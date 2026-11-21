@@ -46,8 +46,8 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 
 ## P6 — No-card hosting proof and resilience [IN_PROGRESS]
 - **P6.1 [BLOCKED]** Test minimally sized host only with user approval/account. Verify egress/websocket, process restarts, RAM/storage limits, volume persistence and renewal restrictions. No false 24/7 promises.
-- **P6.2 [IN_PROGRESS]** Health diagnostic, safe logs, secret redaction, per-user/per-guild limits, provider daily budget, graceful shutdown, reconnection and restart policies.
-- **P6.3** Encrypted off-host private backup/export and restore drill. Never store live member data in GitHub, public CI artifacts or logs.
+- **P6.2 [DONE]** Health diagnostic, safe logs, secret redaction, per-user/per-guild limits, provider daily budget, graceful shutdown, reconnection and restart policies.
+- **P6.3 [IN_PROGRESS]** Encrypted off-host private backup/export and restore drill. Never store live member data in GitHub, public CI artifacts or logs.
 - **Acceptance:** verified host evidence, explicit downtime/renewal behavior, successful persistence/restore proof or recorded blocker.
 
 ## P7 — Consent, privacy review and launch [TODO]

@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P6.2, offline runtime diagnostics, response limits and safe logs.
-- Active branch: `codex/P6.2-runtime-reliability` (base: `codex/P5.4-refresh-and-invalidation`, [PR #31](https://github.com/Hadisovic/Pai/pull/31)).
-- Changed `docs/HOSTING.md`, `src/pai/observability.py`, `src/pai/__main__.py`, `src/pai/commands.py`, `src/pai/discord_gateway.py`, `tests/test_observability.py`. Limits direct mention handling by guild and author while keeping ingestion independent. Logs contain no payloads, and the local diagnostic exercises the real schema and FTS5. P6.1 live host proof is blocked on owner-selected, no-card hosting and explicit approval.
-- Resume: verify remote SHA and CI, then add a streaming encrypted backup and restore drill with a current erasure checkpoint (P6.3).
+- Active task: P6.3, encrypted SQLite backups and restore with erasure replay.
+- Active branch: `codex/P6.3-encrypted-restore` (base: `codex/P6.2-runtime-reliability`, [PR #32](https://github.com/Hadisovic/Pai/pull/32)).
+- Changed `.gitignore`, `docs/BACKUP.md`, `pyproject.toml`, `uv.lock`, `src/pai/backup.py`, `tests/test_backup.py`. Backup and restore are offline and stream AES-256-GCM. Restore requires a newer encrypted erasure checkpoint, reapplies current policy, and never overwrites an existing destination. Off-host storage is user-owned.
+- Resume: verify remote SHA and CI, then prepare member consent notice and launch verification materials (P7.1). P6.1 live host proof remains blocked.
 
 ## Checkpoint log
 
@@ -32,4 +32,5 @@
 | 2026-11-21 | P5.2 | DONE | `codex/P5.2-selective-still-vision` | `cc99ab684c6af274cd2a331e6617c1d7b7430f6b` | Ruff lint, formatting, pytest (64 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917634053) passed.  |
 | 2026-11-21 | P5.3 | DONE | `codex/P5.3-gif-and-cache` | `a60c335405da51805fd37768980cf1aa65699abd` | Ruff lint, formatting, pytest (67 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917952870) passed.  |
 | 2026-11-21 | P5.4 | DONE | `codex/P5.4-refresh-and-invalidation` | `3dc5596c8dfbd3a52e7b8c176ecf7cb65494293c` | Ruff lint, formatting, pytest (69 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918154107) passed.  |
-| 2026-11-21 | P6.2 | IN_PROGRESS | `codex/P6.2-runtime-reliability` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (71 tests) and diff check passed. CI pending. Offline diagnostic reported Python 3.12.10, SQLite 3.49.1, FTS5 true and quick_check ok. |
+| 2026-11-21 | P6.2 | DONE | `codex/P6.2-runtime-reliability` | `682a35027ffec77c0fdc620be87b0c9cae87cc3a` | Ruff lint, formatting, pytest (71 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918341393) passed.  |
+| 2026-11-21 | P6.3 | IN_PROGRESS | `codex/P6.3-encrypted-restore` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (73 tests) and diff check passed. CI pending. Synthetic restore preserved retained messages and rejected stale deletions, opt-outs, wrong keys, tampering and overwrites. No private data or uploads. |
