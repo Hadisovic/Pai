@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P2.2, versioned SQLite archive wired to Discord message creates.
-- Active branch: `codex/P2.2-sqlite-ingestion` (base: `codex/P2.1-discord-authorization`, [PR #16](https://github.com/Hadisovic/Pai/pull/16)).
-- Changed `docs/SETUP.md`, `src/pai/storage.py`, `src/pai/discord_gateway.py`, `src/pai/__main__.py`, `tests/test_archive.py`, `tests/test_discord_gateway.py`. Archive uses UTC, stores full-range Discord IDs as text, deduplicates, and stores scoped reply references.
-- Resume: verify remote SHA and CI, then add raw edits, deletions and retention (P2.3). Keep live collection off until privacy controls and pilot approval.
+- Active task: P2.3, scoped edits, deletions and archive retention.
+- Active branch: `codex/P2.3-edits-deletes-retention` (base: `codex/P2.2-sqlite-ingestion`, [PR #17](https://github.com/Hadisovic/Pai/pull/17)).
+- Changed `docs/SETUP.md`, `src/pai/storage.py`, `src/pai/discord_gateway.py`, `src/pai/policy.py`, `src/pai/__main__.py`, `tests/test_archive.py`, `tests/test_discord_gateway.py`. SQLite schema v2 preserves existing archives, applies ordered content edits, and keeps scoped deletion markers so replay cannot resurrect deleted messages. Collection stores only text and reply references; media expiry and derived cache invalidation will follow in P5.
+- Resume: verify remote SHA and CI, then add the explicit mention and scoped reply-context gate (P2.4).
 
 ## Checkpoint log
 
@@ -17,4 +17,5 @@
 | 2026-11-21 | P1.3 | DONE | `codex/P1.3-no-card-hosting` | `83d5e709b9ea0176ea54de903f6a7e61a3f7e8c9` | Public no-card hosting comparison completed. Ruff lint, formatting, pytest (3 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915021860) passed. Host runtime proof deferred to P6.1. |
 | 2026-11-21 | P1.4 | DONE | `codex/P1.4-synthetic-benchmark` | `5296d3371e54eea701a33eb057619d45dbec2971` | Ruff lint, formatting, pytest (5 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915171413) passed. Six unscored synthetic stub cases ran offline. P1.L live benchmark remains blocked. |
 | 2026-11-21 | P2.1 | DONE | `codex/P2.1-discord-authorization` | `b11a59523ea2aecbc50ba45ce738373576d0719a` | Ruff lint, formatting, pytest (17 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915312630) passed.  |
-| 2026-11-21 | P2.2 | IN_PROGRESS | `codex/P2.2-sqlite-ingestion` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (19 tests) and diff check passed. CI pending. Offline startup reports collection disabled. No live Discord connection. |
+| 2026-11-21 | P2.2 | DONE | `codex/P2.2-sqlite-ingestion` | `aedea2b205010f3f7e8afc050f2f0a41dd3b1e34` | Ruff lint, formatting, pytest (19 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915500591) passed.  |
+| 2026-11-21 | P2.3 | IN_PROGRESS | `codex/P2.3-edits-deletes-retention` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (23 tests) and diff check passed. CI pending. Tests cover the v1 migration, bulk deletion, late replay, scoped and stale edits, and age/count limits. No live data. |

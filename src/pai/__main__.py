@@ -56,7 +56,7 @@ def main() -> None:
         await archive_message(archive, message)
 
     try:
-        PaiDiscordClient(policy, handle).run(token, log_handler=None)
+        PaiDiscordClient(policy, handle, archive=archive).run(token, log_handler=None)
     except discord.DiscordException:
         parser.exit(
             1,

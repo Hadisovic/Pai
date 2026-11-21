@@ -132,3 +132,49 @@ def test_authorized_gateway_reaches_persistent_archive(tmp_path):
     message.author.id = 99
     asyncio.run(client.on_message(message))
     assert archive.get(6) is None
+
+
+def test_raw_events_apply_edits_and_bulk_deletes_without_message_cache(tmp_path):
+    from datetime import UTC, datetime
+
+    from pai.storage import Archive, MessageRecord
+
+    archive = Archive(tmp_path / "pai.sqlite")
+    timestamp = datetime(2026, 11, 21, tzinfo=UTC)
+    assert archive.append(MessageRecord(5, 1, 2, 3, "Sam", "Old", timestamp))
+    client = PaiDiscordClient(policy(), AsyncMock(), archive=archive)
+    channel = sample_message().channel
+    channel.guild = Mock(id=1, me=Mock())
+    client.get_channel = Mock(return_value=channel)
+    asyncio.run(
+        client.on_raw_message_edit(
+            Mock(guild_id=1, channel_id=2, message_id=5, data={"embeds": []})
+        )
+    )
+    assert archive.get(5).text == "Old"
+    asyncio.run(
+        client.on_raw_message_edit(
+            Mock(
+                guild_id=1,
+                channel_id=2,
+                message_id=5,
+                data={
+                    "content": "New",
+                    "edited_timestamp": "2026-11-21T13:00:00+00:00",
+                },
+            )
+        )
+    )
+    assert archive.get(5).text == "New"
+    asyncio.run(
+        client.on_raw_bulk_message_delete(
+            Mock(guild_id=9, channel_id=2, message_ids={5})
+        )
+    )
+    assert archive.get(5) is not None
+    asyncio.run(
+        client.on_raw_bulk_message_delete(
+            Mock(guild_id=1, channel_id=2, message_ids={5})
+        )
+    )
+    assert archive.get(5) is None

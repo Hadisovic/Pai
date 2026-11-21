@@ -45,3 +45,13 @@ its WAL files. Use a fresh archive for the first test. This stage stores
 only new authorized text events and same-channel reply references and has
 no model connection. Complete the remaining privacy and retention tasks
 before collecting real conversations.
+
+Raw edits update existing authorized text when Discord supplies a newer edit
+timestamp. Single and bulk deletes remove the original text and keep a
+temporary, scope-bound ID marker to block replays. Pai prunes expired text
+and markers on startup and hourly. The private policy accepts an optional
+`retention_days` field from 1 through 365, with a 30-day default. The archive
+holds up to 20,000 messages and drops the oldest first when full. SQLite may
+retain allocated disk pages for reuse, so verify disk headroom in the pilot.
+This stage neither stores nor downloads media. A live pilot still needs
+explicit approval and the remaining privacy workflows.

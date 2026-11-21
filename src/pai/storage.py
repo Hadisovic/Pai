@@ -1,23 +1,48 @@
 """Versioned SQLite archive for authorized messages."""
 
+import json
 import sqlite3
+from collections.abc import Iterable
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-_SCHEMA = """
-    CREATE TABLE messages (
-        message_id TEXT PRIMARY KEY NOT NULL,
-        guild_id TEXT NOT NULL,
-        channel_id TEXT NOT NULL,
-        author_id TEXT NOT NULL,
-        author_display TEXT NOT NULL,
-        text TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        reply_to_id TEXT
-    )
-"""
+_MIGRATIONS = (
+    (
+        """
+        CREATE TABLE messages (
+            message_id TEXT PRIMARY KEY NOT NULL,
+            guild_id TEXT NOT NULL,
+            channel_id TEXT NOT NULL,
+            author_id TEXT NOT NULL,
+            author_display TEXT NOT NULL,
+            text TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            reply_to_id TEXT
+        )
+        """,
+    ),
+    (
+        "ALTER TABLE messages ADD COLUMN edited_at TEXT",
+        "CREATE INDEX messages_by_age ON messages (created_at)",
+        """
+        CREATE TABLE deleted_messages (
+            message_id TEXT NOT NULL,
+            guild_id TEXT NOT NULL,
+            channel_id TEXT NOT NULL,
+            deleted_at TEXT NOT NULL,
+            PRIMARY KEY (message_id, guild_id, channel_id)
+        )
+        """,
+    ),
+)
+
+
+def _utc_text(timestamp: datetime) -> str:
+    if timestamp.utcoffset() is None:
+        raise ValueError("Message timestamps must include a timezone")
+    return timestamp.astimezone(UTC).isoformat(timespec="microseconds")
 
 
 @dataclass(frozen=True)
@@ -30,60 +55,153 @@ class MessageRecord:
     text: str
     created_at: datetime
     reply_to_id: int | None = None
+    edited_at: datetime | None = None
 
 
 class Archive:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, max_messages: int = 20_000) -> None:
+        if max_messages < 1:
+            raise ValueError("The archive budget must be positive")
         self.path = path.resolve()
+        self.max_messages = max_messages
         with closing(self.connect()) as connection:
             with connection:
                 connection.execute("BEGIN IMMEDIATE")
                 version = connection.execute("PRAGMA user_version").fetchone()[0]
-                if version == 0:
-                    connection.execute(_SCHEMA)
-                    connection.execute("PRAGMA user_version = 1")
-                elif version != 1:
+                if not 0 <= version <= len(_MIGRATIONS):
                     raise ValueError("Unsupported archive version")
+                for index, statements in enumerate(
+                    _MIGRATIONS[version:], start=version + 1
+                ):
+                    for statement in statements:
+                        connection.execute(statement)
+                    connection.execute(f"PRAGMA user_version = {index}")
             connection.execute("PRAGMA journal_mode = WAL")
 
     def connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.path)
+        connection = sqlite3.connect(self.path)
+        connection.execute("PRAGMA secure_delete = ON")
+        return connection
 
     def append(self, message: MessageRecord) -> bool:
-        if message.created_at.utcoffset() is None:
-            raise ValueError("Message timestamps must include a timezone")
+        scope = (
+            str(message.message_id),
+            str(message.guild_id),
+            str(message.channel_id),
+        )
         with closing(self.connect()) as connection, connection:
             result = connection.execute(
                 """
                 INSERT INTO messages (
                     message_id, guild_id, channel_id, author_id,
                     author_display, text, created_at, reply_to_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                )
+                SELECT ?, ?, ?, ?, ?, ?, ?, ?
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM deleted_messages
+                    WHERE message_id = ? AND guild_id = ? AND channel_id = ?
+                )
                 ON CONFLICT (message_id) DO NOTHING
                 """,
                 (
-                    str(message.message_id),
-                    str(message.guild_id),
-                    str(message.channel_id),
+                    *scope,
                     str(message.author_id),
                     message.author_display,
                     message.text,
-                    message.created_at.astimezone(UTC).isoformat(
-                        timespec="microseconds"
-                    ),
+                    _utc_text(message.created_at),
                     str(message.reply_to_id)
                     if message.reply_to_id is not None
                     else None,
+                    *scope,
+                ),
+            )
+            if result.rowcount != 1:
+                return False
+            count = connection.execute("SELECT count(*) FROM messages").fetchone()[0]
+            if count > self.max_messages:
+                connection.execute(
+                    """
+                    DELETE FROM messages
+                    WHERE rowid IN (
+                        SELECT rowid FROM messages ORDER BY created_at, rowid LIMIT ?
+                    )
+                    """,
+                    (count - self.max_messages,),
+                )
+                return (
+                    connection.execute(
+                        "SELECT 1 FROM messages WHERE message_id = ?", (scope[0],)
+                    ).fetchone()
+                    is not None
+                )
+            return True
+
+    def edit(
+        self,
+        message_id: int,
+        guild_id: int,
+        channel_id: int,
+        authors: frozenset[int],
+        text: str,
+        edited_at: datetime,
+    ) -> bool:
+        timestamp = _utc_text(edited_at)
+        with closing(self.connect()) as connection, connection:
+            result = connection.execute(
+                """
+                UPDATE messages SET text = ?, edited_at = ?
+                WHERE message_id = ? AND guild_id = ? AND channel_id = ?
+                  AND author_id IN (SELECT value FROM json_each(?))
+                  AND created_at <= ? AND (edited_at IS NULL OR edited_at < ?)
+                """,
+                (
+                    text,
+                    timestamp,
+                    str(message_id),
+                    str(guild_id),
+                    str(channel_id),
+                    json.dumps([str(author) for author in authors]),
+                    timestamp,
+                    timestamp,
                 ),
             )
             return result.rowcount == 1
+
+    def delete(
+        self, guild_id: int, channel_id: int, ids: Iterable[int], deleted_at: datetime
+    ) -> int:
+        timestamp = _utc_text(deleted_at)
+        scope = [(str(message), str(guild_id), str(channel_id)) for message in ids]
+        with closing(self.connect()) as connection, connection:
+            connection.executemany(
+                """
+                INSERT INTO deleted_messages (message_id, guild_id, channel_id, deleted_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT (message_id, guild_id, channel_id) DO NOTHING
+                """,
+                ((*message, timestamp) for message in scope),
+            )
+            return connection.executemany(
+                "DELETE FROM messages WHERE message_id = ? AND guild_id = ? AND channel_id = ?",
+                scope,
+            ).rowcount
+
+    def prune(self, cutoff: datetime) -> None:
+        timestamp = _utc_text(cutoff)
+        with closing(self.connect()) as connection, connection:
+            connection.execute(
+                "DELETE FROM messages WHERE created_at < ?", (timestamp,)
+            )
+            connection.execute(
+                "DELETE FROM deleted_messages WHERE deleted_at < ?", (timestamp,)
+            )
 
     def get(self, message_id: int) -> MessageRecord | None:
         with closing(self.connect()) as connection:
             row = connection.execute(
                 """
                 SELECT message_id, guild_id, channel_id, author_id,
-                       author_display, text, created_at, reply_to_id
+                       author_display, text, created_at, reply_to_id, edited_at
                 FROM messages WHERE message_id = ?
                 """,
                 (str(message_id),),
@@ -99,4 +217,5 @@ class Archive:
             text=row[5],
             created_at=datetime.fromisoformat(row[6]),
             reply_to_id=int(row[7]) if row[7] is not None else None,
+            edited_at=datetime.fromisoformat(row[8]) if row[8] is not None else None,
         )
