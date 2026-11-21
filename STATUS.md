@@ -12,6 +12,15 @@ unverified. Kerit remains the fallback and its registration is separate.
 No identity data was submitted, no account or allocation was created,
 and no credentials or payment details were entered by automation.
 
+The owner opened GitHub and Discord in Brave and asked that automation
+leave those tabs in place. Native Windows browser control could not
+initialize in this session, and no Brave DevTools endpoint was
+published when checked. The next step is for the owner to grant
+automation access to the existing Brave window. A browser attempt at
+the Kerit fallback registration returned access denied. The Enzonic
+sign-in and actual no-billing allocation are still pending.
+
+
 P8.1 is waiting on the owner's sign-ins in the three prepared browser
 windows. After authentication, resume by opening each authenticated
 dashboard without inspecting secrets. Verify Groq Free and Zero Data
