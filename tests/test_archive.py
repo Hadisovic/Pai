@@ -70,6 +70,16 @@ def test_version_one_archive_migrates_without_losing_messages(tmp_path):
             PRAGMA user_version = 1;
             """)
     migrated = Archive(path)
+    assert [
+        row.message_id
+        for row in migrated.search(
+            "Before",
+            guild_id=3,
+            channel_id=4,
+            authors=frozenset({5}),
+            cutoff=datetime(2026, 11, 1, tzinfo=UTC),
+        )
+    ] == [1]
     assert migrated.edit(
         1, 3, 4, frozenset({5}), "After", datetime(2026, 11, 22, tzinfo=UTC)
     )

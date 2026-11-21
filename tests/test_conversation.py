@@ -51,3 +51,41 @@ def test_context_keeps_authorized_chain_and_recent_messages_only(tmp_path):
     assert [record.message_id for record in context.parents] == [2, 1]
     assert [record.message_id for record in context.recent] == [3]
     assert context.request == records[5]
+
+
+def test_old_recall_preserves_source_and_excludes_future_content(tmp_path):
+    archive = Archive(tmp_path / "pai.sqlite")
+    time = datetime(2026, 11, 21, tzinfo=UTC)
+    policy = PrivacyPolicy(True, "v1", 10, frozenset({20}), frozenset({30}))
+    old = MessageRecord(1, 10, 20, 30, "Sam", "We named the lab router Waffle.", time)
+    archive.append(old)
+    for index in range(2, 14):
+        archive.append(
+            MessageRecord(
+                index, 10, 20, 30, "Jo", "Daily greeting", time + timedelta(hours=index)
+            )
+        )
+    archive.append(
+        MessageRecord(
+            14,
+            10,
+            20,
+            30,
+            "Jo",
+            "We renamed the router",
+            time + timedelta(days=3),
+        )
+    )
+    request = MessageRecord(
+        15,
+        10,
+        20,
+        30,
+        "Jo",
+        "Hey <@42> what did we name the router?",
+        time + timedelta(days=2),
+    )
+    archive.append(request)
+    context = prepare_context(archive, policy, request)
+    assert context.memory == (old,)
+    assert context.memory[0].jump_url == "https://discord.com/channels/10/20/1"
