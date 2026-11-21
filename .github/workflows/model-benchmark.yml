@@ -1,0 +1,79 @@
+name: Account-free synthetic model benchmark
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/model-benchmark.yml
+      - scripts/benchmark_llamacpp.py
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Qwen3.5-4B Q4_K_M
+            repository: ggml-org/Qwen3.5-4B-GGUF
+            revision: 8d43d974efc48399cb58957ad49c8b26bf5a109c
+            weights: Qwen3.5-4B-Q4_K_M.gguf
+            weights_sha: 217002fa8008ef4fc6d548353a3aebef055a96e6ff8e0e2c0953ef8254a89c14
+            projection: mmproj-Qwen3.5-4B-Q8_0.gguf
+            projection_sha: 5a5ba634d46f9888599963bfc52194eadf099e1efdbee46d71957d911cf62654
+          - label: Gemma 4 E4B IT Q4_0
+            repository: ggml-org/gemma-4-E4B-it-GGUF
+            revision: 8903cb408c7df39cde2ed15fac397e6d7be92951
+            weights: gemma-4-E4B-it-Q4_0.gguf
+            weights_sha: a555b900214b477d8880e7832e0b8925e139b0159640036b09fe472b6f2097f2
+            projection: mmproj-gemma-4-E4B-it-Q8_0.gguf
+            projection_sha: 9257f21a0f5358204b4a612cff83fad2e56412f4f607f0049331ce60c0cf9d34
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - run: python -m pip install uv==0.12.21
+      - run: uv sync --locked --no-dev --python 3.12
+      - name: Run six fixtures against pinned public model weights
+        env:
+          PAI_LABEL: ${{ matrix.label }}
+          PAI_MODEL_REPO: ${{ matrix.repository }}
+          PAI_MODEL_REVISION: ${{ matrix.revision }}
+          PAI_WEIGHTS: ${{ matrix.weights }}
+          PAI_WEIGHTS_SHA: ${{ matrix.weights_sha }}
+          PAI_PROJECTION: ${{ matrix.projection }}
+          PAI_PROJECTION_SHA: ${{ matrix.projection_sha }}
+        run: |
+          set -euo pipefail
+          directory=$(mktemp -d)
+          runtime=llama-b12612-bin-ubuntu-x64.tar.gz
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://github.com/ggml-org/llama.cpp/releases/download/b12612/$runtime" \
+            --output "$directory/$runtime"
+          printf '%s  %s\n' ffee61db59a653939755d59a77cd6ed5463a93834e38ac7ebc77ee7d2edac1cd "$directory/$runtime" | sha256sum --check
+          tar -xzf "$directory/$runtime" -C "$directory"
+          server=$(find "$directory" -type f -name llama-server -print -quit)
+          test -x "$server"
+          model_url="https://huggingface.co/$PAI_MODEL_REPO/resolve/$PAI_MODEL_REVISION"
+          curl --fail --location --retry 3 --silent --show-error "$model_url/$PAI_WEIGHTS" --output "$directory/weights.gguf"
+          curl --fail --location --retry 3 --silent --show-error "$model_url/$PAI_PROJECTION" --output "$directory/projector.gguf"
+          printf '%s  %s\n' "$PAI_WEIGHTS_SHA" "$directory/weights.gguf" "$PAI_PROJECTION_SHA" "$directory/projector.gguf" | sha256sum --check
+          "$server" -m "$directory/weights.gguf" --mmproj "$directory/projector.gguf" \
+            --host 127.0.0.1 --port 18547 --alias pai-local -c 4096 -np 1 -ngl 0 -t 4 \
+            --no-webui --reasoning off >"$directory/llama.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; tail -n 22 "$directory/llama.log"' EXIT
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:18547/health >/dev/null; then break; fi
+            kill -0 "$server_pid"
+            sleep 2
+          done
+          curl --fail --silent --show-error http://127.0.0.1:18547/health >/dev/null
+          uv run --offline --locked --no-dev python scripts/benchmark_llamacpp.py "$PAI_LABEL"
