@@ -516,6 +516,7 @@ name = "pai-discord"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aiohttp" },
     { name = "discord-py" },
 ]
 
@@ -527,7 +528,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "discord-py", specifier = ">=2.6,<3" }]
+requires-dist = [
+    { name = "aiohttp", specifier = ">=3.13,<4" },
+    { name = "discord-py", specifier = ">=2.6,<3" },
+]
 
 [package.metadata.requires-dev]
 dev = [

@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P4.1, free-only, capability-aware routing and persistent quota reservations.
-- Active branch: `codex/P4.1-provider-safety` (base: `codex/P3.4-privacy-controls`, [PR #23](https://github.com/Hadisovic/Pai/pull/23)).
-- Changed `docs/PROVIDER-EVIDENCE.md`, `src/pai/model_router.py`, `src/pai/storage.py`, `tests/test_model_router.py`. The model interface skips incompatible or unverified routes and accounts for requests and tokens in rolling windows. Timeouts and 429s persist cooldowns in SQLite.
-- Resume: verify remote SHA and CI, then implement the Groq text/vision adapter and same-provider free text fallback with mocked HTTP (P4.2).
+- Active task: P4.2, fixed Groq text and vision routes.
+- Active branch: `codex/P4.2-groq-adapter` (base: `codex/P4.1-provider-safety`, [PR #24](https://github.com/Hadisovic/Pai/pull/24)).
+- Changed `docs/PROVIDER-EVIDENCE.md`, `src/pai/providers.py`, `tests/test_providers.py`, `pyproject.toml`, `uv.lock`. Groq Qwen is the first route and Groq GPT OSS is text-only fallback. Both are disabled unless an operator confirms a Free organization. The HTTP adapter rejects redirects, caps responses, and maps 429 to router backoff.
+- Resume: verify remote SHA and CI, then build bounded prompts and validated citations from authorized evidence (P4.3). Keep live AI disabled.
 
 ## Checkpoint log
 
@@ -24,4 +24,5 @@
 | 2026-11-21 | P3.2 | DONE | `codex/P3.2-retrieval-and-provenance` | `7aee93389057101db930f6e33c064812f8c7697f` | Ruff lint, formatting, pytest (37 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916209251) passed.  |
 | 2026-11-21 | P3.3 | DONE | `codex/P3.3-shared-style` | `25488fbb163ac02eb237f221c6b04c05122df865` | Ruff lint, formatting, pytest (38 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916397118) passed.  |
 | 2026-11-21 | P3.4 | DONE | `codex/P3.4-privacy-controls` | `b6387203b711bfd76630fed5456409e73ff39e78` | Ruff lint, formatting, pytest (41 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916639967) passed.  |
-| 2026-11-21 | P4.1 | IN_PROGRESS | `codex/P4.1-provider-safety` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (44 tests) and diff check passed. CI pending. No provider network calls or model account. Discord connection remains untested. |
+| 2026-11-21 | P4.1 | DONE | `codex/P4.1-provider-safety` | `6f065ddad5f19501adeaeb82325df206c0f9bff0` | Ruff lint, formatting, pytest (44 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916783466) passed.  |
+| 2026-11-21 | P4.2 | IN_PROGRESS | `codex/P4.2-groq-adapter` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (47 tests) and diff check passed. CI pending. Only mock HTTP was used. Free account, ZDR and live provider capabilities remain unverified. |

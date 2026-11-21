@@ -35,3 +35,12 @@ Failed attempts count. It uses rolling one-minute and 24-hour windows to
 stay within documented caps even across resets. Budget and backoff state
 contains only route names, timestamps and token counts. A provider's lower
 observed limit still takes precedence when configuring its route.
+
+The Groq adapter uses the documented chat-completions endpoint with a fixed
+Qwen primary and GPT OSS text fallback. It makes no request unless the
+operator has confirmed a separate Free organization with no billing
+information and checked ZDR. Groq uses a shared endpoint for its Free and
+paid plans. Model permissions alone cannot prove account billing status.
+Use only a key from the dedicated Free organization, and remove it if plan,
+quotas, or privacy settings change. The live CLI remains AI-disabled at
+this checkpoint. [Groq API reference](https://console.groq.com/docs/api-reference)
