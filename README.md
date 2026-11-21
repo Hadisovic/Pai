@@ -1,6 +1,6 @@
 # Pai — Discord AI Companion
 
-Pai is a friendly Discord companion in development. The project starts with local development and synthetic tests.
+Pai is a Discord companion with consent-gated chat memory, direct-mention replies, and selective image and GIF understanding. The offline pilot is tested. Live access, model quality, and hosting await owner approval and verification.
 
 ## Product contract
 - Observe and archive messages only in explicitly allowlisted channels after members are informed and consent is configured. No DMs or other servers.
@@ -32,7 +32,7 @@ uv run --locked pytest -q
 ```
 
 Development and CI use the committed lockfile. The baseline needs no Discord
-account, token, or AI credentials. See [the roadmap](PLAN.md) for live setup prerequisites.
+account, token, or AI credentials. See [the pilot runbook](docs/RUNBOOK.md) for live setup prerequisites.
 
 
 Run only the offline Discord and AI smoke test with:
