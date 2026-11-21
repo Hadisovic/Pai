@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P3.2, historical recall with Discord provenance and fresh permissions.
-- Active branch: `codex/P3.2-retrieval-and-provenance` (base: `codex/P3.1-fts-index`, [PR #20](https://github.com/Hadisovic/Pai/pull/20)).
-- Changed `docs/SETUP.md`, `src/pai/conversation.py`, `src/pai/storage.py`, `src/pai/discord_gateway.py`, `tests/test_conversation.py`, `tests/test_discord_gateway.py`. Historical recall is strictly same-channel and limited to four relevant vetted sources. The adapter rechecks current Discord access and source versions before posting.
-- Resume: verify remote SHA and CI, then implement P3.3 shared style feedback without individual profiles or inferred facts.
+- Active task: P3.3, author-chosen, source-linked humor examples.
+- Active branch: `codex/P3.3-shared-style` (base: `codex/P3.2-retrieval-and-provenance`, [PR #21](https://github.com/Hadisovic/Pai/pull/21)).
+- Changed `docs/DECISIONS.md`, `src/pai/conversation.py`, `src/pai/storage.py`, `tests/test_shared_style.py`. Explicit style selections teach shared channel tone without deriving individual profiles. Selected examples occupy a separate part of reply context and their source controls expiry, edit invalidation and deletion.
+- Resume: verify remote SHA and CI, then add the ephemeral privacy, memory, forget-me and style controls and test end-to-end opt-out (P3.4).
 
 ## Checkpoint log
 
@@ -21,4 +21,5 @@
 | 2026-11-21 | P2.3 | DONE | `codex/P2.3-edits-deletes-retention` | `e8e76e0278ea6d7c71dd05a5fddac575bc66db7b` | Ruff lint, formatting, pytest (23 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915751232) passed.  |
 | 2026-11-21 | P2.4 | DONE | `codex/P2.4-mention-and-context` | `275b737f946cde62d9662e1c443846b305ed181b` | Ruff lint, formatting, pytest (33 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915923499) passed.  |
 | 2026-11-21 | P3.1 | DONE | `codex/P3.1-fts-index` | `731a7b9a8fe752aae25952133dd0f06a9e1555e0` | Ruff lint, formatting, pytest (34 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916046542) passed.  |
-| 2026-11-21 | P3.2 | IN_PROGRESS | `codex/P3.2-retrieval-and-provenance` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (37 tests) and diff check passed. CI pending. Tests include old source attribution, future filtering, permission loss, and source deletion during response generation. |
+| 2026-11-21 | P3.2 | DONE | `codex/P3.2-retrieval-and-provenance` | `7aee93389057101db930f6e33c064812f8c7697f` | Ruff lint, formatting, pytest (37 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916209251) passed.  |
+| 2026-11-21 | P3.3 | IN_PROGRESS | `codex/P3.3-shared-style` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (38 tests) and diff check passed. CI pending. Style selection API is currently offline, with command wiring planned in P3.4. |

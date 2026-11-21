@@ -3,7 +3,7 @@
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
@@ -33,10 +33,17 @@ class ConversationContext:
     parents: tuple[MessageRecord, ...] = ()
     recent: tuple[MessageRecord, ...] = ()
     memory: tuple[MessageRecord, ...] = ()
+    style_examples: tuple[MessageRecord, ...] = ()
 
     @property
     def sources(self) -> tuple[MessageRecord, ...]:
-        return (self.request, *self.parents, *self.recent, *self.memory)
+        return (
+            self.request,
+            *self.parents,
+            *self.recent,
+            *self.memory,
+            *self.style_examples,
+        )
 
 
 def prepare_context(
@@ -55,7 +62,7 @@ def prepare_context(
     while (
         parent_id is not None and parent_id not in seen and len(parents) < _PARENT_LIMIT
     ):
-        parent = archive.get(parent_id)
+        parent = archive.get(parent_id, include_style=False)
         if (
             parent is None
             or (parent.guild_id, parent.channel_id)
@@ -87,6 +94,30 @@ def prepare_context(
         through=request.created_at,
         omit=frozenset(seen),
     )
+    style_examples = archive.style_examples(
+        request, policy.consenting_member_ids, cutoff
+    )
     return ConversationContext(
-        request, tuple(parents), tuple(reversed(visible)), memory
+        request, tuple(parents), tuple(reversed(visible)), memory, style_examples
+    )
+
+
+def share_style_example(
+    archive: Archive,
+    policy: PrivacyPolicy,
+    guild_id: int,
+    channel_id: int,
+    author_id: int,
+    message_id: int,
+) -> bool:
+    if not policy.permits(guild_id, channel_id, author_id):
+        return False
+    now = datetime.now(UTC)
+    return archive.add_style_example(
+        guild_id,
+        channel_id,
+        author_id,
+        message_id,
+        now,
+        now - timedelta(days=policy.retention_days),
     )

@@ -65,6 +65,20 @@ _MIGRATIONS = (
         END
         """,
     ),
+    (
+        """
+        CREATE TABLE style_examples (
+            message_id TEXT PRIMARY KEY NOT NULL REFERENCES messages(message_id) ON DELETE CASCADE,
+            chosen_at TEXT NOT NULL
+        )
+        """,
+        """
+        CREATE TRIGGER style_example_update AFTER UPDATE OF text ON messages
+        WHEN old.text <> new.text BEGIN
+            DELETE FROM style_examples WHERE message_id = old.message_id;
+        END
+        """,
+    ),
 )
 
 
@@ -117,6 +131,7 @@ class Archive:
     def connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path)
         connection.execute("PRAGMA secure_delete = ON")
+        connection.execute("PRAGMA foreign_keys = ON")
         return connection
 
     def append(self, message: MessageRecord) -> bool:
@@ -232,15 +247,18 @@ class Archive:
                 "DELETE FROM deleted_messages WHERE deleted_at < ?", (timestamp,)
             )
 
-    def get(self, message_id: int) -> MessageRecord | None:
+    def get(
+        self, message_id: int, *, include_style: bool = True
+    ) -> MessageRecord | None:
         with closing(self.connect()) as connection:
             row = connection.execute(
                 """
                 SELECT message_id, guild_id, channel_id, author_id,
                        author_display, text, created_at, reply_to_id, edited_at
                 FROM messages WHERE message_id = ?
+                  AND (? OR message_id NOT IN (SELECT message_id FROM style_examples))
                 """,
-                (str(message_id),),
+                (str(message_id), include_style),
             ).fetchone()
         if row is None:
             return None
@@ -273,6 +291,7 @@ class Archive:
                   AND messages.author_id IN (SELECT value FROM json_each(?))
                   AND messages.created_at BETWEEN ? AND ?
                   AND messages.message_id NOT IN (SELECT value FROM json_each(?))
+                  AND messages.message_id NOT IN (SELECT message_id FROM style_examples)
                 ORDER BY bm25(messages_fts), messages.created_at DESC, messages.rowid DESC
                 LIMIT ?
                 """,
@@ -285,6 +304,62 @@ class Archive:
                     _utc_text(through) if through is not None else "9999",
                     json.dumps([str(message_id) for message_id in omit]),
                     min(limit, 32),
+                ),
+            ).fetchall()
+        return tuple(_record(row) for row in rows)
+
+    def add_style_example(
+        self,
+        guild_id: int,
+        channel_id: int,
+        author_id: int,
+        message_id: int,
+        chosen_at: datetime,
+        cutoff: datetime,
+    ) -> bool:
+        with closing(self.connect()) as connection, connection:
+            row = connection.execute(
+                """
+                INSERT INTO style_examples (message_id, chosen_at)
+                SELECT message_id, ? FROM messages
+                WHERE message_id = ? AND guild_id = ? AND channel_id = ? AND author_id = ?
+                  AND created_at BETWEEN ? AND ?
+                ON CONFLICT (message_id) DO NOTHING
+                """,
+                (
+                    _utc_text(chosen_at),
+                    str(message_id),
+                    str(guild_id),
+                    str(channel_id),
+                    str(author_id),
+                    _utc_text(cutoff),
+                    _utc_text(chosen_at),
+                ),
+            )
+            return row.rowcount == 1
+
+    def style_examples(
+        self, request: MessageRecord, authors: frozenset[int], cutoff: datetime
+    ) -> tuple[MessageRecord, ...]:
+        with closing(self.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT messages.message_id, messages.guild_id, messages.channel_id,
+                       messages.author_id, messages.author_display, messages.text,
+                       messages.created_at, messages.reply_to_id, messages.edited_at
+                FROM style_examples JOIN messages USING (message_id)
+                WHERE guild_id = ? AND channel_id = ? AND message_id <> ?
+                  AND author_id IN (SELECT value FROM json_each(?))
+                  AND created_at BETWEEN ? AND ?
+                ORDER BY chosen_at DESC, messages.rowid DESC LIMIT 2
+                """,
+                (
+                    str(request.guild_id),
+                    str(request.channel_id),
+                    str(request.message_id),
+                    json.dumps([str(author) for author in authors]),
+                    _utc_text(cutoff),
+                    _utc_text(request.created_at),
                 ),
             ).fetchall()
         return tuple(_record(row) for row in rows)
@@ -315,6 +390,7 @@ class Archive:
                        author_display, text, created_at, reply_to_id, edited_at
                 FROM messages
                 WHERE guild_id = ? AND channel_id = ? AND message_id <> ?
+                  AND message_id NOT IN (SELECT message_id FROM style_examples)
                   AND author_id IN (SELECT value FROM json_each(?))
                   AND created_at BETWEEN ? AND ?
                 ORDER BY created_at DESC, rowid DESC LIMIT ?
