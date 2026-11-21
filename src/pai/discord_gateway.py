@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 import discord
 from discord.ext import tasks
 
+from pai.commands import controls
 from pai.conversation import ConversationContext, direct_mention, prepare_context
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
@@ -139,6 +140,11 @@ class PaiDiscordClient(discord.Client):
     async def setup_hook(self) -> None:
         if self.archive is not None:
             await asyncio.to_thread(self.archive.prune, self._retention_cutoff())
+            if self.policy.guild_id is not None:
+                self.control_tree = controls(self, self.archive, self.policy)
+                await self.control_tree.sync(
+                    guild=discord.Object(id=self.policy.guild_id)
+                )
             self._prune_archive.start()
 
     async def close(self) -> None:

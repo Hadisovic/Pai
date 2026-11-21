@@ -76,3 +76,27 @@ a source changed or was removed during generation. Use history-enabled
 channels only when their audience is authorized to receive the historical
 context in an ordinary channel reply. The production model responder
 remains disabled.
+
+## Member privacy controls
+
+Only explicit command invocations receive these private responses. Social
+replies still require a direct bot mention.
+
+- `/privacy` shows your collection state and the current retention window.
+- `/memory` exports up to 100 of your own recent authorized messages in the
+  current channel. Ask an administrator for a larger export.
+- `/forgetme` removes your active archived messages in this guild along with
+  their search and style references. A minimal opt-out record prevents
+  collection from restarting after a bot restart or an out-of-order event.
+- `/sharestyle` marks one of your own saved messages as a style example.
+
+The operator can update the private allowlist, consent list and retention.
+Refresh consent when the notice changes. Stop the bot before changing the
+file. It purges revoked scope at startup before connecting. To apply a
+revocation without connecting, run `python -m pai --apply-policy --policy
+/private/policy.json --database /private/pai.sqlite` in the locked
+environment. Applying an explicitly disabled policy clears archived text.
+Do not restore an older backup without applying all current revocations and
+opt-outs. Backups and restoration need an erasure procedure and drill before
+a live launch. Deletion from Pai does not delete original Discord messages,
+messages previously posted by the bot, or files users already downloaded.

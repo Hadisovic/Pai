@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from pai.policy import PrivacyPolicy
+
 _MIGRATIONS = (
     (
         """
@@ -78,6 +80,17 @@ _MIGRATIONS = (
             DELETE FROM style_examples WHERE message_id = old.message_id;
         END
         """,
+    ),
+    (
+        """
+        CREATE TABLE member_opt_outs (
+            guild_id TEXT NOT NULL,
+            author_id TEXT NOT NULL,
+            recorded_at TEXT NOT NULL,
+            PRIMARY KEY (guild_id, author_id)
+        )
+        """,
+        "CREATE INDEX messages_by_author ON messages (guild_id, author_id, channel_id, created_at)",
     ),
 )
 
@@ -152,6 +165,9 @@ class Archive:
                     SELECT 1 FROM deleted_messages
                     WHERE message_id = ? AND guild_id = ? AND channel_id = ?
                 )
+                AND NOT EXISTS (
+                    SELECT 1 FROM member_opt_outs WHERE guild_id = ? AND author_id = ?
+                )
                 ON CONFLICT (message_id) DO NOTHING
                 """,
                 (
@@ -164,6 +180,8 @@ class Archive:
                     if message.reply_to_id is not None
                     else None,
                     *scope,
+                    scope[1],
+                    str(message.author_id),
                 ),
             )
             if result.rowcount != 1:
@@ -236,6 +254,65 @@ class Archive:
                 "DELETE FROM messages WHERE message_id = ? AND guild_id = ? AND channel_id = ?",
                 scope,
             ).rowcount
+
+    def forget_author(self, guild_id: int, author_id: int, now: datetime) -> int:
+        scope = (str(guild_id), str(author_id))
+        with closing(self.connect()) as connection, connection:
+            connection.execute(
+                """
+                INSERT INTO member_opt_outs (guild_id, author_id, recorded_at)
+                VALUES (?, ?, ?) ON CONFLICT (guild_id, author_id) DO NOTHING
+                """,
+                (*scope, _utc_text(now)),
+            )
+            return connection.execute(
+                "DELETE FROM messages WHERE guild_id = ? AND author_id = ?", scope
+            ).rowcount
+
+    def is_opted_out(self, guild_id: int, author_id: int) -> bool:
+        with closing(self.connect()) as connection:
+            return (
+                connection.execute(
+                    "SELECT 1 FROM member_opt_outs WHERE guild_id = ? AND author_id = ?",
+                    (str(guild_id), str(author_id)),
+                ).fetchone()
+                is not None
+            )
+
+    def apply_policy(self, policy: PrivacyPolicy) -> int:
+        with closing(self.connect()) as connection, connection:
+            return connection.execute(
+                """
+                DELETE FROM messages
+                WHERE NOT ? OR guild_id <> ?
+                   OR channel_id NOT IN (SELECT value FROM json_each(?))
+                   OR author_id NOT IN (SELECT value FROM json_each(?))
+                """,
+                (
+                    policy.is_enabled,
+                    str(policy.guild_id),
+                    json.dumps([str(channel) for channel in policy.channel_ids]),
+                    json.dumps(
+                        [str(author) for author in policy.consenting_member_ids]
+                    ),
+                ),
+            ).rowcount
+
+    def export_author(
+        self, guild_id: int, channel_id: int, author_id: int, cutoff: datetime
+    ) -> tuple[MessageRecord, ...]:
+        with closing(self.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT message_id, guild_id, channel_id, author_id,
+                       author_display, text, created_at, reply_to_id, edited_at
+                FROM messages WHERE guild_id = ? AND channel_id = ? AND author_id = ?
+                  AND created_at >= ?
+                ORDER BY created_at DESC, rowid DESC LIMIT 100
+                """,
+                (str(guild_id), str(channel_id), str(author_id), _utc_text(cutoff)),
+            ).fetchall()
+        return tuple(_record(row) for row in rows)
 
     def prune(self, cutoff: datetime) -> None:
         timestamp = _utc_text(cutoff)

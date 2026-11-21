@@ -15,8 +15,14 @@ from pai.storage import Archive
 def main() -> None:
     parser = argparse.ArgumentParser(description="Pai Discord companion")
     parser.add_argument("--policy", type=Path, default=Path(".pai-policy.json"))
-    parser.add_argument(
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument(
         "--connect", action="store_true", help="Start authorized live collection"
+    )
+    action.add_argument(
+        "--apply-policy",
+        action="store_true",
+        help="Purge revoked archive scope offline",
     )
     parser.add_argument(
         "--database", type=Path, help="Private path for the SQLite archive"
@@ -29,6 +35,23 @@ def main() -> None:
             2,
             "Unable to load the private policy file. Check its format and permissions.\n",
         )
+
+    if args.apply_policy:
+        if (
+            args.database is None
+            or not args.database.is_file()
+            or not args.policy.is_file()
+        ):
+            parser.error(
+                "--apply-policy requires existing private database and policy files"
+            )
+        os.umask(0o077)
+        try:
+            count = Archive(args.database).apply_policy(policy)
+        except (OSError, sqlite3.Error, ValueError):
+            parser.exit(2, "Could not apply the policy to the archive.\n")
+        print(f"Purged {count} records outside the approved scope.")
+        return
 
     if not args.connect:
         print(
@@ -47,6 +70,7 @@ def main() -> None:
     os.umask(0o077)
     try:
         archive = Archive(args.database)
+        archive.apply_policy(policy)
     except (OSError, sqlite3.Error, ValueError):
         parser.exit(
             2, "Unable to open the private archive. Check its path and schema.\n"

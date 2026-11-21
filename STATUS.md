@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P3.3, author-chosen, source-linked humor examples.
-- Active branch: `codex/P3.3-shared-style` (base: `codex/P3.2-retrieval-and-provenance`, [PR #21](https://github.com/Hadisovic/Pai/pull/21)).
-- Changed `docs/DECISIONS.md`, `src/pai/conversation.py`, `src/pai/storage.py`, `tests/test_shared_style.py`. Explicit style selections teach shared channel tone without deriving individual profiles. Selected examples occupy a separate part of reply context and their source controls expiry, edit invalidation and deletion.
-- Resume: verify remote SHA and CI, then add the ephemeral privacy, memory, forget-me and style controls and test end-to-end opt-out (P3.4).
+- Active task: P3.4, ephemeral privacy controls, export and durable opt-out.
+- Active branch: `codex/P3.4-privacy-controls` (base: `codex/P3.3-shared-style`, [PR #22](https://github.com/Hadisovic/Pai/pull/22)).
+- Changed `docs/SETUP.md`, `src/pai/storage.py`, `src/pai/commands.py`, `src/pai/discord_gateway.py`, `src/pai/__main__.py`, `tests/test_privacy.py`. Members can see their status, export their own scoped messages, select a style example, or opt out and remove their active archive entries. The operator administers the private policy file.
+- Resume: verify remote SHA and CI, then implement the deadline-, capability-, and quota-aware provider interface (P4.1). Keep live keys disconnected.
 
 ## Checkpoint log
 
@@ -22,4 +22,5 @@
 | 2026-11-21 | P2.4 | DONE | `codex/P2.4-mention-and-context` | `275b737f946cde62d9662e1c443846b305ed181b` | Ruff lint, formatting, pytest (33 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915923499) passed.  |
 | 2026-11-21 | P3.1 | DONE | `codex/P3.1-fts-index` | `731a7b9a8fe752aae25952133dd0f06a9e1555e0` | Ruff lint, formatting, pytest (34 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916046542) passed.  |
 | 2026-11-21 | P3.2 | DONE | `codex/P3.2-retrieval-and-provenance` | `7aee93389057101db930f6e33c064812f8c7697f` | Ruff lint, formatting, pytest (37 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916209251) passed.  |
-| 2026-11-21 | P3.3 | IN_PROGRESS | `codex/P3.3-shared-style` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (38 tests) and diff check passed. CI pending. Style selection API is currently offline, with command wiring planned in P3.4. |
+| 2026-11-21 | P3.3 | DONE | `codex/P3.3-shared-style` | `25488fbb163ac02eb237f221c6b04c05122df865` | Ruff lint, formatting, pytest (38 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916397118) passed.  |
+| 2026-11-21 | P3.4 | IN_PROGRESS | `codex/P3.4-privacy-controls` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (41 tests) and diff check passed. CI pending. Offline CLI startup and all 41 tests passed, including guild-scoped command callbacks. Live command registration and backup-erasure proof remain pending. |
