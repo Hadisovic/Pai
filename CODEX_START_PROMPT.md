@@ -11,3 +11,11 @@ Requirements: Friendly English-first social companion; understands some Arabic i
 Strict budget: $0, no billing card/address, no paid AI endpoints. Hosting 24/7 is aspirational: verify renewal and reliability limits, never promise guarantees. Provider choices must be evidence-based with free text/vision tests and fallback support.
 
 Start with P0.1/P0.2 mocked development baseline, no credentials or Discord connection needed. Proceed to P1 official provider/hosting research, then implement what is testable without secrets. Stop only on truly necessary user-only external steps, document precise blockers and continue other independent tasks if possible.
+
+
+## Engineering freedom and open-source acceleration
+The architecture and task sequence are starting proposals, **not strict implementation rules**. Make independent engineering choices that maximize quality and speed, provided the bot stays genuinely free with **no billing address/payment card**, preserves privacy, learns the group's humor, remembers conversations, handles relevant images/GIFs, and replies only on mention.
+
+**Before writing the core from scratch, research existing open-source Discord AI bots and related memory/vision frameworks.** Evaluate maintenance, licensing, security, resource usage, free API compatibility, and how well they fit our requirements. Clone/fork/adapt permissively licensed projects where beneficial, keeping legal notices and attribution; otherwise implement from scratch. Avoid reinventing useful, well-tested components.
+
+Explain your choice and any justified architecture/roadmap deviations in `docs/DECISIONS.md` or `STATUS.md`. Adjust the implementation plan when warranted, without silently dropping key features or the no-cost/no-billing constraint. Keep the existing push-test-verify checkpoint system mandatory.
