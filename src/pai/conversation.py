@@ -28,12 +28,21 @@ def direct_mention(text: str, recognized_targets: Iterable[int], bot_id: int) ->
 
 
 @dataclass(frozen=True)
+class MediaReading:
+    unavailable: bool = False
+    description: str = ""
+    origin: MessageRecord | None = None
+    source: MessageRecord | None = None
+
+
+@dataclass(frozen=True)
 class ConversationContext:
     request: MessageRecord
     parents: tuple[MessageRecord, ...] = ()
     recent: tuple[MessageRecord, ...] = ()
     memory: tuple[MessageRecord, ...] = ()
     style_examples: tuple[MessageRecord, ...] = ()
+    media: MediaReading = MediaReading()
 
     @property
     def sources(self) -> tuple[MessageRecord, ...]:
@@ -43,6 +52,7 @@ class ConversationContext:
             *self.recent,
             *self.memory,
             *self.style_examples,
+            *((self.media.origin,) if self.media.origin is not None else ()),
         )
 
 

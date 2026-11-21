@@ -42,8 +42,7 @@ operator has confirmed a separate Free organization with no billing
 information and checked ZDR. Groq uses a shared endpoint for its Free and
 paid plans. Model permissions alone cannot prove account billing status.
 Use only a key from the dedicated Free organization, and remove it if plan,
-quotas, or privacy settings change. The live CLI remains AI-disabled at
-this checkpoint. [Groq API reference](https://console.groq.com/docs/api-reference)
+quotas, or privacy settings change. The live CLI defaults to AI disabled and requires the opt-in described in SETUP.md. [Groq API reference](https://console.groq.com/docs/api-reference)
 
 The reply prompt sends selected text and display names, with local source
 aliases in place of Discord IDs or jump links. It removes raw mention tags,

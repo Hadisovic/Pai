@@ -1,9 +1,10 @@
 # Durable handoff state
 
-- Active task: P4.3, bounded, source-backed prompts with isolated chat data.
-- Active branch: `codex/P4.3-bounded-prompts` (base: `codex/P4.2-groq-adapter`, [PR #25](https://github.com/Hadisovic/Pai/pull/25)).
-- Changed `docs/PROVIDER-EVIDENCE.md`, `src/pai/prompts.py`, `tests/test_prompts.py`. Minimizes IDs, detected credentials and URLs. Places chat and style material in structured untrusted data, and resolves citations locally against selected sources. Three frames fit the conservative free request budget.
-- Resume: verify remote SHA and CI, then wire the English-first reply engine with separate explicit AI consent and exercise it with a fake route (P4.4).
+- Offline implementation and launch preparation have passed local and GitHub checks. The product is awaiting live approval, validation and launch.
+- Active branch: `codex/P7.3-launch-readiness`, [PR #36](https://github.com/Hadisovic/Pai/pull/36), stacked on [PR #35](https://github.com/Hadisovic/Pai/pull/35). The review stack starts at [PR #9](https://github.com/Hadisovic/Pai/pull/9). Pai's implementation is on the open branches. The owner controls merges.
+- Latest verified implementation checkpoint is `3989da3241b328fae8ffde2fb4a98d88c133b416`. Push CI passed on Python 3.12 and 3.13. [GitHub Actions](https://github.com/Hadisovic/Pai/actions/runs/44941578162)
+- Live blockers: P1.L needs an owner-controlled card-free model account and live synthetic scoring. P6.1 needs an approved card-free host and a host pilot. P7.2 needs an approved test Discord application and explicitly consented scope. P7.L needs owner approval after live acceptance.
+- Resume with `git fetch origin`, compare `git rev-parse HEAD` with `git ls-remote origin refs/heads/codex/P7.3-launch-readiness`, and inspect PR #36. After owner approval and verified Free Groq access, run the synthetic benchmark in `docs/BENCHMARK.md`. Then conduct the approved host and test-server pilots using `docs/RUNBOOK.md`. Inject credentials only through the operator's secret store. Keep collection off until the notice and scope are approved.
 
 ## Checkpoint log
 
@@ -26,4 +27,15 @@
 | 2026-11-21 | P3.4 | DONE | `codex/P3.4-privacy-controls` | `b6387203b711bfd76630fed5456409e73ff39e78` | Ruff lint, formatting, pytest (41 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916639967) passed.  |
 | 2026-11-21 | P4.1 | DONE | `codex/P4.1-provider-safety` | `6f065ddad5f19501adeaeb82325df206c0f9bff0` | Ruff lint, formatting, pytest (44 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916783466) passed.  |
 | 2026-11-21 | P4.2 | DONE | `codex/P4.2-groq-adapter` | `b552ea3ae2d62adf722004de45d3003dc1f7fc7f` | Ruff lint, formatting, pytest (47 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916968582) passed.  |
-| 2026-11-21 | P4.3 | IN_PROGRESS | `codex/P4.3-bounded-prompts` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (49 tests) and diff check passed. CI pending. The sanitization tests use invented content. No provider call or claims about real model adherence. |
+| 2026-11-21 | P4.3 | DONE | `codex/P4.3-bounded-prompts` | `7ef9c9fa92dd47bbc62685b3fea3f44d3783e915` | Ruff lint, formatting, pytest (49 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917104590) passed.  |
+| 2026-11-21 | P4.4 | DONE | `codex/P4.4-personality-and-replies` | `8e954f01de1f1244e68342aa05c96ace306c7c7b` | Ruff lint, formatting, pytest (51 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917267765) passed.  |
+| 2026-11-21 | P5.1 | DONE | `codex/P5.1-media-boundaries` | `99604c5e3b428ce3fe291ef8a2b345c68e67e932` | Ruff lint, formatting, pytest (63 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917468577) passed.  |
+| 2026-11-21 | P5.2 | DONE | `codex/P5.2-selective-still-vision` | `cc99ab684c6af274cd2a331e6617c1d7b7430f6b` | Ruff lint, formatting, pytest (64 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917634053) passed.  |
+| 2026-11-21 | P5.3 | DONE | `codex/P5.3-gif-and-cache` | `a60c335405da51805fd37768980cf1aa65699abd` | Ruff lint, formatting, pytest (67 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917952870) passed.  |
+| 2026-11-21 | P5.4 | DONE | `codex/P5.4-refresh-and-invalidation` | `3dc5596c8dfbd3a52e7b8c176ecf7cb65494293c` | Ruff lint, formatting, pytest (69 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918154107) passed.  |
+| 2026-11-21 | P6.2 | DONE | `codex/P6.2-runtime-reliability` | `682a35027ffec77c0fdc620be87b0c9cae87cc3a` | Ruff lint, formatting, pytest (71 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918341393) passed.  |
+| 2026-11-21 | P6.3 | DONE | `codex/P6.3-encrypted-restore` | `2bc855465c6cff47f040acfd976cc732c7fe11a0` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918539920) passed.  |
+| 2026-11-21 | P7.1 | DONE | `codex/P7.1-member-notice` | `c3783e292c832369b06e7665fb391d7a1062aa9c` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918619053) passed.  |
+| 2026-11-21 | P7.2a | DONE | `codex/P7.2a-offline-end-to-end` | `fbb82b3a931ba02b6ea8aac3a84ad493931b3231` | Ruff lint, formatting, pytest (74 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918767018) passed.  |
+| 2026-11-21 | P7.3 | DONE | `codex/P7.3-launch-readiness` | `3989da3241b328fae8ffde2fb4a98d88c133b416` | Ruff lint, format, pytest (75 tests), diff check, runtime doctor and offline six-case benchmark passed. Locked audit found no known vulnerabilities or adverse package statuses in 23 packages. [GitHub CI](https://github.com/Hadisovic/Pai/actions/runs/44941578162) passed on Python 3.12 and 3.13. |
+| 2026-11-21 | P1.L / P6.1 / P7.2 / P7.L | BLOCKED | `codex/P7.3-launch-readiness` | Live validation pending | The owner must approve the pilot and provide access through verified free accounts, with actual member consent before data collection. Start with the synthetic model benchmark. |
