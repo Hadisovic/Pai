@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P2.4, direct mention gate and bounded same-channel context.
-- Active branch: `codex/P2.4-mention-and-context` (base: `codex/P2.3-edits-deletes-retention`, [PR #18](https://github.com/Hadisovic/Pai/pull/18)).
-- Changed `docs/SETUP.md`, `src/pai/conversation.py`, `src/pai/storage.py`, `src/pai/discord_gateway.py`, `src/pai/__main__.py`, `tests/test_conversation.py`, `tests/test_discord_gateway.py`. The live CLI remains archive-only. The offline responder exercises strict explicit mentions, replay suppression and outbound mention suppression.
-- Resume: verify remote SHA and CI, then implement P3.1 FTS5 migrations and archive indexing. Live Discord and cloud access remain pending owner-controlled setup.
+- Active task: P3.1, scope-bound SQLite FTS5 index.
+- Active branch: `codex/P3.1-fts-index` (base: `codex/P2.4-mention-and-context`, [PR #19](https://github.com/Hadisovic/Pai/pull/19)).
+- Changed `docs/SETUP.md`, `src/pai/storage.py`, `tests/test_search.py`, `tests/test_archive.py`. The archive migrates to SQLite FTS5 with secure-delete, uses a plain bounded query, and indexes existing text. Attachments and derived analysis schema move to P5 alongside deletion and URL controls.
+- Resume: verify remote SHA and CI, then wire source-backed long-term retrieval into mention context and revalidate current permissions before sending (P3.2).
 
 ## Checkpoint log
 
@@ -19,4 +19,5 @@
 | 2026-11-21 | P2.1 | DONE | `codex/P2.1-discord-authorization` | `b11a59523ea2aecbc50ba45ce738373576d0719a` | Ruff lint, formatting, pytest (17 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915312630) passed.  |
 | 2026-11-21 | P2.2 | DONE | `codex/P2.2-sqlite-ingestion` | `aedea2b205010f3f7e8afc050f2f0a41dd3b1e34` | Ruff lint, formatting, pytest (19 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915500591) passed.  |
 | 2026-11-21 | P2.3 | DONE | `codex/P2.3-edits-deletes-retention` | `e8e76e0278ea6d7c71dd05a5fddac575bc66db7b` | Ruff lint, formatting, pytest (23 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915751232) passed.  |
-| 2026-11-21 | P2.4 | IN_PROGRESS | `codex/P2.4-mention-and-context` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (33 tests) and diff check passed. CI pending. Mocked Discord responder invoked exactly once for a direct mention with valid recent context. |
+| 2026-11-21 | P2.4 | DONE | `codex/P2.4-mention-and-context` | `275b737f946cde62d9662e1c443846b305ed181b` | Ruff lint, formatting, pytest (33 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44915923499) passed.  |
+| 2026-11-21 | P3.1 | IN_PROGRESS | `codex/P3.1-fts-index` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (34 tests) and diff check passed. CI pending. Windows SQLite 3.49.1 supports FTS5 secure-delete. Host support remains a deployment check. |

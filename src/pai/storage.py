@@ -1,6 +1,7 @@
 """Versioned SQLite archive for authorized messages."""
 
 import json
+import re
 import sqlite3
 from collections.abc import Iterable
 from contextlib import closing
@@ -36,7 +37,38 @@ _MIGRATIONS = (
         )
         """,
     ),
+    (
+        "CREATE INDEX messages_by_channel_time ON messages (guild_id, channel_id, created_at)",
+        """
+        CREATE VIRTUAL TABLE messages_fts USING fts5(
+            text, content='messages', content_rowid='rowid'
+        )
+        """,
+        "INSERT INTO messages_fts(messages_fts, rank) VALUES ('secure-delete', 1)",
+        "INSERT INTO messages_fts(messages_fts) VALUES ('rebuild')",
+        """
+        CREATE TRIGGER messages_fts_insert AFTER INSERT ON messages BEGIN
+            INSERT INTO messages_fts(rowid, text) VALUES (new.rowid, new.text);
+        END
+        """,
+        """
+        CREATE TRIGGER messages_fts_delete AFTER DELETE ON messages BEGIN
+            INSERT INTO messages_fts(messages_fts, rowid, text)
+            VALUES ('delete', old.rowid, old.text);
+        END
+        """,
+        """
+        CREATE TRIGGER messages_fts_update AFTER UPDATE OF text ON messages BEGIN
+            INSERT INTO messages_fts(messages_fts, rowid, text)
+            VALUES ('delete', old.rowid, old.text);
+            INSERT INTO messages_fts(rowid, text) VALUES (new.rowid, new.text);
+        END
+        """,
+    ),
 )
+
+
+_WORDS = re.compile(r"[^\W_]+")
 
 
 def _utc_text(timestamp: datetime) -> str:
@@ -209,6 +241,44 @@ class Archive:
         if row is None:
             return None
         return _record(row)
+
+    def search(
+        self,
+        query: str,
+        *,
+        guild_id: int,
+        channel_id: int,
+        authors: frozenset[int],
+        cutoff: datetime,
+        limit: int = 8,
+    ) -> tuple[MessageRecord, ...]:
+        terms = list(dict.fromkeys(_WORDS.findall(query[:2000].lower())))[:12]
+        if not terms or not authors or limit < 1:
+            return ()
+        expression = " OR ".join(f'"{term}"' for term in terms)
+        with closing(self.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT messages.message_id, messages.guild_id, messages.channel_id,
+                       messages.author_id, messages.author_display, messages.text,
+                       messages.created_at, messages.reply_to_id, messages.edited_at
+                FROM messages_fts JOIN messages ON messages.rowid = messages_fts.rowid
+                WHERE messages_fts MATCH ? AND messages.guild_id = ? AND messages.channel_id = ?
+                  AND messages.author_id IN (SELECT value FROM json_each(?))
+                  AND messages.created_at >= ?
+                ORDER BY bm25(messages_fts), messages.created_at DESC, messages.rowid DESC
+                LIMIT ?
+                """,
+                (
+                    expression,
+                    str(guild_id),
+                    str(channel_id),
+                    json.dumps([str(author) for author in authors]),
+                    _utc_text(cutoff),
+                    min(limit, 32),
+                ),
+            ).fetchall()
+        return tuple(_record(row) for row in rows)
 
     def recent(
         self,

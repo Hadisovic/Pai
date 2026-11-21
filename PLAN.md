@@ -16,15 +16,15 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P1.L [BLOCKED]** Run live synthetic model calls and human scoring after the owner controls an approved card-free account. Continue independently with the mocked gateway, storage and retrieval.
 - **Acceptance:** dated official links and decision matrix, verified or explicitly unknown free quotas, recommended primary text+vision, fallback, and host candidates. Real live tests require user-controlled credentials.
 
-## P2 — Discord connection, authorization and ingestion [IN_PROGRESS]
+## P2 — Discord connection, authorization and ingestion [DONE]
 - **P2.1 [DONE]** Connect with `discord.py` and minimal permissions. Persist allowlisted guild/channel IDs only after admin opt-in and member notice/consent, disabled by default.
 - **P2.2 [DONE]** Store new messages in SQLite with UTC timestamps, immutable Discord IDs, author ID/display name, channel ID, reply linkage; deduplicate on reconnect. No history backfill needed.
 - **P2.3 [DONE]** Process edits/deletions, expired/inaccessible media, storage budgets and retention; no leaks from disallowed channels.
-- **P2.4 [IN_PROGRESS]** Direct mention gate: never reply on ordinary chat or bot-authored messages; resolve quoted/replied-to message and bounded recent context.
+- **P2.4 [DONE]** Direct mention gate: never reply on ordinary chat or bot-authored messages; resolve quoted/replied-to message and bounded recent context.
 - **Acceptance:** opt-in, idempotency, restart persistence, ACL, mention gate and edit/delete tests. No AI call for normal ingestion.
 
-## P3 — Long-term searchable memory [TODO]
-- **P3.1** SQLite migrations, FTS5 for content search, indexes, safe queries, message-linked media metadata and cache.
+## P3 — Long-term searchable memory [IN_PROGRESS]
+- **P3.1 [IN_PROGRESS]** SQLite migrations, FTS5 for content search, indexes, safe queries. Introduce message-linked media metadata and cache in P5 alongside their invalidation rules.
 - **P3.2** Source-backed retrieval of old messages plus conversational context, correct user attribution and Discord jump links. Verify viewing permissions before quoting.
 - **P3.3** Source-linked, group-level conversation context and explicit style feedback, within the platform policy documented in docs/DISCORD.md; preserve supporting message IDs, inference status, confidence, corrections and expiry. Avoid treating sarcasm as factual profile.
 - **P3.4** `/privacy`, `/memory`, `/forgetme`; admin configurable allowlist/retention; delete/export and backup-deletion policy. Ensure restricted-channel isolation.

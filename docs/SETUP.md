@@ -61,3 +61,9 @@ Reply notification pings and code examples do not trigger it. When both
 the requester and the bot can read channel history, it can see up to four
 authorized reply ancestors and eight recent messages in that same channel.
 The CLI does not enable model replies yet.
+
+Search uses SQLite 3.42+ with FTS5 and its secure-delete option. Check
+`uv run --locked python -c "import sqlite3; print(sqlite3.sqlite_version)"`
+on the host and test archive initialization before importing data. Opening
+with an older SQLite build after an FTS5 update may fail. Use the same or a
+newer SQLite version for tested backups and restores.
