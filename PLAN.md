@@ -12,12 +12,12 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P1.R [DONE]** Evaluate open-source foundations and dependency reuse before core implementation. Record the decision and license obligations.
 - **P1.2 [DONE]** Verify current Gemini, Groq, OpenRouter free provider offerings, actual model IDs and text/vision capability, request and token limits, account/card restrictions, privacy/data-use and region rules. No paid accounts.
 - **P1.3 [DONE]** Verify no-card hosting candidates Kerit Cloud, Bot-Hosting.net and FPS.ms and alternatives: RAM, storage, persistence, websockets, renewal, inactivity policy, uptime and backup. Claims are not proof.
-- **P1.4 [IN_PROGRESS]** Build repeatable **synthetic** model benchmark for natural English conversation, humor, contextual recall, some Arabic comprehension and memes/GIFs. Never send real private messages without permission.
+- **P1.4 [DONE]** Build repeatable **synthetic** model benchmark for natural English conversation, humor, contextual recall, some Arabic comprehension and memes/GIFs. Never send real private messages without permission.
 - **P1.L [BLOCKED]** Run live synthetic model calls and human scoring after the owner controls an approved card-free account. Continue independently with the mocked gateway, storage and retrieval.
 - **Acceptance:** dated official links and decision matrix, verified or explicitly unknown free quotas, recommended primary text+vision, fallback, and host candidates. Real live tests require user-controlled credentials.
 
-## P2 — Discord connection, authorization and ingestion [TODO]
-- **P2.1** Connect with `discord.py` and minimal permissions. Persist allowlisted guild/channel IDs only after admin opt-in and member notice/consent, disabled by default.
+## P2 — Discord connection, authorization and ingestion [IN_PROGRESS]
+- **P2.1 [IN_PROGRESS]** Connect with `discord.py` and minimal permissions. Persist allowlisted guild/channel IDs only after admin opt-in and member notice/consent, disabled by default.
 - **P2.2** Store new messages in SQLite with UTC timestamps, immutable Discord IDs, author ID/display name, channel ID, reply linkage; deduplicate on reconnect. No history backfill needed.
 - **P2.3** Process edits/deletions, expired/inaccessible media, storage budgets and retention; no leaks from disallowed channels.
 - **P2.4** Direct mention gate: never reply on ordinary chat or bot-authored messages; resolve quoted/replied-to message and bounded recent context.
