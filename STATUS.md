@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P5.2, selective still image and sticker decoding on direct mentions.
-- Active branch: `codex/P5.2-selective-still-vision` (base: `codex/P5.1-media-boundaries`, [PR #28](https://github.com/Hadisovic/Pai/pull/28)).
-- Changed `docs/SETUP.md`, `docs/BENCHMARK.md`, `pyproject.toml`, `uv.lock`, `src/pai/__main__.py`, `src/pai/media.py`, `src/pai/vision.py`, `src/pai/conversation.py`, `src/pai/discord_gateway.py`, `src/pai/prompts.py`, `src/pai/reply_engine.py`, `tests/test_media.py`, `tests/test_discord_gateway.py`. The model sees at most one relevant asset, selected from the current message or a directly replied-to authorized source. Pillow verifies format and pixel size and normalizes to PNG. The pipeline reports inaccessible images without guessing.
-- Resume: verify remote SHA and CI, then sample ordered GIF frames and reuse vision analysis for repeat media (P5.3).
+- Active task: P5.3, ordered GIF sampling and provenance-bound descriptions.
+- Active branch: `codex/P5.3-gif-and-cache` (base: `codex/P5.2-selective-still-vision`, [PR #29](https://github.com/Hadisovic/Pai/pull/29)).
+- Changed `docs/SETUP.md`, `src/pai/__main__.py`, `src/pai/media.py`, `src/pai/vision.py`, `src/pai/conversation.py`, `src/pai/discord_gateway.py`, `src/pai/prompts.py`, `src/pai/reply_engine.py`, `src/pai/storage.py`, `tests/test_media.py`, `tests/test_discord_gateway.py`. Samples up to three normalized frames. Caches short, channel-scoped descriptions keyed by content digest and tied to the original message, with an authorization and freshness gate before reply.
+- Resume: verify remote SHA and CI, then refresh expired media through authorized Discord message IDs and invalidate caches on attachment-only edits (P5.4).
 
 ## Checkpoint log
 
@@ -29,4 +29,5 @@
 | 2026-11-21 | P4.3 | DONE | `codex/P4.3-bounded-prompts` | `7ef9c9fa92dd47bbc62685b3fea3f44d3783e915` | Ruff lint, formatting, pytest (49 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917104590) passed.  |
 | 2026-11-21 | P4.4 | DONE | `codex/P4.4-personality-and-replies` | `8e954f01de1f1244e68342aa05c96ace306c7c7b` | Ruff lint, formatting, pytest (51 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917267765) passed.  |
 | 2026-11-21 | P5.1 | DONE | `codex/P5.1-media-boundaries` | `99604c5e3b428ce3fe291ef8a2b345c68e67e932` | Ruff lint, formatting, pytest (63 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917468577) passed.  |
-| 2026-11-21 | P5.2 | IN_PROGRESS | `codex/P5.2-selective-still-vision` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (64 tests) and diff check passed. CI pending. 64 tests, including rejection of corrupted/oversized image data and one media call for a new direct mention. |
+| 2026-11-21 | P5.2 | DONE | `codex/P5.2-selective-still-vision` | `cc99ab684c6af274cd2a331e6617c1d7b7430f6b` | Ruff lint, formatting, pytest (64 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917634053) passed.  |
+| 2026-11-21 | P5.3 | IN_PROGRESS | `codex/P5.3-gif-and-cache` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (67 tests) and diff check passed. CI pending. Synthetic GIF tests verify frame order. Fake vision call count confirms reuse and deletion invalidation. |

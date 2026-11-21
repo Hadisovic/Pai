@@ -119,6 +119,26 @@ _MIGRATIONS = (
         )
         """,
     ),
+    (
+        """
+        CREATE TABLE media_descriptions (
+            guild_id TEXT NOT NULL,
+            channel_id TEXT NOT NULL,
+            fingerprint TEXT NOT NULL,
+            message_id TEXT NOT NULL REFERENCES messages(message_id) ON DELETE CASCADE,
+            description TEXT NOT NULL,
+            described_at TEXT NOT NULL,
+            PRIMARY KEY (guild_id, channel_id, fingerprint)
+        )
+        """,
+        "CREATE INDEX media_descriptions_by_source ON media_descriptions(message_id)",
+        """
+        CREATE TRIGGER media_description_update AFTER UPDATE OF edited_at ON messages
+        BEGIN
+            DELETE FROM media_descriptions WHERE message_id = old.message_id;
+        END
+        """,
+    ),
 )
 
 
@@ -263,6 +283,65 @@ class Archive:
                 (str(message_id),),
             ).fetchall()
         return tuple(MediaItem(*row) for row in rows)
+
+    def find_description(
+        self,
+        fingerprint: str,
+        guild_id: int,
+        channel_id: int,
+        authors: frozenset[int],
+        cutoff: datetime,
+    ) -> tuple[MessageRecord, str] | None:
+        with closing(self.connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT messages.message_id, messages.guild_id, messages.channel_id,
+                       messages.author_id, messages.author_display, messages.text,
+                       messages.created_at, messages.reply_to_id, messages.edited_at, description
+                FROM media_descriptions JOIN messages USING (message_id)
+                WHERE media_descriptions.guild_id = ? AND media_descriptions.channel_id = ?
+                  AND fingerprint = ? AND messages.created_at >= ?
+                  AND messages.author_id IN (SELECT value FROM json_each(?))
+                """,
+                (
+                    str(guild_id),
+                    str(channel_id),
+                    fingerprint,
+                    _utc_text(cutoff),
+                    json.dumps([str(author) for author in authors]),
+                ),
+            ).fetchone()
+        return (_record(row[:-1]), row[-1]) if row is not None else None
+
+    def save_description(
+        self, source: MessageRecord, fingerprint: str, description: str, now: datetime
+    ) -> bool:
+        with closing(self.connect()) as connection, connection:
+            row = connection.execute(
+                """
+                INSERT INTO media_descriptions
+                    (guild_id, channel_id, fingerprint, message_id, description, described_at)
+                SELECT guild_id, channel_id, ?, message_id, ?, ? FROM messages
+                WHERE message_id = ? AND guild_id = ? AND channel_id = ? AND text = ?
+                  AND edited_at IS ?
+                ON CONFLICT (guild_id, channel_id, fingerprint) DO UPDATE SET
+                    message_id = excluded.message_id, description = excluded.description,
+                    described_at = excluded.described_at
+                """,
+                (
+                    fingerprint,
+                    description,
+                    _utc_text(now),
+                    str(source.message_id),
+                    str(source.guild_id),
+                    str(source.channel_id),
+                    source.text,
+                    _utc_text(source.edited_at)
+                    if source.edited_at is not None
+                    else None,
+                ),
+            )
+            return row.rowcount == 1
 
     def edit(
         self,

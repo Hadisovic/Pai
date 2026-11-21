@@ -39,7 +39,8 @@ async def _run(
                 )
             )
             routes = Groq(session, groq_key, free_plan_confirmed=True).routes()
-            client.respond = ReplyEngine(Router(archive, routes))
+            router = Router(archive, routes)
+            client.respond = ReplyEngine(router)
             if policy.media_opt_in:
                 resolver = PublicMediaResolver()
                 resources.push_async_callback(resolver.close)
@@ -50,7 +51,9 @@ async def _run(
                         trust_env=False,
                     )
                 )
-                client.read_media = MentionVision(archive, media_session)
+                client.read_media = MentionVision(
+                    archive, media_session, router, policy
+                )
         await client.start(token)
 
 

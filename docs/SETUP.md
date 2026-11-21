@@ -125,3 +125,10 @@ sticker on an authorized direct mention or its directly referenced
 authorized message. It verifies the actual file format and bounds the
 decoded image to four million pixels, then sends a normalized frame of at
 most 512 × 512 pixels. It performs no downloads during ordinary collection.
+
+For GIFs and supported animated image files, Pai samples the beginning,
+temporal midpoint and end in order. It scans at most 48 frames and 24
+million cumulative frame pixels. It stores a short description only after
+the source is checked and can reuse it for identical media in the same
+channel. Changes, deletion, expiry or opt-out invalidate the source-linked
+description. A new asset uses one bounded vision call before the reply.

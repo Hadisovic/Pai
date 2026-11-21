@@ -9,9 +9,13 @@ import discord
 from discord.ext import tasks
 
 from pai.commands import controls
-from pai.conversation import ConversationContext, direct_mention, prepare_context
+from pai.conversation import (
+    ConversationContext,
+    MediaReading,
+    direct_mention,
+    prepare_context,
+)
 from pai.discord_media import discover_media
-from pai.media import MediaReading
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
 
@@ -98,7 +102,14 @@ class PaiDiscordClient(discord.Client):
                 now=datetime.now(UTC),
             )
         if self.read_media is not None:
-            context = replace(context, media=await self.read_media(message, context))
+            media = await self.read_media(message, context)
+            if (
+                not can_read_history
+                and media.origin
+                and media.origin.message_id != request.message_id
+            ):
+                media = MediaReading(unavailable=True)
+            context = replace(context, media=media)
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
         response = (await self.respond(context)).strip()
@@ -109,7 +120,9 @@ class PaiDiscordClient(discord.Client):
         if access is None:
             return
         channel, can_read_history = access
-        if len(context.sources) > 1 and not can_read_history:
+        if not can_read_history and any(
+            source.message_id != request.message_id for source in context.sources
+        ):
             return
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
