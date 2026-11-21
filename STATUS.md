@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P4.3, bounded, source-backed prompts with isolated chat data.
-- Active branch: `codex/P4.3-bounded-prompts` (base: `codex/P4.2-groq-adapter`, [PR #25](https://github.com/Hadisovic/Pai/pull/25)).
-- Changed `docs/PROVIDER-EVIDENCE.md`, `src/pai/prompts.py`, `tests/test_prompts.py`. Minimizes IDs, detected credentials and URLs. Places chat and style material in structured untrusted data, and resolves citations locally against selected sources. Three frames fit the conservative free request budget.
-- Resume: verify remote SHA and CI, then wire the English-first reply engine with separate explicit AI consent and exercise it with a fake route (P4.4).
+- Active task: P4.4, English-first reply engine with explicit inference opt-in.
+- Active branch: `codex/P4.4-personality-and-replies` (base: `codex/P4.3-bounded-prompts`, [PR #26](https://github.com/Hadisovic/Pai/pull/26)).
+- Changed `.env.example`, `docs/SETUP.md`, `docs/PROVIDER-EVIDENCE.md`, `src/pai/__main__.py`, `src/pai/policy.py`, `src/pai/reply_engine.py`, `tests/test_reply_engine.py`. Answers use the style and source rules through the same dispatcher tested with fake models. The optional Groq mode requires a private AI opt-in and separate CLI flag. Default startup is still disconnected.
+- Resume: verify remote SHA and CI, then implement bounded Discord media metadata and safe asset fetch boundaries (P5.1). Real reply quality still needs P1.L/P7 testing.
 
 ## Checkpoint log
 
@@ -26,4 +26,5 @@
 | 2026-11-21 | P3.4 | DONE | `codex/P3.4-privacy-controls` | `b6387203b711bfd76630fed5456409e73ff39e78` | Ruff lint, formatting, pytest (41 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916639967) passed.  |
 | 2026-11-21 | P4.1 | DONE | `codex/P4.1-provider-safety` | `6f065ddad5f19501adeaeb82325df206c0f9bff0` | Ruff lint, formatting, pytest (44 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916783466) passed.  |
 | 2026-11-21 | P4.2 | DONE | `codex/P4.2-groq-adapter` | `b552ea3ae2d62adf722004de45d3003dc1f7fc7f` | Ruff lint, formatting, pytest (47 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44916968582) passed.  |
-| 2026-11-21 | P4.3 | IN_PROGRESS | `codex/P4.3-bounded-prompts` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (49 tests) and diff check passed. CI pending. The sanitization tests use invented content. No provider call or claims about real model adherence. |
+| 2026-11-21 | P4.3 | DONE | `codex/P4.3-bounded-prompts` | `7ef9c9fa92dd47bbc62685b3fea3f44d3783e915` | Ruff lint, formatting, pytest (49 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917104590) passed.  |
+| 2026-11-21 | P4.4 | IN_PROGRESS | `codex/P4.4-personality-and-replies` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (51 tests) and diff check passed. CI pending. 51 offline tests and the credential-free CLI check passed. No live model calls. |

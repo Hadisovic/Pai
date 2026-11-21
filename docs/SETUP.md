@@ -60,7 +60,7 @@ The mocked responder requires a literal, Discord-recognized bot mention.
 Reply notification pings and code examples do not trigger it. When both
 the requester and the bot can read channel history, it can see up to four
 authorized reply ancestors and eight recent messages in that same channel.
-The CLI does not enable model replies yet.
+The CLI leaves model replies disabled unless the operator enables the approved Groq mode.
 
 Search uses SQLite 3.42+ with FTS5 and its secure-delete option. Check
 `uv run --locked python -c "import sqlite3; print(sqlite3.sqlite_version)"`
@@ -74,8 +74,7 @@ links. It fetches current guild membership and checks channel permissions
 before selecting history and again before sending. It discards a response if
 a source changed or was removed during generation. Use history-enabled
 channels only when their audience is authorized to receive the historical
-context in an ordinary channel reply. The production model responder
-remains disabled.
+context in an ordinary channel reply. The provider-backed responder requires a separate opt-in.
 
 ## Member privacy controls
 
@@ -100,3 +99,15 @@ Do not restore an older backup without applying all current revocations and
 opt-outs. Backups and restoration need an erasure procedure and drill before
 a live launch. Deletion from Pai does not delete original Discord messages,
 messages previously posted by the bot, or files users already downloaded.
+
+## Optional model replies
+
+The normal connected mode archives authorized messages without model calls.
+A user-approved pilot can add `--groq-free` alongside `--connect` if the
+operator has confirmed the Free plan, its limits, no billing information and
+ZDR in a dedicated Groq organization. Inject `PAI_GROQ_KEY` via secrets.
+Set `external_ai_opt_in: true` only after the current notice and members'
+consent cover this provider and the use of selected chat text and display
+names. The CLI exits before Discord login when the flag lacks consent or a
+key. A local mock verified routing and prompt assembly. Live model access
+and conversational quality are still unverified.

@@ -33,8 +33,8 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 ## P4 — Natural model-assisted conversation [IN_PROGRESS]
 - **P4.1 [DONE]** Provider interface with model capabilities (text/image/frames), timeouts, quota counters, backoff and circuit breakers; reject all paid endpoints and unverified billing.
 - **P4.2 [DONE]** Select primary/fallback from P1 evidence; route to compatible free provider only; on exhausted quotas give one brief notice while ingestion continues.
-- **P4.3 [IN_PROGRESS]** Assemble bounded prompts from direct mention, reply chain, current channel context and authorized memory search; trim tokens, minimize sensitive content and provide provenance.
-- **P4.4** Hybrid English-first personality; understand occasional Arabic/Arabizi where possible; naturally adapt to server humor, tease lightly, avoid repetitive catchphrases; support tone correction/feedback and resist chat prompt injection.
+- **P4.3 [DONE]** Assemble bounded prompts from direct mention, reply chain, current channel context and authorized memory search; trim tokens, minimize sensitive content and provide provenance.
+- **P4.4 [IN_PROGRESS]** Hybrid English-first personality; understand occasional Arabic/Arabizi where possible; naturally adapt to server humor, tease lightly, avoid repetitive catchphrases; support tone correction/feedback and resist chat prompt injection.
 - **Acceptance:** deterministic fake-provider dialogue tests and human-scored quality, provider failover, data minimization and no cross-channel leaks.
 
 ## P5 — Images, memes, stickers and GIFs [TODO]
