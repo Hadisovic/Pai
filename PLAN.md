@@ -23,15 +23,15 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P2.4 [DONE]** Direct mention gate: never reply on ordinary chat or bot-authored messages; resolve quoted/replied-to message and bounded recent context.
 - **Acceptance:** opt-in, idempotency, restart persistence, ACL, mention gate and edit/delete tests. No AI call for normal ingestion.
 
-## P3 — Long-term searchable memory [IN_PROGRESS]
+## P3 — Long-term searchable memory [DONE]
 - **P3.1 [DONE]** SQLite migrations, FTS5 for content search, indexes, safe queries. Introduce message-linked media metadata and cache in P5 alongside their invalidation rules.
 - **P3.2 [DONE]** Source-backed retrieval of old messages plus conversational context, correct user attribution and Discord jump links. Verify viewing permissions before quoting.
 - **P3.3 [DONE]** Source-linked, group-level conversation context and explicit style feedback, within the platform policy documented in docs/DISCORD.md; preserve supporting message IDs, inference status, confidence, corrections and expiry. Avoid treating sarcasm as factual profile.
-- **P3.4 [IN_PROGRESS]** `/privacy`, `/memory`, `/forgetme`; admin configurable allowlist/retention; delete/export and backup-deletion policy. Ensure restricted-channel isolation.
+- **P3.4 [DONE]** `/privacy`, `/memory`, `/forgetme`; admin configurable allowlist/retention; delete/export and backup-deletion policy. Ensure restricted-channel isolation.
 - **Acceptance:** tests for history retrieval, provenance, cross-channel ACL, sarcasm, corrections, deleted memories, retention and account removal.
 
-## P4 — Natural model-assisted conversation [TODO]
-- **P4.1** Provider interface with model capabilities (text/image/frames), timeouts, quota counters, backoff and circuit breakers; reject all paid endpoints and unverified billing.
+## P4 — Natural model-assisted conversation [IN_PROGRESS]
+- **P4.1 [IN_PROGRESS]** Provider interface with model capabilities (text/image/frames), timeouts, quota counters, backoff and circuit breakers; reject all paid endpoints and unverified billing.
 - **P4.2** Select primary/fallback from P1 evidence; route to compatible free provider only; on exhausted quotas give one brief notice while ingestion continues.
 - **P4.3** Assemble bounded prompts from direct mention, reply chain, current channel context and authorized memory search; trim tokens, minimize sensitive content and provide provenance.
 - **P4.4** Hybrid English-first personality; understand occasional Arabic/Arabizi where possible; naturally adapt to server humor, tease lightly, avoid repetitive catchphrases; support tone correction/feedback and resist chat prompt injection.

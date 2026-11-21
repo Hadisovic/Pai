@@ -29,3 +29,9 @@ candidate with actual text, vision, quota, and 429 tests. Until there is an
 authorized live provider, keep archiving and inference independently
 switchable and use only mocked AI replies. Avoid paid tools, account
 upgrades, and unconstrained routing even when a provider lists a model as free.
+
+The local router reserves attempts and estimated tokens before sending.
+Failed attempts count. It uses rolling one-minute and 24-hour windows to
+stay within documented caps even across resets. Budget and backoff state
+contains only route names, timestamps and token counts. A provider's lower
+observed limit still takes precedence when configuring its route.

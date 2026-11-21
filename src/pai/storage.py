@@ -6,7 +6,7 @@ import sqlite3
 from collections.abc import Iterable
 from contextlib import closing
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from pai.policy import PrivacyPolicy
@@ -91,6 +91,19 @@ _MIGRATIONS = (
         )
         """,
         "CREATE INDEX messages_by_author ON messages (guild_id, author_id, channel_id, created_at)",
+    ),
+    (
+        """
+        CREATE TABLE model_attempts (
+            route TEXT NOT NULL, occurred_at TEXT NOT NULL, tokens INTEGER NOT NULL
+        )
+        """,
+        "CREATE INDEX model_attempts_by_route ON model_attempts (route, occurred_at)",
+        """
+        CREATE TABLE model_backoff (
+            route TEXT PRIMARY KEY NOT NULL, until_at TEXT NOT NULL
+        )
+        """,
     ),
 )
 
@@ -313,6 +326,61 @@ class Archive:
                 (str(guild_id), str(channel_id), str(author_id), _utc_text(cutoff)),
             ).fetchall()
         return tuple(_record(row) for row in rows)
+
+    def reserve_model_attempt(
+        self,
+        route: str,
+        now: datetime,
+        tokens: int,
+        request_limits: tuple[int, int],
+        token_limits: tuple[int, int],
+    ) -> bool:
+        current = _utc_text(now)
+        minute = _utc_text(now - timedelta(minutes=1))
+        day = _utc_text(now - timedelta(days=1))
+        with closing(self.connect()) as connection, connection:
+            connection.execute("BEGIN IMMEDIATE")
+            blocked = connection.execute(
+                "SELECT 1 FROM model_backoff WHERE route = ? AND until_at > ?",
+                (route, current),
+            ).fetchone()
+            if blocked:
+                return False
+            connection.execute(
+                "DELETE FROM model_attempts WHERE route = ? AND occurred_at < ?",
+                (route, day),
+            )
+            minute_calls, day_calls, minute_tokens, day_tokens = connection.execute(
+                """
+                SELECT coalesce(sum(occurred_at >= ?), 0), count(*),
+                       coalesce(sum(CASE WHEN occurred_at >= ? THEN tokens ELSE 0 END), 0),
+                       coalesce(sum(tokens), 0)
+                FROM model_attempts WHERE route = ?
+                """,
+                (minute, minute, route),
+            ).fetchone()
+            if (
+                minute_calls >= request_limits[0]
+                or day_calls >= request_limits[1]
+                or minute_tokens + tokens > token_limits[0]
+                or day_tokens + tokens > token_limits[1]
+            ):
+                return False
+            connection.execute(
+                "INSERT INTO model_attempts (route, occurred_at, tokens) VALUES (?, ?, ?)",
+                (route, current, tokens),
+            )
+            return True
+
+    def block_model_route(self, route: str, until: datetime) -> None:
+        with closing(self.connect()) as connection, connection:
+            connection.execute(
+                """
+                INSERT INTO model_backoff (route, until_at) VALUES (?, ?)
+                ON CONFLICT (route) DO UPDATE SET until_at = max(until_at, excluded.until_at)
+                """,
+                (route, _utc_text(until)),
+            )
 
     def prune(self, cutoff: datetime) -> None:
         timestamp = _utc_text(cutoff)
