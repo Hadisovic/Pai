@@ -16,6 +16,7 @@ from pai.conversation import (
     prepare_context,
 )
 from pai.discord_media import discover_media
+from pai.observability import LOG, ReplyLimits
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
 
@@ -46,6 +47,7 @@ class PaiDiscordClient(discord.Client):
         self.archive = archive
         self.respond = respond
         self.read_media = read_media
+        self.reply_limits = ReplyLimits()
         self.archive_lock = asyncio.Lock()
 
     async def on_message(self, message: discord.Message) -> None:
@@ -84,6 +86,13 @@ class PaiDiscordClient(discord.Client):
                 self.user.id,
             )
         ):
+            return
+        with self.reply_limits.slot(message.author.id) as admitted:
+            if admitted:
+                await self._deliver_reply(message)
+
+    async def _deliver_reply(self, message: discord.Message) -> None:
+        if self.archive is None or self.respond is None:
             return
         access = await self._current_reply_access(message)
         if access is None:
@@ -176,6 +185,20 @@ class PaiDiscordClient(discord.Client):
         self._prune_archive.cancel()
         await super().close()
 
+    async def on_ready(self) -> None:
+        LOG.info("Discord gateway is ready")
+
+    async def on_resumed(self) -> None:
+        LOG.info("Discord gateway resumed")
+
+    async def on_disconnect(self) -> None:
+        LOG.info("Discord gateway disconnected")
+
+    async def on_error(
+        self, event_method: str, *args: object, **kwargs: object
+    ) -> None:
+        LOG.warning("Discord event handling failed")
+
     def _retention_cutoff(self) -> datetime:
         return datetime.now(UTC) - timedelta(days=self.policy.retention_days)
 
@@ -184,6 +207,10 @@ class PaiDiscordClient(discord.Client):
         if self.archive is not None:
             async with self.archive_lock:
                 await asyncio.to_thread(self.archive.prune, self._retention_cutoff())
+
+    @_prune_archive.error
+    async def _prune_failed(self, error: BaseException) -> None:
+        LOG.error("Archive maintenance stopped. Restart and check the local archive")
 
     def _permits_mutation(self, guild_id: int | None, channel_id: int) -> bool:
         if guild_id is None or not self.policy.permits_channel(guild_id, channel_id):
