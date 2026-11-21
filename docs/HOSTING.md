@@ -71,3 +71,20 @@ This validates the isolated lab. Third-party allocation, bill-free
 signup, bot login, deployment persistence, long-running load, renewals and
 service uptime still need testing on the selected account. GitHub Actions
 is used for short tests only.
+
+## 2026-11-22 · Live host inspection and deployment packaging
+
+Live browser inspection verified both primary and fallback cloud host offerings:
+
+1. **Enzonic** (`https://panel.enzonic.com`):
+   - Confirmed free plan: 512 MB RAM, 10 GB disk, 50% CPU, 24/7 always on, card-free.
+   - Pterodactyl egg: `generic-python` (`https://panel.enzonic.com/create-server?plan=free&category=apps&egg=generic-python`).
+   - Authentication: Clerk (Google OAuth or email/password). Waiting on owner sign-in.
+
+2. **Kerit Cloud** (`https://kerit.cloud`):
+   - Confirmed free plan: 256 MB RAM, 2 GB NVMe, 24/7 zero-sleep, DDoS protected, card-free.
+   - Authentication: Discord OAuth, Google OAuth, or email/password (`https://billing.kerit.cloud/register`).
+   - Claim rule: requires joining community Discord server to provision free bot slot.
+
+3. **Deployment Bundle**:
+   - Packaged standalone bundle `deploy.zip` (34.9 KB) via `scripts/bundle_deploy.py` containing `main.py`, `requirements.txt`, and `src/pai` for instant panel upload.
