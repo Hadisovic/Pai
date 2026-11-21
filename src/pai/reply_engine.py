@@ -18,7 +18,9 @@ class ReplyEngine:
         self.notice = OutageNotice()
 
     async def __call__(self, context: ConversationContext) -> str:
-        prompt = build_prompt(context, rules=f"{RULES} {_PERSONALITY}")
+        prompt = build_prompt(
+            context, frames=context.media.frames, rules=f"{RULES} {_PERSONALITY}"
+        )
         channel = context.request.channel_id
         try:
             response = await self.router.generate(prompt.request)

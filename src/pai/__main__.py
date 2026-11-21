@@ -11,11 +11,13 @@ import aiohttp
 import discord
 
 from pai.discord_gateway import PaiDiscordClient, archive_message
+from pai.media import PublicMediaResolver
 from pai.model_router import Router
 from pai.policy import PrivacyPolicy, load_policy
 from pai.providers import Groq
 from pai.reply_engine import ReplyEngine
 from pai.storage import Archive
+from pai.vision import MentionVision
 
 
 async def _run(
@@ -38,6 +40,17 @@ async def _run(
             )
             routes = Groq(session, groq_key, free_plan_confirmed=True).routes()
             client.respond = ReplyEngine(Router(archive, routes))
+            if policy.media_opt_in:
+                resolver = PublicMediaResolver()
+                resources.push_async_callback(resolver.close)
+                media_session = await resources.enter_async_context(
+                    aiohttp.ClientSession(
+                        connector=aiohttp.TCPConnector(resolver=resolver, limit=2),
+                        timeout=aiohttp.ClientTimeout(total=6),
+                        trust_env=False,
+                    )
+                )
+                client.read_media = MentionVision(archive, media_session)
         await client.start(token)
 
 

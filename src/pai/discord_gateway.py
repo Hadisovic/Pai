@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Awaitable, Callable, Iterable
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import discord
@@ -10,6 +11,7 @@ from discord.ext import tasks
 from pai.commands import controls
 from pai.conversation import ConversationContext, direct_mention, prepare_context
 from pai.discord_media import discover_media
+from pai.media import MediaReading
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
 
@@ -22,6 +24,10 @@ class PaiDiscordClient(discord.Client):
         *,
         archive: Archive | None = None,
         respond: Callable[[ConversationContext], Awaitable[str]] | None = None,
+        read_media: Callable[
+            [discord.Message, ConversationContext], Awaitable[MediaReading]
+        ]
+        | None = None,
     ) -> None:
         super().__init__(
             intents=discord.Intents(
@@ -35,6 +41,7 @@ class PaiDiscordClient(discord.Client):
         self.handle_message = handle_message
         self.archive = archive
         self.respond = respond
+        self.read_media = read_media
         self.archive_lock = asyncio.Lock()
 
     async def on_message(self, message: discord.Message) -> None:
@@ -90,6 +97,10 @@ class PaiDiscordClient(discord.Client):
                 request,
                 now=datetime.now(UTC),
             )
+        if self.read_media is not None:
+            context = replace(context, media=await self.read_media(message, context))
+        if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
+            return
         response = (await self.respond(context)).strip()
         if not response:
             return

@@ -184,6 +184,7 @@ def test_gateway_responds_only_once_to_direct_mentions(tmp_path):
     from datetime import UTC, datetime
 
     from pai.discord_gateway import archive_message
+    from pai.media import MediaReading
     from pai.storage import Archive
 
     archive = Archive(tmp_path / "pai.sqlite")
@@ -203,6 +204,7 @@ def test_gateway_responds_only_once_to_direct_mentions(tmp_path):
 
     client = PaiDiscordClient(policy(), handle, archive=archive, respond=respond)
     client._connection.user = Mock(id=42)
+    client.read_media = AsyncMock(return_value=MediaReading())
     event.channel.guild = event.guild
     event.guild.fetch_member = AsyncMock(return_value=event.author)
     client.get_channel = Mock(return_value=event.channel)
@@ -211,12 +213,14 @@ def test_gateway_responds_only_once_to_direct_mentions(tmp_path):
     event.mentions = [Mock(id=42)]
     asyncio.run(client.on_message(event))
     respond.assert_not_awaited()
+    client.read_media.assert_not_awaited()
     assert archive.get(5).text == "Ordinary message"
     event.id = 6
     event.content = "Hi <@42>"
     asyncio.run(client.on_message(event))
     asyncio.run(client.on_message(event))
     respond.assert_awaited_once()
+    client.read_media.assert_awaited_once()
     assert [row.message_id for row in respond.call_args.args[0].recent] == [5]
     event.channel.send.assert_awaited_once()
     assert event.channel.send.call_args.args == ("Synthetic answer",)

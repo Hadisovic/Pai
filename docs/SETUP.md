@@ -119,3 +119,9 @@ signed URLs. The download boundary admits only supported image MIME types
 from Discord's media CDN and selected GIF CDNs with public DNS resolution,
 no redirects, a 3 MiB cap and a six-second deadline. Actual format and pixel
 verification is added with mention-triggered analysis.
+
+With AI and media enabled, Pai considers one still image or supported
+sticker on an authorized direct mention or its directly referenced
+authorized message. It verifies the actual file format and bounds the
+decoded image to four million pixels, then sends a normalized frame of at
+most 512 × 512 pixels. It performs no downloads during ordinary collection.

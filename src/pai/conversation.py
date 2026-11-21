@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from pai.media import MediaReading
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
 
@@ -34,6 +35,7 @@ class ConversationContext:
     recent: tuple[MessageRecord, ...] = ()
     memory: tuple[MessageRecord, ...] = ()
     style_examples: tuple[MessageRecord, ...] = ()
+    media: MediaReading = MediaReading()
 
     @property
     def sources(self) -> tuple[MessageRecord, ...]:

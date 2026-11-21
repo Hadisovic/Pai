@@ -4,14 +4,18 @@ import asyncio
 import ipaddress
 import socket
 from dataclasses import dataclass
+from io import BytesIO
 from urllib.parse import unquote, urlsplit
 
 import aiohttp
 from aiohttp.abc import AbstractResolver, ResolveResult
 from aiohttp.resolver import ThreadedResolver
+from PIL import Image, ImageOps
 
 MAX_DOWNLOAD_BYTES = 3 * 1024 * 1024
 MAX_MEDIA_ITEMS = 6
+MAX_IMAGE_PIXELS = 4_000_000
+_IMAGE_FORMATS = ("PNG", "JPEG", "GIF", "WEBP")
 _IMAGE_TYPES = frozenset(
     {"image/png", "image/apng", "image/jpeg", "image/gif", "image/webp"}
 )
@@ -38,6 +42,38 @@ class MediaItem:
 class MediaAsset:
     item: MediaItem
     url: str
+
+
+@dataclass(frozen=True)
+class MediaReading:
+    frames: tuple[bytes, ...] = ()
+    unavailable: bool = False
+
+
+def _check_dimensions(image: Image.Image) -> None:
+    if image.width * image.height > MAX_IMAGE_PIXELS:
+        raise MediaError("Image exceeds the pixel limit")
+
+
+def _encode_frame(image: Image.Image) -> bytes:
+    frame = ImageOps.exif_transpose(image).convert("RGB")
+    frame.thumbnail((512, 512))
+    output = BytesIO()
+    frame.save(output, format="PNG")
+    return output.getvalue()
+
+
+def decode_still(data: bytes) -> bytes:
+    if not data or len(data) > MAX_DOWNLOAD_BYTES:
+        raise MediaError("Image exceeds the byte limit or is empty")
+    try:
+        with Image.open(BytesIO(data), formats=_IMAGE_FORMATS) as image:
+            _check_dimensions(image)
+            if getattr(image, "is_animated", False):
+                raise MediaError("Animated image analysis is unavailable")
+            return _encode_frame(image)
+    except (OSError, ValueError, Image.DecompressionBombError, SyntaxError):
+        raise MediaError("Unable to decode the image") from None
 
 
 def allowed_url(url: str) -> bool:

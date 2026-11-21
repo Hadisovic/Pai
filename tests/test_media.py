@@ -61,3 +61,25 @@ def test_media_metadata_stores_identifiers_without_signed_urls_and_cascades(tmp_
     assert archive.media_for(1) == items
     assert archive.delete(2, 3, [1], now) == 1
     assert archive.media_for(1) == ()
+
+
+def test_decoding_validates_actual_format_and_pixel_count():
+    from io import BytesIO
+
+    from PIL import Image
+
+    from pai.media import decode_still
+
+    source = BytesIO()
+    Image.new("RGB", (700, 360), "navy").save(source, format="PNG")
+    rendered = decode_still(source.getvalue())
+    with Image.open(BytesIO(rendered)) as normalized:
+        assert normalized.format == "PNG"
+        assert normalized.width <= 512
+        assert normalized.height <= 512
+    with pytest.raises(MediaError, match="decode"):
+        decode_still(b"not an image")
+    source = BytesIO()
+    Image.new("RGB", (3000, 3000)).save(source, format="PNG")
+    with pytest.raises(MediaError, match="pixel"):
+        decode_still(source.getvalue())

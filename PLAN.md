@@ -38,8 +38,8 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **Acceptance:** deterministic fake-provider dialogue tests and human-scored quality, provider failover, data minimization and no cross-channel leaks.
 
 ## P5 — Images, memes, stickers and GIFs [IN_PROGRESS]
-- **P5.1 [IN_PROGRESS]** Store Discord attachment IDs and metadata, embed/GIF provider links, original message context; enforce URL allowlists, MIME, size, pixel and time bounds. Avoid SSRF.
-- **P5.2** Selectively analyze relevant images on mentions or explicitly approved importance rules; don't call AI for every attachment; stickers and custom emoji descriptions when feasible.
+- **P5.1 [DONE]** Store Discord attachment IDs and metadata, embed/GIF provider links, original message context; enforce URL allowlists, MIME, size, pixel and time bounds. Avoid SSRF.
+- **P5.2 [IN_PROGRESS]** Selectively analyze relevant images on mentions or explicitly approved importance rules; don't call AI for every attachment; stickers and custom emoji descriptions when feasible.
 - **P5.3** Sample bounded meaningful GIF frames, preserve ordering/motion explanation, cache with fingerprint and provenance, reuse analysis for recurring memes.
 - **P5.4** Re-fetch authorized media via message ID when URLs expire; handle removed/unavailable content honestly; invalidate caches on deletion/forget.
 - **Acceptance:** synthetic still and animated fixtures, corrupted/oversize defense, no unrequested mass vision calls, analysis reuse and deletion safety.

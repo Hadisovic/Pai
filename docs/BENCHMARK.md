@@ -10,7 +10,7 @@ The command creates six synthetic cases and reports their adapter results as
 JSON. It includes a meme drawn in memory and three ordered frames decoded
 from an in-memory animated GIF. The default adapter is a deterministic stub.
 Its latency measures only local stub calls and the output contains no quality
-scores. Pillow is a development dependency for fixture generation. Its
+scores. Pillow is used for fixture generation and runtime image decoding. Its
 [MIT-CMU license](https://github.com/python-pillow/Pillow/blob/main/LICENSE)
 ships with the installed package.
 
