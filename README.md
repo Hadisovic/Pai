@@ -1,6 +1,6 @@
 # Pai — Discord AI Companion
 
-Planning-first repository for a friendly, funny, long-memory Discord companion for a new friends' server. **No bot has been implemented, tested, connected, or deployed yet.**
+Pai is a Discord companion with consent-gated chat memory, direct-mention replies, and selective image and GIF understanding. The offline pilot is tested. Live access, model quality, and hosting await owner approval and verification.
 
 ## Product contract
 - Observe and archive messages only in explicitly allowlisted channels after members are informed and consent is configured. No DMs or other servers.
@@ -20,8 +20,29 @@ Planning-first repository for a friendly, funny, long-memory Discord companion f
 7. [Testing and launch](docs/TESTING.md)
 8. [Codex start prompt](CODEX_START_PROMPT.md)
 
-## Starting point
-The repo currently contains **planning files only**. Codex must implement P0 using mocks/fake providers before any real account integration, then validate free models and no-card hosting. User-only actions such as bot-token provisioning and approving channel logging must be explicitly requested at the appropriate phase.
+## Local development
+
+Use Python 3.12 or newer and uv 0.12.21. From the repository root:
+
+```sh
+uv sync --locked --python 3.12
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked pytest -q
+```
+
+Development and CI use the committed lockfile. The baseline needs no Discord
+account, token, or AI credentials. See [the pilot runbook](docs/RUNBOOK.md) for live setup prerequisites.
+
+
+Run only the offline Discord and AI smoke test with:
+
+```sh
+uv run --offline --locked pytest -q tests/test_mock_gateway.py
+```
+
+The test replays synthetic messages through a fake gateway, calls a
+deterministic provider stub on a direct mention, and checks a temporary SQLite archive.
 
 ## Privacy
 Repository should preferably be **private**. Never commit private chat logs, AI API keys, tokens, databases, caches, logs, screenshots or identifiable member information. Keep operational data in private off-repo storage. Read-only publicly visible planning documentation contains no server credentials.
