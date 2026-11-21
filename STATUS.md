@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P5.4, authorized asset refresh and media-only edit invalidation.
-- Active branch: `codex/P5.4-refresh-and-invalidation` (base: `codex/P5.3-gif-and-cache`, [PR #30](https://github.com/Hadisovic/Pai/pull/30)).
-- Changed `docs/SETUP.md`, `src/pai/storage.py`, `src/pai/discord_gateway.py`, `src/pai/vision.py`, `tests/test_media.py`. Re-fetches a Discord message by ID at most once when a known asset is unavailable, validates scope, author and stored asset identity, and versions media-only changes to invalidate cache and in-flight responses.
-- Resume: verify remote SHA and CI, then record the live host proof as blocked on approval (P6.1), then implement offline diagnostics and limits (P6.2).
+- Active task: P6.2, offline runtime diagnostics, response limits and safe logs.
+- Active branch: `codex/P6.2-runtime-reliability` (base: `codex/P5.4-refresh-and-invalidation`, [PR #31](https://github.com/Hadisovic/Pai/pull/31)).
+- Changed `docs/HOSTING.md`, `src/pai/observability.py`, `src/pai/__main__.py`, `src/pai/commands.py`, `src/pai/discord_gateway.py`, `tests/test_observability.py`. Limits direct mention handling by guild and author while keeping ingestion independent. Logs contain no payloads, and the local diagnostic exercises the real schema and FTS5. P6.1 live host proof is blocked on owner-selected, no-card hosting and explicit approval.
+- Resume: verify remote SHA and CI, then add a streaming encrypted backup and restore drill with a current erasure checkpoint (P6.3).
 
 ## Checkpoint log
 
@@ -31,4 +31,5 @@
 | 2026-11-21 | P5.1 | DONE | `codex/P5.1-media-boundaries` | `99604c5e3b428ce3fe291ef8a2b345c68e67e932` | Ruff lint, formatting, pytest (63 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917468577) passed.  |
 | 2026-11-21 | P5.2 | DONE | `codex/P5.2-selective-still-vision` | `cc99ab684c6af274cd2a331e6617c1d7b7430f6b` | Ruff lint, formatting, pytest (64 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917634053) passed.  |
 | 2026-11-21 | P5.3 | DONE | `codex/P5.3-gif-and-cache` | `a60c335405da51805fd37768980cf1aa65699abd` | Ruff lint, formatting, pytest (67 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917952870) passed.  |
-| 2026-11-21 | P5.4 | IN_PROGRESS | `codex/P5.4-refresh-and-invalidation` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (69 tests) and diff check passed. CI pending. 69 tests include expired URLs and cache invalidation on attachment-only edits. |
+| 2026-11-21 | P5.4 | DONE | `codex/P5.4-refresh-and-invalidation` | `3dc5596c8dfbd3a52e7b8c176ecf7cb65494293c` | Ruff lint, formatting, pytest (69 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918154107) passed.  |
+| 2026-11-21 | P6.2 | IN_PROGRESS | `codex/P6.2-runtime-reliability` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (71 tests) and diff check passed. CI pending. Offline diagnostic reported Python 3.12.10, SQLite 3.49.1, FTS5 true and quick_check ok. |

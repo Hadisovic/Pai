@@ -37,16 +37,16 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P4.4 [DONE]** Hybrid English-first personality; understand occasional Arabic/Arabizi where possible; naturally adapt to server humor, tease lightly, avoid repetitive catchphrases; support tone correction/feedback and resist chat prompt injection.
 - **Acceptance:** deterministic fake-provider dialogue tests and human-scored quality, provider failover, data minimization and no cross-channel leaks.
 
-## P5 — Images, memes, stickers and GIFs [IN_PROGRESS]
+## P5 — Images, memes, stickers and GIFs [DONE]
 - **P5.1 [DONE]** Store Discord attachment IDs and metadata, embed/GIF provider links, original message context; enforce URL allowlists, MIME, size, pixel and time bounds. Avoid SSRF.
 - **P5.2 [DONE]** Selectively analyze relevant images on mentions or explicitly approved importance rules; don't call AI for every attachment; stickers and custom emoji descriptions when feasible.
 - **P5.3 [DONE]** Sample bounded meaningful GIF frames, preserve ordering/motion explanation, cache with fingerprint and provenance, reuse analysis for recurring memes.
-- **P5.4 [IN_PROGRESS]** Re-fetch authorized media via message ID when URLs expire; handle removed/unavailable content honestly; invalidate caches on deletion/forget.
+- **P5.4 [DONE]** Re-fetch authorized media via message ID when URLs expire; handle removed/unavailable content honestly; invalidate caches on deletion/forget.
 - **Acceptance:** synthetic still and animated fixtures, corrupted/oversize defense, no unrequested mass vision calls, analysis reuse and deletion safety.
 
-## P6 — No-card hosting proof and resilience [TODO]
-- **P6.1** Test minimally sized host only with user approval/account. Verify egress/websocket, process restarts, RAM/storage limits, volume persistence and renewal restrictions. No false 24/7 promises.
-- **P6.2** Health diagnostic, safe logs, secret redaction, per-user/per-guild limits, provider daily budget, graceful shutdown, reconnection and restart policies.
+## P6 — No-card hosting proof and resilience [IN_PROGRESS]
+- **P6.1 [BLOCKED]** Test minimally sized host only with user approval/account. Verify egress/websocket, process restarts, RAM/storage limits, volume persistence and renewal restrictions. No false 24/7 promises.
+- **P6.2 [IN_PROGRESS]** Health diagnostic, safe logs, secret redaction, per-user/per-guild limits, provider daily budget, graceful shutdown, reconnection and restart policies.
 - **P6.3** Encrypted off-host private backup/export and restore drill. Never store live member data in GitHub, public CI artifacts or logs.
 - **Acceptance:** verified host evidence, explicit downtime/renewal behavior, successful persistence/restore proof or recorded blocker.
 
