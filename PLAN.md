@@ -24,8 +24,8 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **Acceptance:** opt-in, idempotency, restart persistence, ACL, mention gate and edit/delete tests. No AI call for normal ingestion.
 
 ## P3 — Long-term searchable memory [IN_PROGRESS]
-- **P3.1 [IN_PROGRESS]** SQLite migrations, FTS5 for content search, indexes, safe queries. Introduce message-linked media metadata and cache in P5 alongside their invalidation rules.
-- **P3.2** Source-backed retrieval of old messages plus conversational context, correct user attribution and Discord jump links. Verify viewing permissions before quoting.
+- **P3.1 [DONE]** SQLite migrations, FTS5 for content search, indexes, safe queries. Introduce message-linked media metadata and cache in P5 alongside their invalidation rules.
+- **P3.2 [IN_PROGRESS]** Source-backed retrieval of old messages plus conversational context, correct user attribution and Discord jump links. Verify viewing permissions before quoting.
 - **P3.3** Source-linked, group-level conversation context and explicit style feedback, within the platform policy documented in docs/DISCORD.md; preserve supporting message IDs, inference status, confidence, corrections and expiry. Avoid treating sarcasm as factual profile.
 - **P3.4** `/privacy`, `/memory`, `/forgetme`; admin configurable allowlist/retention; delete/export and backup-deletion policy. Ensure restricted-channel isolation.
 - **Acceptance:** tests for history retrieval, provenance, cross-channel ACL, sarcasm, corrections, deleted memories, retention and account removal.

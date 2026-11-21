@@ -89,6 +89,10 @@ class MessageRecord:
     reply_to_id: int | None = None
     edited_at: datetime | None = None
 
+    @property
+    def jump_url(self) -> str:
+        return f"https://discord.com/channels/{self.guild_id}/{self.channel_id}/{self.message_id}"
+
 
 class Archive:
     def __init__(self, path: Path, *, max_messages: int = 20_000) -> None:
@@ -251,6 +255,8 @@ class Archive:
         authors: frozenset[int],
         cutoff: datetime,
         limit: int = 8,
+        through: datetime | None = None,
+        omit: frozenset[int] = frozenset(),
     ) -> tuple[MessageRecord, ...]:
         terms = list(dict.fromkeys(_WORDS.findall(query[:2000].lower())))[:12]
         if not terms or not authors or limit < 1:
@@ -265,7 +271,8 @@ class Archive:
                 FROM messages_fts JOIN messages ON messages.rowid = messages_fts.rowid
                 WHERE messages_fts MATCH ? AND messages.guild_id = ? AND messages.channel_id = ?
                   AND messages.author_id IN (SELECT value FROM json_each(?))
-                  AND messages.created_at >= ?
+                  AND messages.created_at BETWEEN ? AND ?
+                  AND messages.message_id NOT IN (SELECT value FROM json_each(?))
                 ORDER BY bm25(messages_fts), messages.created_at DESC, messages.rowid DESC
                 LIMIT ?
                 """,
@@ -275,10 +282,24 @@ class Archive:
                     str(channel_id),
                     json.dumps([str(author) for author in authors]),
                     _utc_text(cutoff),
+                    _utc_text(through) if through is not None else "9999",
+                    json.dumps([str(message_id) for message_id in omit]),
                     min(limit, 32),
                 ),
             ).fetchall()
         return tuple(_record(row) for row in rows)
+
+    def records_unchanged(self, sources: tuple[MessageRecord, ...]) -> bool:
+        with closing(self.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT message_id, guild_id, channel_id, author_id,
+                       author_display, text, created_at, reply_to_id, edited_at
+                FROM messages WHERE message_id IN (SELECT value FROM json_each(?))
+                """,
+                (json.dumps([str(source.message_id) for source in sources]),),
+            ).fetchall()
+        return {_record(row) for row in rows} == set(sources)
 
     def recent(
         self,

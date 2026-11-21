@@ -203,6 +203,9 @@ def test_gateway_responds_only_once_to_direct_mentions(tmp_path):
 
     client = PaiDiscordClient(policy(), handle, archive=archive, respond=respond)
     client._connection.user = Mock(id=42)
+    event.channel.guild = event.guild
+    event.guild.fetch_member = AsyncMock(return_value=event.author)
+    client.get_channel = Mock(return_value=event.channel)
     event.id = 5
     event.content = "Ordinary message"
     event.mentions = [Mock(id=42)]
@@ -220,3 +223,57 @@ def test_gateway_responds_only_once_to_direct_mentions(tmp_path):
     assert event.channel.send.call_args.kwargs["allowed_mentions"].to_dict() == {
         "parse": []
     }
+
+
+@pytest.mark.parametrize("mutation", ["delete_source", "revoke_history"])
+def test_gateway_discards_reply_if_a_source_or_permission_changes(tmp_path, mutation):
+    from datetime import UTC, datetime, timedelta
+
+    from pai.discord_gateway import archive_message
+    from pai.storage import Archive, MessageRecord
+
+    archive = Archive(tmp_path / "pai.sqlite")
+    event = sample_message()
+    event.created_at = datetime.now(UTC)
+    event.type = discord.MessageType.default
+    event.reference = None
+    event.author = Mock(spec=discord.Member, id=3, bot=False, display_name="Sam")
+    event.id = 6
+    event.content = "Hi <@42>"
+    event.mentions = [Mock(id=42)]
+    event.channel.guild = event.guild
+    event.guild.fetch_member = AsyncMock(return_value=event.author)
+    event.channel.send = AsyncMock()
+    event.channel.permissions_for.return_value = discord.Permissions(
+        view_channel=True, read_message_history=True, send_messages=True
+    )
+    archive.append(
+        MessageRecord(
+            5,
+            1,
+            2,
+            3,
+            "Sam",
+            "Old synthetic evidence",
+            event.created_at - timedelta(seconds=2),
+        )
+    )
+
+    async def handle(message):
+        return await archive_message(archive, message)
+
+    async def respond(context):
+        assert [row.message_id for row in context.recent] == [5]
+        if mutation == "delete_source":
+            archive.delete(1, 2, [5], datetime.now(UTC))
+        else:
+            event.channel.permissions_for.return_value = discord.Permissions(
+                view_channel=True, send_messages=True
+            )
+        return "Discard this answer"
+
+    client = PaiDiscordClient(policy(), handle, archive=archive, respond=respond)
+    client._connection.user = Mock(id=42)
+    client.get_channel = Mock(return_value=event.channel)
+    asyncio.run(client.on_message(event))
+    event.channel.send.assert_not_awaited()

@@ -11,6 +11,14 @@ from pai.storage import Archive, MessageRecord
 _TOKEN = re.compile(r"\\.|(`+).*?(?<!`)\1(?!`)|<@!?([0-9]+)>", re.DOTALL)
 _PARENT_LIMIT = 4
 _RECENT_LIMIT = 8
+_MEMORY_LIMIT = 4
+_QUERY_WORDS = re.compile(r"[^\W_]+")
+_DISCORD_TAG = re.compile(r"<[@#][!&]?[0-9]+>")
+_STOP_WORDS = frozenset(
+    "a an and are as at be by can could did do does for from had has have hey how i in "
+    "is it me of on or our pai say tell than that the their them there they this to us "
+    "was we were what when where which who why will with would you your".split()
+)
 
 
 def direct_mention(text: str, recognized_targets: Iterable[int], bot_id: int) -> bool:
@@ -24,6 +32,11 @@ class ConversationContext:
     request: MessageRecord
     parents: tuple[MessageRecord, ...] = ()
     recent: tuple[MessageRecord, ...] = ()
+    memory: tuple[MessageRecord, ...] = ()
+
+    @property
+    def sources(self) -> tuple[MessageRecord, ...]:
+        return (self.request, *self.parents, *self.recent, *self.memory)
 
 
 def prepare_context(
@@ -59,4 +72,21 @@ def prepare_context(
         request, policy.consenting_member_ids, cutoff, _RECENT_LIMIT + len(parents)
     )
     visible = tuple(row for row in recent if row.message_id not in seen)[:_RECENT_LIMIT]
-    return ConversationContext(request, tuple(parents), tuple(reversed(visible)))
+    seen.update(row.message_id for row in visible)
+    terms = _QUERY_WORDS.findall(_DISCORD_TAG.sub("", request.text).lower())
+    query = " ".join(
+        term for term in terms if term not in _STOP_WORDS and len(term) > 1
+    )
+    memory = archive.search(
+        query,
+        guild_id=request.guild_id,
+        channel_id=request.channel_id,
+        authors=policy.consenting_member_ids,
+        cutoff=cutoff,
+        limit=_MEMORY_LIMIT,
+        through=request.created_at,
+        omit=frozenset(seen),
+    )
+    return ConversationContext(
+        request, tuple(parents), tuple(reversed(visible)), memory
+    )

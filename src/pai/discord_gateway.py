@@ -72,18 +72,13 @@ class PaiDiscordClient(discord.Client):
             )
         ):
             return
-        channel = message.channel
-        bot = message.guild.me
-        if bot is None or not channel.permissions_for(bot).send_messages:
+        access = await self._current_reply_access(message)
+        if access is None:
             return
+        _, can_read_history = access
         request = await asyncio.to_thread(self.archive.get, message.id)
         if request is None or request.text != message.content:
             return
-        can_read_history = (
-            isinstance(message.author, discord.Member)
-            and channel.permissions_for(message.author).read_message_history
-            and channel.permissions_for(bot).read_message_history
-        )
         context = ConversationContext(request)
         if can_read_history:
             context = await asyncio.to_thread(
@@ -94,10 +89,52 @@ class PaiDiscordClient(discord.Client):
                 now=datetime.now(UTC),
             )
         response = (await self.respond(context)).strip()
-        if response and channel.permissions_for(bot).send_messages:
-            await channel.send(
-                response[:2000], allowed_mentions=discord.AllowedMentions.none()
-            )
+        if not response:
+            return
+
+        access = await self._current_reply_access(message)
+        if access is None:
+            return
+        channel, can_read_history = access
+        if len(context.sources) > 1 and not can_read_history:
+            return
+        if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
+            return
+        await channel.send(
+            response[:2000], allowed_mentions=discord.AllowedMentions.none()
+        )
+
+    async def _current_reply_access(
+        self, message: discord.Message
+    ) -> tuple[discord.TextChannel, bool] | None:
+        channel = self.get_channel(message.channel.id)
+        if (
+            message.guild is None
+            or not isinstance(channel, discord.TextChannel)
+            or channel.guild.id != message.guild.id
+            or not self.policy.permits(channel.guild.id, channel.id, message.author.id)
+        ):
+            return None
+        bot = channel.guild.me
+        if bot is None:
+            return None
+        try:
+            requester = await channel.guild.fetch_member(message.author.id)
+        except discord.HTTPException:
+            return None
+        bot_permissions = channel.permissions_for(bot)
+        member_permissions = channel.permissions_for(requester)
+        if (
+            not bot_permissions.view_channel
+            or not bot_permissions.send_messages
+            or not member_permissions.view_channel
+        ):
+            return None
+        return (
+            channel,
+            bot_permissions.read_message_history
+            and member_permissions.read_message_history,
+        )
 
     async def setup_hook(self) -> None:
         if self.archive is not None:

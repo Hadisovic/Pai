@@ -67,3 +67,12 @@ Search uses SQLite 3.42+ with FTS5 and its secure-delete option. Check
 on the host and test archive initialization before importing data. Opening
 with an older SQLite build after an FTS5 update may fail. Use the same or a
 newer SQLite version for tested backups and restores.
+
+Historical recall searches only the requesting channel. The responder adds
+up to four older matching messages with author attribution and Discord jump
+links. It fetches current guild membership and checks channel permissions
+before selecting history and again before sending. It discards a response if
+a source changed or was removed during generation. Use history-enabled
+channels only when their audience is authorized to receive the historical
+context in an ordinary channel reply. The production model responder
+remains disabled.
