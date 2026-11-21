@@ -12,13 +12,14 @@ unverified. Kerit remains the fallback and its registration is separate.
 No identity data was submitted, no account or allocation was created,
 and no credentials or payment details were entered by automation.
 
-The owner opened GitHub and Discord in Brave and asked that automation
-leave those tabs in place. Native Windows browser control could not
-initialize in this session, and no Brave DevTools endpoint was
-published when checked. The next step is for the owner to grant
-automation access to the existing Brave window. A browser attempt at
-the Kerit fallback registration returned access denied. The Enzonic
-sign-in and actual no-billing allocation are still pending.
+The owner opened GitHub and Discord in Brave. Automated browser
+inspection and CDP troubleshooting were discontinued to avoid unnecessary
+tooling overhead. Minimal manual authentication instructions were prepared
+for the owner to provision the Discord application token, Groq Free API key,
+and hosting account directly in their active browser. The local test suite
+(75 passed), doctor, linting, and policy verification remain passing.
+Pai is staged to connect immediately once the private credentials and
+test policy are supplied in .env and .pai-policy.json.
 
 
 P8.1 is waiting on the owner's sign-ins in the three prepared browser
