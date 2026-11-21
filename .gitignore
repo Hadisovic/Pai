@@ -18,3 +18,5 @@ attachments/
 chat-exports/
 *.pem
 *.key
+.pai-policy.json
+*.pai
