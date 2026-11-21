@@ -197,32 +197,57 @@ class PaiDiscordClient(discord.Client):
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
         archive = self.archive
         guild_id = payload.guild_id
-        content = payload.data.get("content")
-        timestamp = payload.data.get("edited_timestamp")
         if (
             archive is None
             or guild_id is None
             or not self._permits_mutation(guild_id, payload.channel_id)
-            or not isinstance(content, str)
-            or not isinstance(timestamp, str)
         ):
             return
+        content = payload.data.get("content")
+        timestamp = payload.data.get("edited_timestamp")
         try:
-            edited = datetime.fromisoformat(timestamp)
-        except ValueError:
-            return
-        if edited.utcoffset() is None:
-            return
-        async with self.archive_lock:
-            await asyncio.to_thread(
-                archive.edit,
-                payload.message_id,
-                guild_id,
-                payload.channel_id,
-                self.policy.consenting_member_ids,
-                content,
-                edited,
+            edited = (
+                datetime.fromisoformat(timestamp)
+                if isinstance(timestamp, str)
+                else None
             )
+        except ValueError:
+            edited = None
+        kinds = frozenset(
+            kind
+            for field, kind in (
+                ("attachments", "attachment"),
+                ("sticker_items", "sticker"),
+                ("embeds", "embed"),
+            )
+            if field in payload.data
+        )
+        async with self.archive_lock:
+            if (
+                isinstance(content, str)
+                and edited is not None
+                and edited.utcoffset() is not None
+            ):
+                await asyncio.to_thread(
+                    archive.edit,
+                    payload.message_id,
+                    guild_id,
+                    payload.channel_id,
+                    self.policy.consenting_member_ids,
+                    content,
+                    edited,
+                )
+            if self.policy.media_opt_in and kinds:
+                items = tuple(asset.item for asset in discover_media(payload.message))
+                await asyncio.to_thread(
+                    archive.update_media,
+                    payload.message_id,
+                    guild_id,
+                    payload.channel_id,
+                    self.policy.consenting_member_ids,
+                    kinds,
+                    items,
+                )
 
     async def on_raw_message_delete(
         self, payload: discord.RawMessageDeleteEvent

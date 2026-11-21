@@ -132,3 +132,11 @@ million cumulative frame pixels. It stores a short description only after
 the source is checked and can reuse it for identical media in the same
 channel. Changes, deletion, expiry or opt-out invalidate the source-linked
 description. A new asset uses one bounded vision call before the reply.
+
+If an approved image link expires, Pai can re-fetch the source message in
+the same authorized channel once and try its updated link. It checks that
+the author, message revision and stored asset identity still match. Removed
+media, corrupted files, unsupported sticker formats and video-only embeds
+may be unavailable. Media-only updates remove outdated descriptions.
+Disabling the media policy purges media metadata and cached descriptions
+when the operator applies that policy.

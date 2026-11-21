@@ -139,6 +139,15 @@ _MIGRATIONS = (
         END
         """,
     ),
+    (
+        "ALTER TABLE messages ADD COLUMN media_revision INTEGER NOT NULL DEFAULT 0",
+        """
+        CREATE TRIGGER media_metadata_update AFTER UPDATE OF media_revision ON messages
+        BEGIN
+            DELETE FROM media_descriptions WHERE message_id = old.message_id;
+        END
+        """,
+    ),
 )
 
 
@@ -162,6 +171,7 @@ class MessageRecord:
     created_at: datetime
     reply_to_id: int | None = None
     edited_at: datetime | None = None
+    media_revision: int = 0
 
     @property
     def jump_url(self) -> str:
@@ -254,23 +264,7 @@ class Archive:
                 ):
                     return False
             if media:
-                connection.executemany(
-                    """
-                    INSERT INTO message_media (message_id, position, kind, external_id, mime, size)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        (
-                            scope[0],
-                            index,
-                            item.kind,
-                            item.external_id,
-                            item.mime,
-                            item.size,
-                        )
-                        for index, item in enumerate(media[:MAX_MEDIA_ITEMS])
-                    ),
-                )
+                _write_media(connection, scope[0], media)
             return True
 
     def media_for(self, message_id: int) -> tuple[MediaItem, ...]:
@@ -283,6 +277,58 @@ class Archive:
                 (str(message_id),),
             ).fetchall()
         return tuple(MediaItem(*row) for row in rows)
+
+    def update_media(
+        self,
+        message_id: int,
+        guild_id: int,
+        channel_id: int,
+        authors: frozenset[int],
+        changed_kinds: frozenset[str],
+        media: tuple[MediaItem, ...],
+    ) -> bool:
+        identifier = str(message_id)
+        with closing(self.connect()) as connection, connection:
+            connection.execute("BEGIN IMMEDIATE")
+            authorized = connection.execute(
+                """
+                SELECT 1 FROM messages WHERE message_id = ? AND guild_id = ? AND channel_id = ?
+                  AND author_id IN (SELECT value FROM json_each(?))
+                """,
+                (
+                    identifier,
+                    str(guild_id),
+                    str(channel_id),
+                    json.dumps([str(author) for author in authors]),
+                ),
+            ).fetchone()
+            if authorized is None:
+                return False
+            current = tuple(
+                MediaItem(*row)
+                for row in connection.execute(
+                    """
+                    SELECT kind, external_id, mime, size FROM message_media
+                    WHERE message_id = ? ORDER BY position
+                    """,
+                    (identifier,),
+                )
+            )
+            updated = (
+                tuple(item for item in current if item.kind not in changed_kinds)
+                + tuple(item for item in media if item.kind in changed_kinds)
+            )[:MAX_MEDIA_ITEMS]
+            if set(current) == set(updated):
+                return False
+            connection.execute(
+                "DELETE FROM message_media WHERE message_id = ?", (identifier,)
+            )
+            _write_media(connection, identifier, updated)
+            connection.execute(
+                "UPDATE messages SET media_revision = media_revision + 1 WHERE message_id = ?",
+                (identifier,),
+            )
+            return True
 
     def find_description(
         self,
@@ -297,7 +343,7 @@ class Archive:
                 """
                 SELECT messages.message_id, messages.guild_id, messages.channel_id,
                        messages.author_id, messages.author_display, messages.text,
-                       messages.created_at, messages.reply_to_id, messages.edited_at, description
+                       messages.created_at, messages.reply_to_id, messages.edited_at, messages.media_revision, description
                 FROM media_descriptions JOIN messages USING (message_id)
                 WHERE media_descriptions.guild_id = ? AND media_descriptions.channel_id = ?
                   AND fingerprint = ? AND messages.created_at >= ?
@@ -323,7 +369,7 @@ class Archive:
                     (guild_id, channel_id, fingerprint, message_id, description, described_at)
                 SELECT guild_id, channel_id, ?, message_id, ?, ? FROM messages
                 WHERE message_id = ? AND guild_id = ? AND channel_id = ? AND text = ?
-                  AND edited_at IS ?
+                  AND edited_at IS ? AND media_revision = ?
                 ON CONFLICT (guild_id, channel_id, fingerprint) DO UPDATE SET
                     message_id = excluded.message_id, description = excluded.description,
                     described_at = excluded.described_at
@@ -339,6 +385,7 @@ class Archive:
                     _utc_text(source.edited_at)
                     if source.edited_at is not None
                     else None,
+                    source.media_revision,
                 ),
             )
             return row.rowcount == 1
@@ -419,6 +466,9 @@ class Archive:
 
     def apply_policy(self, policy: PrivacyPolicy) -> int:
         with closing(self.connect()) as connection, connection:
+            if not policy.media_opt_in:
+                connection.execute("DELETE FROM media_descriptions")
+                connection.execute("DELETE FROM message_media")
             return connection.execute(
                 """
                 DELETE FROM messages
@@ -443,7 +493,7 @@ class Archive:
             rows = connection.execute(
                 """
                 SELECT message_id, guild_id, channel_id, author_id,
-                       author_display, text, created_at, reply_to_id, edited_at
+                       author_display, text, created_at, reply_to_id, edited_at, media_revision
                 FROM messages WHERE guild_id = ? AND channel_id = ? AND author_id = ?
                   AND created_at >= ?
                 ORDER BY created_at DESC, rowid DESC LIMIT 100
@@ -524,7 +574,7 @@ class Archive:
             row = connection.execute(
                 """
                 SELECT message_id, guild_id, channel_id, author_id,
-                       author_display, text, created_at, reply_to_id, edited_at
+                       author_display, text, created_at, reply_to_id, edited_at, media_revision
                 FROM messages WHERE message_id = ?
                   AND (? OR message_id NOT IN (SELECT message_id FROM style_examples))
                 """,
@@ -555,7 +605,7 @@ class Archive:
                 """
                 SELECT messages.message_id, messages.guild_id, messages.channel_id,
                        messages.author_id, messages.author_display, messages.text,
-                       messages.created_at, messages.reply_to_id, messages.edited_at
+                       messages.created_at, messages.reply_to_id, messages.edited_at, messages.media_revision
                 FROM messages_fts JOIN messages ON messages.rowid = messages_fts.rowid
                 WHERE messages_fts MATCH ? AND messages.guild_id = ? AND messages.channel_id = ?
                   AND messages.author_id IN (SELECT value FROM json_each(?))
@@ -616,7 +666,7 @@ class Archive:
                 """
                 SELECT messages.message_id, messages.guild_id, messages.channel_id,
                        messages.author_id, messages.author_display, messages.text,
-                       messages.created_at, messages.reply_to_id, messages.edited_at
+                       messages.created_at, messages.reply_to_id, messages.edited_at, messages.media_revision
                 FROM style_examples JOIN messages USING (message_id)
                 WHERE guild_id = ? AND channel_id = ? AND message_id <> ?
                   AND author_id IN (SELECT value FROM json_each(?))
@@ -639,7 +689,7 @@ class Archive:
             rows = connection.execute(
                 """
                 SELECT message_id, guild_id, channel_id, author_id,
-                       author_display, text, created_at, reply_to_id, edited_at
+                       author_display, text, created_at, reply_to_id, edited_at, media_revision
                 FROM messages WHERE message_id IN (SELECT value FROM json_each(?))
                 """,
                 (json.dumps([str(source.message_id) for source in sources]),),
@@ -657,7 +707,7 @@ class Archive:
             rows = connection.execute(
                 """
                 SELECT message_id, guild_id, channel_id, author_id,
-                       author_display, text, created_at, reply_to_id, edited_at
+                       author_display, text, created_at, reply_to_id, edited_at, media_revision
                 FROM messages
                 WHERE guild_id = ? AND channel_id = ? AND message_id <> ?
                   AND message_id NOT IN (SELECT message_id FROM style_examples)
@@ -678,6 +728,21 @@ class Archive:
         return tuple(_record(row) for row in rows)
 
 
+def _write_media(
+    connection: sqlite3.Connection, message_id: str, items: tuple[MediaItem, ...]
+) -> None:
+    connection.executemany(
+        """
+        INSERT INTO message_media (message_id, position, kind, external_id, mime, size)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            (message_id, index, item.kind, item.external_id, item.mime, item.size)
+            for index, item in enumerate(items[:MAX_MEDIA_ITEMS])
+        ),
+    )
+
+
 def _record(row: tuple) -> MessageRecord:
     return MessageRecord(
         message_id=int(row[0]),
@@ -689,4 +754,5 @@ def _record(row: tuple) -> MessageRecord:
         created_at=datetime.fromisoformat(row[6]),
         reply_to_id=int(row[7]) if row[7] is not None else None,
         edited_at=datetime.fromisoformat(row[8]) if row[8] is not None else None,
+        media_revision=row[9],
     )

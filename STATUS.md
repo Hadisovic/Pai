@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P5.3, ordered GIF sampling and provenance-bound descriptions.
-- Active branch: `codex/P5.3-gif-and-cache` (base: `codex/P5.2-selective-still-vision`, [PR #29](https://github.com/Hadisovic/Pai/pull/29)).
-- Changed `docs/SETUP.md`, `src/pai/__main__.py`, `src/pai/media.py`, `src/pai/vision.py`, `src/pai/conversation.py`, `src/pai/discord_gateway.py`, `src/pai/prompts.py`, `src/pai/reply_engine.py`, `src/pai/storage.py`, `tests/test_media.py`, `tests/test_discord_gateway.py`. Samples up to three normalized frames. Caches short, channel-scoped descriptions keyed by content digest and tied to the original message, with an authorization and freshness gate before reply.
-- Resume: verify remote SHA and CI, then refresh expired media through authorized Discord message IDs and invalidate caches on attachment-only edits (P5.4).
+- Active task: P5.4, authorized asset refresh and media-only edit invalidation.
+- Active branch: `codex/P5.4-refresh-and-invalidation` (base: `codex/P5.3-gif-and-cache`, [PR #30](https://github.com/Hadisovic/Pai/pull/30)).
+- Changed `docs/SETUP.md`, `src/pai/storage.py`, `src/pai/discord_gateway.py`, `src/pai/vision.py`, `tests/test_media.py`. Re-fetches a Discord message by ID at most once when a known asset is unavailable, validates scope, author and stored asset identity, and versions media-only changes to invalidate cache and in-flight responses.
+- Resume: verify remote SHA and CI, then record the live host proof as blocked on approval (P6.1), then implement offline diagnostics and limits (P6.2).
 
 ## Checkpoint log
 
@@ -30,4 +30,5 @@
 | 2026-11-21 | P4.4 | DONE | `codex/P4.4-personality-and-replies` | `8e954f01de1f1244e68342aa05c96ace306c7c7b` | Ruff lint, formatting, pytest (51 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917267765) passed.  |
 | 2026-11-21 | P5.1 | DONE | `codex/P5.1-media-boundaries` | `99604c5e3b428ce3fe291ef8a2b345c68e67e932` | Ruff lint, formatting, pytest (63 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917468577) passed.  |
 | 2026-11-21 | P5.2 | DONE | `codex/P5.2-selective-still-vision` | `cc99ab684c6af274cd2a331e6617c1d7b7430f6b` | Ruff lint, formatting, pytest (64 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917634053) passed.  |
-| 2026-11-21 | P5.3 | IN_PROGRESS | `codex/P5.3-gif-and-cache` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (67 tests) and diff check passed. CI pending. Synthetic GIF tests verify frame order. Fake vision call count confirms reuse and deletion invalidation. |
+| 2026-11-21 | P5.3 | DONE | `codex/P5.3-gif-and-cache` | `a60c335405da51805fd37768980cf1aa65699abd` | Ruff lint, formatting, pytest (67 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917952870) passed.  |
+| 2026-11-21 | P5.4 | IN_PROGRESS | `codex/P5.4-refresh-and-invalidation` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (69 tests) and diff check passed. CI pending. 69 tests include expired URLs and cache invalidation on attachment-only edits. |
