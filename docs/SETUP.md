@@ -55,3 +55,9 @@ holds up to 20,000 messages and drops the oldest first when full. SQLite may
 retain allocated disk pages for reuse, so verify disk headroom in the pilot.
 This stage neither stores nor downloads media. A live pilot still needs
 explicit approval and the remaining privacy workflows.
+
+The mocked responder requires a literal, Discord-recognized bot mention.
+Reply notification pings and code examples do not trigger it. When both
+the requester and the bot can read channel history, it can see up to four
+authorized reply ancestors and eight recent messages in that same channel.
+The CLI does not enable model replies yet.

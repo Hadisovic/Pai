@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 import discord
 from discord.ext import tasks
 
+from pai.conversation import ConversationContext, direct_mention, prepare_context
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
 
@@ -15,9 +16,10 @@ class PaiDiscordClient(discord.Client):
     def __init__(
         self,
         policy: PrivacyPolicy,
-        handle_message: Callable[[discord.Message], Awaitable[None]],
+        handle_message: Callable[[discord.Message], Awaitable[bool | None]],
         *,
         archive: Archive | None = None,
+        respond: Callable[[ConversationContext], Awaitable[str]] | None = None,
     ) -> None:
         super().__init__(
             intents=discord.Intents(
@@ -30,6 +32,7 @@ class PaiDiscordClient(discord.Client):
         self.policy = policy
         self.handle_message = handle_message
         self.archive = archive
+        self.respond = respond
         self.archive_lock = asyncio.Lock()
 
     async def on_message(self, message: discord.Message) -> None:
@@ -52,7 +55,49 @@ class PaiDiscordClient(discord.Client):
         if self.archive is not None and message.created_at < self._retention_cutoff():
             return
         async with self.archive_lock:
-            await self.handle_message(message)
+            inserted = await self.handle_message(message)
+        if inserted and self.respond is not None:
+            await self._respond_if_mentioned(message)
+
+    async def _respond_if_mentioned(self, message: discord.Message) -> None:
+        if (
+            self.user is None
+            or self.archive is None
+            or self.respond is None
+            or message.guild is None
+            or not direct_mention(
+                message.content,
+                (target.id for target in message.mentions),
+                self.user.id,
+            )
+        ):
+            return
+        channel = message.channel
+        bot = message.guild.me
+        if bot is None or not channel.permissions_for(bot).send_messages:
+            return
+        request = await asyncio.to_thread(self.archive.get, message.id)
+        if request is None or request.text != message.content:
+            return
+        can_read_history = (
+            isinstance(message.author, discord.Member)
+            and channel.permissions_for(message.author).read_message_history
+            and channel.permissions_for(bot).read_message_history
+        )
+        context = ConversationContext(request)
+        if can_read_history:
+            context = await asyncio.to_thread(
+                prepare_context,
+                self.archive,
+                self.policy,
+                request,
+                now=datetime.now(UTC),
+            )
+        response = (await self.respond(context)).strip()
+        if response and channel.permissions_for(bot).send_messages:
+            await channel.send(
+                response[:2000], allowed_mentions=discord.AllowedMentions.none()
+            )
 
     async def setup_hook(self) -> None:
         if self.archive is not None:

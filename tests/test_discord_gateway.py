@@ -178,3 +178,45 @@ def test_raw_events_apply_edits_and_bulk_deletes_without_message_cache(tmp_path)
         )
     )
     assert archive.get(5) is None
+
+
+def test_gateway_responds_only_once_to_direct_mentions(tmp_path):
+    from datetime import UTC, datetime
+
+    from pai.discord_gateway import archive_message
+    from pai.storage import Archive
+
+    archive = Archive(tmp_path / "pai.sqlite")
+    respond = AsyncMock(return_value="Synthetic answer")
+    event = sample_message()
+    event.created_at = datetime.now(UTC)
+    event.type = discord.MessageType.default
+    event.reference = None
+    event.author = Mock(spec=discord.Member, id=3, bot=False, display_name="Sam")
+    event.channel.permissions_for.return_value = discord.Permissions(
+        view_channel=True, read_message_history=True, send_messages=True
+    )
+    event.channel.send = AsyncMock()
+
+    async def handle(message):
+        return await archive_message(archive, message)
+
+    client = PaiDiscordClient(policy(), handle, archive=archive, respond=respond)
+    client._connection.user = Mock(id=42)
+    event.id = 5
+    event.content = "Ordinary message"
+    event.mentions = [Mock(id=42)]
+    asyncio.run(client.on_message(event))
+    respond.assert_not_awaited()
+    assert archive.get(5).text == "Ordinary message"
+    event.id = 6
+    event.content = "Hi <@42>"
+    asyncio.run(client.on_message(event))
+    asyncio.run(client.on_message(event))
+    respond.assert_awaited_once()
+    assert [row.message_id for row in respond.call_args.args[0].recent] == [5]
+    event.channel.send.assert_awaited_once()
+    assert event.channel.send.call_args.args == ("Synthetic answer",)
+    assert event.channel.send.call_args.kwargs["allowed_mentions"].to_dict() == {
+        "parse": []
+    }

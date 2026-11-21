@@ -208,14 +208,48 @@ class Archive:
             ).fetchone()
         if row is None:
             return None
-        return MessageRecord(
-            message_id=int(row[0]),
-            guild_id=int(row[1]),
-            channel_id=int(row[2]),
-            author_id=int(row[3]),
-            author_display=row[4],
-            text=row[5],
-            created_at=datetime.fromisoformat(row[6]),
-            reply_to_id=int(row[7]) if row[7] is not None else None,
-            edited_at=datetime.fromisoformat(row[8]) if row[8] is not None else None,
-        )
+        return _record(row)
+
+    def recent(
+        self,
+        request: MessageRecord,
+        authors: frozenset[int],
+        cutoff: datetime,
+        limit: int,
+    ) -> tuple[MessageRecord, ...]:
+        with closing(self.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT message_id, guild_id, channel_id, author_id,
+                       author_display, text, created_at, reply_to_id, edited_at
+                FROM messages
+                WHERE guild_id = ? AND channel_id = ? AND message_id <> ?
+                  AND author_id IN (SELECT value FROM json_each(?))
+                  AND created_at BETWEEN ? AND ?
+                ORDER BY created_at DESC, rowid DESC LIMIT ?
+                """,
+                (
+                    str(request.guild_id),
+                    str(request.channel_id),
+                    str(request.message_id),
+                    json.dumps([str(author) for author in authors]),
+                    _utc_text(cutoff),
+                    _utc_text(request.created_at),
+                    limit,
+                ),
+            ).fetchall()
+        return tuple(_record(row) for row in rows)
+
+
+def _record(row: tuple) -> MessageRecord:
+    return MessageRecord(
+        message_id=int(row[0]),
+        guild_id=int(row[1]),
+        channel_id=int(row[2]),
+        author_id=int(row[3]),
+        author_display=row[4],
+        text=row[5],
+        created_at=datetime.fromisoformat(row[6]),
+        reply_to_id=int(row[7]) if row[7] is not None else None,
+        edited_at=datetime.fromisoformat(row[8]) if row[8] is not None else None,
+    )

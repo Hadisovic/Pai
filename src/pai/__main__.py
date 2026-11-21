@@ -52,8 +52,8 @@ def main() -> None:
             2, "Unable to open the private archive. Check its path and schema.\n"
         )
 
-    async def handle(message: discord.Message) -> None:
-        await archive_message(archive, message)
+    async def handle(message: discord.Message) -> bool:
+        return await archive_message(archive, message)
 
     try:
         PaiDiscordClient(policy, handle, archive=archive).run(token, log_handler=None)
