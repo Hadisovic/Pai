@@ -29,3 +29,25 @@ candidate with actual text, vision, quota, and 429 tests. Until there is an
 authorized live provider, keep archiving and inference independently
 switchable and use only mocked AI replies. Avoid paid tools, account
 upgrades, and unconstrained routing even when a provider lists a model as free.
+
+The local router reserves attempts and estimated tokens before sending.
+Failed attempts count. It uses rolling one-minute and 24-hour windows to
+stay within documented caps even across resets. Budget and backoff state
+contains only route names, timestamps and token counts. A provider's lower
+observed limit still takes precedence when configuring its route.
+
+The Groq adapter uses the documented chat-completions endpoint with a fixed
+Qwen primary and GPT OSS text fallback. It makes no request unless the
+operator has confirmed a separate Free organization with no billing
+information and checked ZDR. Groq uses a shared endpoint for its Free and
+paid plans. Model permissions alone cannot prove account billing status.
+Use only a key from the dedicated Free organization, and remove it if plan,
+quotas, or privacy settings change. The live CLI defaults to AI disabled and requires the opt-in described in SETUP.md. [Groq API reference](https://console.groq.com/docs/api-reference)
+
+The reply prompt sends selected text and display names, with local source
+aliases in place of Discord IDs or jump links. It removes raw mention tags,
+URLs and common credential-shaped strings. The request budget prioritizes
+the mention, reply chain and matching evidence. The model has no tools, and
+the renderer expands only supplied source aliases into Discord links. Prompt
+separation and sanitization reduce risk. Real model behavior and notice
+coverage still need approval and testing before sending private content.
