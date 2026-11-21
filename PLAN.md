@@ -13,6 +13,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P1.2 [DONE]** Verify current Gemini, Groq, OpenRouter free provider offerings, actual model IDs and text/vision capability, request and token limits, account/card restrictions, privacy/data-use and region rules. No paid accounts.
 - **P1.3 [DONE]** Verify no-card hosting candidates Kerit Cloud, Bot-Hosting.net and FPS.ms and alternatives: RAM, storage, persistence, websockets, renewal, inactivity policy, uptime and backup. Claims are not proof.
 - **P1.4 [DONE]** Build repeatable **synthetic** model benchmark for natural English conversation, humor, contextual recall, some Arabic comprehension and memes/GIFs. Never send real private messages without permission.
+- **P1.La [IN_PROGRESS]** Compare real outputs from public multimodal models with the synthetic benchmark and a loopback inference server on a disposable Linux runner.
 - **P1.L [BLOCKED]** Run live synthetic model calls and human scoring after the owner controls an approved card-free account. The offline implementation and benchmark are verified.
 - **Acceptance:** dated official links and decision matrix, verified or explicitly unknown free quotas, recommended primary text+vision, fallback, and host candidates. Real live tests require user-controlled credentials.
 

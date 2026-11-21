@@ -40,3 +40,13 @@
 | 2026-11-21 | P1.L / P6.1 / P7.2 / P7.L | BLOCKED | `codex/P7.3-launch-readiness` | Live validation pending | The owner must approve the pilot and provide access through verified free accounts, with actual member consent before data collection. Start with the synthetic model benchmark. |
 | 2026-11-21 | Stack integration | DONE | `main` | `ec9834e0e62139b1f0dae206c34becf6236a8408` | Verified dependencies, file scopes and per-PR CI. Merged #36 through #9 to their declared parents. The final main tree and CI passed. |
 | 2026-11-21 | P6.1a | IN_PROGRESS | `codex/P6.1a-synthetic-host-validation` | See next checkpoint | Windows public WebSocket HELLO verified. Local split-process restore, Ruff and 75 pytest tests passed. Linux job pending. |
+
+## Account-free local inference checkpoint
+
+The initial Windows llama.cpp Vulkan and CUDA distributions exited before
+model loading. The Qwen3.5-4B and Gemma 4 E4B IT weights and projectors were
+downloaded from pinned public revisions and matched their published SHA-256
+digests. The benchmark is now queued on two disposable standard Linux
+runners. The local server binds to loopback and receives generated fixtures
+only. No provider key, Discord account or payment information is involved.
+Resume by checking the model benchmark PR jobs for this branch.
