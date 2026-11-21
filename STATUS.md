@@ -1,9 +1,11 @@
 # Durable handoff state
 
-- Original PRs #9 through #36 were reviewed and merged into their declared parents from tip to base. Each resulting remote branch and tree was verified. The final [main integration](https://github.com/Hadisovic/Pai/commit/ec9834e0e62139b1f0dae206c34becf6236a8408) preserves the maintainer instructions and the fully audited tree. [Main CI](https://github.com/Hadisovic/Pai/actions/runs/44942592048)
-- Active task: P6.1a, a credential-free synthetic Linux pilot with a 256 MiB memory limit. The public Gateway handshake succeeded from Windows without Identify.
-- Third-party inference and hosting accounts and the authenticated Discord pilot remain unavailable. No real messages were accessed. The account-free local model benchmark is in progress.
-- Resume: verify the P6.1a branch and its Linux job. Review measured memory and persistence before updating the host shortlist. Then record the real synthetic model benchmarks and remaining authenticated pilot requirements.
+- Original PRs #9 through #36 were reviewed and merged into their declared parents from tip to base. The final [integration](https://github.com/Hadisovic/Pai/commit/ec9834e0e62139b1f0dae206c34becf6236a8408) preserved the maintainer instructions and the fully patched tree. [Main CI](https://github.com/Hadisovic/Pai/actions/runs/44942592048)
+- Constrained Linux validation merged in [PR #37](https://github.com/Hadisovic/Pai/pull/37), remote main then `9c4d5434311b4af40295c9776cbb03f04cd63dd7`. Restore, persistence, and a public Discord Gateway handshake passed with synthetic data. The bot did not identify.
+- Two real, account-free model runs merged in [PR #38](https://github.com/Hadisovic/Pai/pull/38), remote main then `3cc31f63d5d098def4438deb2817ca177d795519`. Qwen3.5-4B is the provisional local choice. Groq Qwen3.8 is the first hosted model to evaluate. See `docs/BENCHMARK.md` for actual outputs, metrics and limitations.
+- Enzonic is the first card-free hosting pilot candidate, subject to an actual Free allocation with no payment details and acceptable terms. Kerit is the fallback. Third-party access and billing status were not verified.
+- Remaining: P1.L needs a key from a confirmed Groq Free organization with no billing information and checked privacy controls. P6.1 needs access to a confirmed no-card/no-billing-address host. P7.2 needs an isolated Discord application, token and consented synthetic test server. P7.L remains a decision after live acceptance. No production launch or real Discord collection occurred.
+- Resume by fetching `origin/main` and comparing its SHA with the last verified merge. Run the Groq synthetic benchmark first when access is available. Then verify the actual host and authenticated test server using `docs/RUNBOOK.md`. Inject credentials through the owner's secret store. Keep real collection disabled without member consent.
 
 ## Checkpoint log
 
@@ -39,14 +41,5 @@
 | 2026-11-21 | P7.3 | DONE | `codex/P7.3-launch-readiness` | `3989da3241b328fae8ffde2fb4a98d88c133b416` | Ruff lint, format, pytest (75 tests), diff check, runtime doctor and offline six-case benchmark passed. Locked audit found no known vulnerabilities or adverse package statuses in 23 packages. [GitHub CI](https://github.com/Hadisovic/Pai/actions/runs/44941578162) passed on Python 3.12 and 3.13. |
 | 2026-11-21 | P1.L / P6.1 / P7.2 / P7.L | BLOCKED | `codex/P7.3-launch-readiness` | Live validation pending | The owner must approve the pilot and provide access through verified free accounts, with actual member consent before data collection. Start with the synthetic model benchmark. |
 | 2026-11-21 | Stack integration | DONE | `main` | `ec9834e0e62139b1f0dae206c34becf6236a8408` | Verified dependencies, file scopes and per-PR CI. Merged #36 through #9 to their declared parents. The final main tree and CI passed. |
-| 2026-11-21 | P6.1a | IN_PROGRESS | `codex/P6.1a-synthetic-host-validation` | See next checkpoint | Windows public WebSocket HELLO verified. Local split-process restore, Ruff and 75 pytest tests passed. Linux job pending. |
-
-## Account-free local inference checkpoint
-
-The initial Windows llama.cpp Vulkan and CUDA distributions exited before
-model loading. The Qwen3.5-4B and Gemma 4 E4B IT weights and projectors were
-downloaded from pinned public revisions and matched their published SHA-256
-digests. The benchmark is now queued on two disposable standard Linux
-runners. The local server binds to loopback and receives generated fixtures
-only. No provider key, Discord account or payment information is involved.
-Resume by checking the model benchmark PR jobs for this branch.
+| 2026-11-21 | P6.1a | DONE | `main` | `9c4d5434311b4af40295c9776cbb03f04cd63dd7` | Ruff, formatting, pytest (75), [Windows/Linux synthetic task via PR #37](https://github.com/Hadisovic/Pai/pull/37), [Linux host smoke](https://github.com/Hadisovic/Pai/actions/runs/44942850593) and [main CI](https://github.com/Hadisovic/Pai/actions/runs/44943143660) passed. Public Gateway only. |
+| 2026-11-21 | P1.La | DONE | `main` | `3cc31f63d5d098def4438deb2817ca177d795519` | Ruff, formatting, pytest (75), and [12 real synthetic completions on Linux](https://github.com/Hadisovic/Pai/actions/runs/44942991533) passed. Two public models, SHA-256 checks and no provider account. |

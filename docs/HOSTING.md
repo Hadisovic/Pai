@@ -43,3 +43,31 @@ normal restart-on-failure policy and verify it with synthetic data.
 P6.1 remains blocked without an owner-selected Free account and approval
 to conduct the real host pilot. No persistence, memory or uptime claim is
 made for an untested host.
+## 2026-11-21 · Public plan recheck and constrained Linux evidence
+
+Enzonic is the first third-party pilot candidate based on its published
+Python plan. It advertises a capacity-limited allocation with 512 MB RAM,
+half a CPU core, 10 GB SSD, no payment details, and an always-on bot
+process. Verify the actual allocation, absence of a card or billing address,
+and bot-specific renewal and persistence terms after sign-in. Keep Kerit
+as the smaller fallback at 256 MB and 2 GB. Bot-Hosting.net and FPS.ms
+require more frequent manual renewal. [Enzonic Python plan](https://www.enzonic.com/python)
+· [Enzonic Discord plan](https://enzonic.com/discord-bots/discord-py)
+· [Kerit Free Bot Hosting](https://kerit.cloud/bot/free/)
+
+The synthetic Linux job used two separate containers on a standard
+public GitHub runner. Both had a 256 MiB cgroup memory limit, no extra
+swap and half a CPU. A private disposable volume persisted across the
+containers. Locked install, SQLite 3.46.1/FTS5, active archive reopen,
+searchable encrypted restore, an existing opt-out, and the public
+Discord Gateway v10 TLS/WebSocket HELLO all passed. It never identified a
+bot or received guild events. Install plus seed peaked at 174,661,632
+bytes (166.6 MiB). Restart, restore and the handshake peaked at 37,044,224
+bytes (35.3 MiB). The volume used 58 MiB including the environment and
+download cache. Windows also passed the public handshake and split-process
+restore. [Linux job](https://github.com/Hadisovic/Pai/actions/runs/44942850593/job/136963641961)
+
+This validates the isolated lab. Third-party allocation, bill-free
+signup, bot login, deployment persistence, long-running load, renewals and
+service uptime still need testing on the selected account. GitHub Actions
+is used for short tests only.
