@@ -1,17 +1,13 @@
 # Durable handoff state
 
-- Repository: https://github.com/Hadisovic/Pai
-- Initial state: **PLAN ONLY — IMPLEMENTATION NOT STARTED**
-- Active phase/task: P0.1 (TODO)
-- Active implementation branch: none
-- Implementation code/tests: none
-- Provider, Discord, hosting accounts: not configured or verified
-- Next action: read AGENTS.md and PLAN.md; create `codex/P0.1-project-baseline`, implement small mocked P0.1 scope, run checks, push and verify remote, open PR.
-- Important: GitHub reports this repository as **public** on 2026-11-21. Owner should switch to private before any project-sensitive content is introduced. No member/chat data or secrets may ever be committed.
+- Active task: P0.1 (IN_PROGRESS while GitHub CI is pending).
+- Active branch: `codex/P0.1-project-baseline` (base: `main`).
+- P0.1 files: `pyproject.toml`, `uv.lock`, `src/pai/__init__.py`, `tests/test_installation.py`, `.env.example`, `.github/workflows/ci.yml` and `README.md`.
+- Discord, provider and hosting accounts are unconfigured. The public repository contains only code, documentation and synthetic development material.
+- Resume: compare the remote branch to the local head, find its P0.1 pull request and verify the CI matrix. Record the verified implementation SHA, then continue from P0.2 on a stacked branch.
 
 ## Checkpoint log
-For every task append a dated record:
 
-`Task | TODO/IN_PROGRESS/BLOCKED/DONE | branch | commit SHA | verified remote SHA | tests/actual output | blockers | next exact step`
-
-No `DONE` without passing acceptance checks and remote push verification. On interruption, preserve honest partial checkpoints. The initial planning commit is not implementation progress.
+| Date | Task | Status | Branch | Commit / verified remote SHA | Checks and blockers |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-21 | P0.1 | IN_PROGRESS | `codex/P0.1-project-baseline` | See next checkpoint for this commit's verified SHA | Clean `uv sync --locked --python 3.12` created the environment and installed 8 packages; `uv run --locked ruff check .` passed; `uv run --locked ruff format --check .` passed; `uv run --locked pytest -q` passed (1 test); `git diff --check` passed. The install test first failed with missing package metadata. CI requires the pushed commit. |

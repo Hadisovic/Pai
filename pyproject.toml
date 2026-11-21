@@ -1,0 +1,26 @@
+[build-system]
+requires = ["uv_build==0.12.21"]
+build-backend = "uv_build"
+
+[project]
+name = "pai-discord"
+version = "0.1.0"
+description = "A privacy-conscious Discord companion"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8.4,<10", "ruff>=0.13,<1"]
+
+[tool.uv.build-backend]
+module-name = "pai"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
