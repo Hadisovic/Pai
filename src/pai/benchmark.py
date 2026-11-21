@@ -1,13 +1,23 @@
 """Credential-free, synthetic quality benchmark for future provider adapters."""
 
+import argparse
+import asyncio
 import json
-from collections.abc import Callable
+import os
+import sqlite3
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from io import BytesIO
+from pathlib import Path
 from time import perf_counter
 
+import aiohttp
 from PIL import Image, ImageDraw, ImageSequence
+
+from pai.model_router import ModelRequest, NoFreeRoute, Router
+from pai.providers import Groq
+from pai.storage import Archive
 
 
 @dataclass(frozen=True)
@@ -88,31 +98,105 @@ def build_cases() -> tuple[Case, ...]:
     )
 
 
+def _result(model: str, case: Case, completion: Completion, elapsed: float) -> dict:
+    return {
+        "model": model,
+        "case": case.skill,
+        "date": datetime.now(UTC).date().isoformat(),
+        "frame_count": len(case.frames),
+        "requests": 1,
+        "latency_ms": round(elapsed * 1000, 2),
+        "tokens": completion.tokens,
+        "response": completion.response,
+        "rubric": case.rubric,
+        "score": None,
+    }
+
+
 def run_benchmark(model: str, complete: Callable[[Case], Completion]) -> list[dict]:
     """Capture outputs and measurements for subsequent human scoring."""
     results = []
     for case in build_cases():
         start = perf_counter()
-        result = complete(case)
+        completion = complete(case)
+        results.append(_result(model, case, completion, perf_counter() - start))
+    return results
+
+
+async def run_provider_benchmark(
+    router: Router,
+    model: str,
+    read_usage: Callable[[], int | None],
+    wait_window: Callable[[], Awaitable[None]],
+) -> list[dict]:
+    results = []
+    for case in build_cases():
+        if len(case.frames) == 3:
+            await wait_window()
+        start = perf_counter()
+        response = await router.generate(
+            ModelRequest(
+                "Answer as Pai, a warm English-first Discord companion. "
+                "Use the provided synthetic context and ordered images. Keep your answer short.",
+                case.prompt,
+                case.frames,
+            )
+        )
         results.append(
-            {
-                "model": model,
-                "case": case.skill,
-                "date": datetime.now(UTC).date().isoformat(),
-                "frame_count": len(case.frames),
-                "requests": 1,
-                "latency_ms": round((perf_counter() - start) * 1000, 2),
-                "tokens": result.tokens,
-                "response": result.response,
-                "rubric": case.rubric,
-                "score": None,
-            }
+            _result(
+                model, case, Completion(response, read_usage()), perf_counter() - start
+            )
         )
     return results
 
 
-if __name__ == "__main__":
-    results = run_benchmark(
-        "offline-stub", lambda _: Completion("Synthetic stub response")
+async def _groq_benchmark(key: str, quota_path: Path) -> list[dict]:
+    tokens = None
+
+    def observe_usage(value: int | None) -> None:
+        nonlocal tokens
+        tokens = value
+
+    async def wait_window() -> None:
+        await asyncio.sleep(61)
+
+    async with aiohttp.ClientSession(trust_env=False) as session:
+        primary = Groq(
+            session, key, free_plan_confirmed=True, observe_usage=observe_usage
+        ).routes()[0]
+        router = Router(Archive(quota_path), (primary,))
+        return await run_provider_benchmark(
+            router, primary.name, lambda: tokens, wait_window
+        )
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Run Pai's synthetic benchmark")
+    parser.add_argument(
+        "--groq-free", action="store_true", help="Use a verified Free Groq organization"
     )
+    parser.add_argument(
+        "--quota-db", type=Path, help="Private persistent SQLite quota database"
+    )
+    args = parser.parse_args()
+    if args.groq_free:
+        key = os.environ.get("PAI_GROQ_KEY", "").strip()
+        if not key or args.quota_db is None:
+            parser.error("--groq-free requires a verified Free key and --quota-db")
+        os.umask(0o077)
+        try:
+            results = asyncio.run(_groq_benchmark(key, args.quota_db))
+        except (NoFreeRoute, OSError, sqlite3.Error, ValueError):
+            parser.exit(
+                2,
+                "The synthetic run could not complete within the free route or local setup.\n",
+            )
+    else:
+        results = run_benchmark(
+            "offline-stub", lambda _: Completion("Synthetic stub response")
+        )
     print(json.dumps(results, ensure_ascii=True, indent=2))
+
+
+if __name__ == "__main__":
+    main()

@@ -43,3 +43,30 @@ def test_benchmark_preserves_evidence_and_leaves_quality_unscored():
         assert result["latency_ms"] >= 0
         assert result["tokens"] is None
         assert result["score"] is None
+
+
+def test_provider_benchmark_sends_only_fixture_prompt_and_frames(tmp_path):
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    from pai.benchmark import run_provider_benchmark
+    from pai.model_router import ProviderRoute, Quota, Router
+    from pai.storage import Archive
+
+    complete = AsyncMock(return_value="Synthetic completion")
+    route = ProviderRoute(
+        "synthetic", 3, True, Quota(20, 100, 30_000, 100_000), complete
+    )
+    router = Router(Archive(tmp_path / "quota.sqlite"), (route,))
+    wait = AsyncMock()
+    results = asyncio.run(run_provider_benchmark(router, "synthetic", lambda: 42, wait))
+    assert len(results) == 6
+    for case, call, result in zip(
+        build_cases(), complete.await_args_list, results, strict=True
+    ):
+        request = call.args[0]
+        assert request.payload == case.prompt
+        assert request.frames == case.frames
+        assert case.rubric not in request.instructions
+        assert result["tokens"] == 42
+    wait.assert_awaited_once()

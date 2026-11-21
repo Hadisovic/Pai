@@ -119,3 +119,24 @@ signed URLs. The download boundary admits only supported image MIME types
 from Discord's media CDN and selected GIF CDNs with public DNS resolution,
 no redirects, a 3 MiB cap and a six-second deadline. Actual format and pixel
 verification is added with mention-triggered analysis.
+
+With AI and media enabled, Pai considers one still image or supported
+sticker on an authorized direct mention or its directly referenced
+authorized message. It verifies the actual file format and bounds the
+decoded image to four million pixels, then sends a normalized frame of at
+most 512 × 512 pixels. It performs no downloads during ordinary collection.
+
+For GIFs and supported animated image files, Pai samples the beginning,
+temporal midpoint and end in order. It scans at most 48 frames and 24
+million cumulative frame pixels. It stores a short description only after
+the source is checked and can reuse it for identical media in the same
+channel. Changes, deletion, expiry or opt-out invalidate the source-linked
+description. A new asset uses one bounded vision call before the reply.
+
+If an approved image link expires, Pai can re-fetch the source message in
+the same authorized channel once and try its updated link. It checks that
+the author, message revision and stored asset identity still match. Removed
+media, corrupted files, unsupported sticker formats and video-only embeds
+may be unavailable. Media-only updates remove outdated descriptions.
+Disabling the media policy purges media metadata and cached descriptions
+when the operator applies that policy.
