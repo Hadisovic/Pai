@@ -12,6 +12,9 @@ class PrivacyPolicy:
     guild_id: int | None = None
     channel_ids: frozenset[int] = frozenset()
     consenting_member_ids: frozenset[int] = frozenset()
+    retention_days: int = 30
+    external_ai_opt_in: bool = False
+    media_opt_in: bool = False
 
     @property
     def is_enabled(self) -> bool:
@@ -23,11 +26,16 @@ class PrivacyPolicy:
             and bool(self.consenting_member_ids)
         )
 
-    def permits(self, guild_id: int, channel_id: int, author_id: int) -> bool:
+    def permits_channel(self, guild_id: int, channel_id: int) -> bool:
         return (
             self.is_enabled
             and guild_id == self.guild_id
             and channel_id in self.channel_ids
+        )
+
+    def permits(self, guild_id: int, channel_id: int, author_id: int) -> bool:
+        return (
+            self.permits_channel(guild_id, channel_id)
             and author_id in self.consenting_member_ids
         )
 
@@ -64,10 +72,22 @@ def load_policy(path: Path) -> PrivacyPolicy:
     notice_version = config.get("notice_version", "")
     if type(admin_opt_in) is not bool or not isinstance(notice_version, str):
         raise ValueError("Invalid admin_opt_in or notice_version")
+    retention_days = config.get("retention_days", 30)
+    if type(retention_days) is not int or not 1 <= retention_days <= 365:
+        raise ValueError("retention_days must be an integer between 1 and 365")
+    external_ai_opt_in = config.get("external_ai_opt_in", False)
+    if type(external_ai_opt_in) is not bool:
+        raise ValueError("external_ai_opt_in must be a boolean")
+    media_opt_in = config.get("media_opt_in", False)
+    if type(media_opt_in) is not bool:
+        raise ValueError("media_opt_in must be a boolean")
     return PrivacyPolicy(
         admin_opt_in=admin_opt_in,
         notice_version=notice_version,
         guild_id=guild_id,
         channel_ids=_snowflakes(config, "channel_ids"),
         consenting_member_ids=_snowflakes(config, "consenting_member_ids"),
+        retention_days=retention_days,
+        external_ai_opt_in=external_ai_opt_in,
+        media_opt_in=media_opt_in,
     )
