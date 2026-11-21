@@ -2,13 +2,13 @@
 
 Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after its acceptance checks pass, a commit is pushed, and the remote branch SHA is verified. Record results in STATUS.md. Never treat planning completion as implemented functionality.
 
-## P0 — Reproducible development baseline [IN_PROGRESS]
+## P0 — Reproducible development baseline [DONE]
 - **P0.1 [DONE]** Initialize Python 3.12+ project, `src/`, `tests/`, `pyproject.toml`, locked dependencies, `.env.example`, lint/format/tests, CI, and concise developer instructions. No credentials.
-- **P0.2 [IN_PROGRESS]** Mock Discord gateway/events and fake AI providers; synthetic chat fixtures and a complete local smoke test independent of network or accounts.
+- **P0.2 [DONE]** Mock Discord gateway/events and fake AI providers; synthetic chat fixtures and a complete local smoke test independent of network or accounts.
 - **Acceptance:** clean install; unit tests and CI pass; `git diff --check`; verified remote checkpoint.
 
-## P1 — Free provider and hosting research [TODO]
-- **P1.1** Confirm official Discord intent, bot permission, message content, edit/delete, reply reference, embed, attachment, sticker and rate-limit semantics.
+## P1 — Free provider and hosting research [IN_PROGRESS]
+- **P1.1 [IN_PROGRESS]** Confirm official Discord intent, bot permission, message content, edit/delete, reply reference, embed, attachment, sticker and rate-limit semantics.
 - **P1.2** Verify current Gemini, Groq, OpenRouter free provider offerings, actual model IDs and text/vision capability, request and token limits, account/card restrictions, privacy/data-use and region rules. No paid accounts.
 - **P1.3** Verify no-card hosting candidates Kerit Cloud, Bot-Hosting.net and FPS.ms and alternatives: RAM, storage, persistence, websockets, renewal, inactivity policy, uptime and backup. Claims are not proof.
 - **P1.4** Build repeatable **synthetic** model benchmark for natural English conversation, humor, contextual recall, some Arabic comprehension and memes/GIFs. Never send real private messages without permission.
