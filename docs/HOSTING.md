@@ -77,14 +77,17 @@ is used for short tests only.
 Live browser inspection verified both primary and fallback cloud host offerings:
 
 1. **Enzonic** (`https://panel.enzonic.com`):
-   - Confirmed free plan: 512 MB RAM, 10 GB disk, 50% CPU, 24/7 always on, card-free.
-   - Pterodactyl egg: `generic-python` (`https://panel.enzonic.com/create-server?plan=free&category=apps&egg=generic-python`).
-   - Authentication: Clerk (Google OAuth or email/password). Waiting on owner sign-in.
+   - Confirmed free plan: 512 MB RAM, 10 GB disk, 50% CPU, $0.00 cost, no card or billing details.
+   - Server created: `Pai` under Discord Bot -> Python (startup file: `main.py`).
+   - Provisioning Status: Enzonic Free Queue ID 9980, Position #122 in line (estimated queue delay: 242–726 minutes due to node hardware expansion).
+   - Inactivity policy: Free tier containers sleep after idle periods and wake on request or panel access.
+   - Control architecture: Hydrodactyl V6.1 (Pterodactyl fork) with console, file manager, and SFTP access once assigned.
 
 2. **Kerit Cloud** (`https://kerit.cloud`):
-   - Confirmed free plan: 256 MB RAM, 2 GB NVMe, 24/7 zero-sleep, DDoS protected, card-free.
+   - Confirmed free plan: 256 MB RAM, 2 GB NVMe, 24/7 zero-sleep mode, DDoS protected, card-free.
    - Authentication: Discord OAuth, Google OAuth, or email/password (`https://billing.kerit.cloud/register`).
    - Claim rule: requires joining community Discord server to provision free bot slot.
 
 3. **Deployment Bundle**:
-   - Packaged standalone bundle `deploy.zip` (34.9 KB) via `scripts/bundle_deploy.py` containing `main.py`, `requirements.txt`, and `src/pai` for instant panel upload.
+   - Packaged standalone bundle `deploy.zip` (39.7 KB) via `scripts/bundle_deploy.py` containing `main.py`, locked `requirements.txt`, `src/pai/`, and active `.pai-policy.json` + `pai.sqlite` memory snapshot.
+   - Encrypted off-host backup created: `backups/snapshot.pai` via AES-256-GCM (`PAI_BACKUP_KEY` preserved in private `.env`).

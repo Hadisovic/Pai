@@ -1,7 +1,13 @@
 import os
 import zipfile
 
-files_to_pack = ["main.py", "requirements.txt", ".pai-policy.json.example"]
+files_to_pack = [
+    "main.py",
+    "requirements.txt",
+    ".pai-policy.json.example",
+    ".pai-policy.json",
+    "pai.sqlite",
+]
 dirs_to_pack = ["src"]
 
 zip_path = "deploy.zip"
