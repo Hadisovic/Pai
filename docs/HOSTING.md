@@ -27,3 +27,19 @@ server and backup locations, renewal notices, deletion and host support
 access before any private data. Keep the service on the free tier. A missing
 renewal can leave gaps in history and no host in this table has measured
 availability yet.
+
+## Offline validation before hosting
+
+Run `uv run --offline --locked python -m pai --doctor` after the locked
+install. It checks the SQLite schema and FTS5 with a temporary archive and
+prints runtime versions and integrity state without credentials. Pai caps
+replies to eight per rolling minute for the configured guild, a 12-second
+per-member interval, and two active responders. These limits apply to model
+work and replies, while normal messages continue through the archive gate.
+The library manages Gateway reconnects. The process handles Ctrl+C and
+POSIX SIGTERM and closes its connections. Configure the eventual host's
+normal restart-on-failure policy and verify it with synthetic data.
+
+P6.1 remains blocked without an owner-selected Free account and approval
+to conduct the real host pilot. No persistence, memory or uptime claim is
+made for an untested host.

@@ -9,14 +9,26 @@ import discord
 from discord import app_commands
 
 from pai.conversation import share_style_example
+from pai.observability import LOG
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive
+
+
+class PrivateCommandTree(app_commands.CommandTree):
+    async def on_error(
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ) -> None:
+        LOG.warning("A privacy command failed")
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                "This action could not be completed.", ephemeral=True
+            )
 
 
 def controls(
     client: discord.Client, archive: Archive, policy: PrivacyPolicy
 ) -> app_commands.CommandTree:
-    tree = app_commands.CommandTree(client)
+    tree = PrivateCommandTree(client)
     guild = discord.Object(id=policy.guild_id) if policy.guild_id is not None else None
     if guild is None:
         return tree
