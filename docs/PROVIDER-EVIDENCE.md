@@ -44,3 +44,11 @@ paid plans. Model permissions alone cannot prove account billing status.
 Use only a key from the dedicated Free organization, and remove it if plan,
 quotas, or privacy settings change. The live CLI remains AI-disabled at
 this checkpoint. [Groq API reference](https://console.groq.com/docs/api-reference)
+
+The reply prompt sends selected text and display names, with local source
+aliases in place of Discord IDs or jump links. It removes raw mention tags,
+URLs and common credential-shaped strings. The request budget prioritizes
+the mention, reply chain and matching evidence. The model has no tools, and
+the renderer expands only supplied source aliases into Discord links. Prompt
+separation and sanitization reduce risk. Real model behavior and notice
+coverage still need approval and testing before sending private content.
