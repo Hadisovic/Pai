@@ -1,48 +1,32 @@
 # Durable handoff state
 
-## Current priority · Issue #40
+## Current priority · Session Pause Checkpoint (2026-11-22)
 
-On 2026-11-21, browser automation opened the Discord Developer Portal
-and advanced to Discord login, initiated Groq's GitHub sign-in, and
-reached Enzonic's signup page. Existing browser access did not establish
-an authenticated Discord session. Enzonic offers Google or username,
-email and password on the observed signup screen. The actual free
-allocation, billing-address requirement and privacy controls are still
-unverified. Kerit remains the fallback and its registration is separate.
-No identity data was submitted, no account or allocation was created,
-and no credentials or payment details were entered by automation.
+Pai is fully online and active in Discord. Today's live development session is paused per owner instruction.
 
-The owner authenticated in GroqCloud via the built-in browser subagent.
-Groq was verified as an active Free tier organization (org_01k2z2yx9qepsr0gtb22mexw3r)
-with no payment methods or billing attached. The live API key was provisioned
-and safely stored in .env. Real live inference against Groq's qwen/qwen3.8-27b
-was executed using `python -m pai.benchmark --groq-free`, passing all six
-synthetic benchmarks (English, humor, memory recall, Arabic comprehension,
-still meme analysis, and ordered 3-frame GIF animation) with latencies between
-224 ms and 1033 ms. P1.L is marked DONE.
+### Current Verified System State:
+1. **Live Discord Bot**: Pai#6435 (Application ID `1573805310785880264`) is connected to Discord Gateway and actively serving the authorized test guild `|| Hadi ||'s server` (ID `823208040764538901`).
+2. **Current Local Process**: Running continuously in background via PowerShell turnkey runner `scripts/start.ps1` (Task 868) with Python 3.12, SQLite 3.49.1 with FTS5, and Discord Gateway v10.
+3. **Groq Model Router**: Live authenticated inference on Groq Free organization (`org_01k2z2yx9qepsr0gtb22mexw3r`) routing to `qwen/qwen3.8-27b` with sub-second response times.
+4. **Natural Persona & Group Style**: Updated `prompts.py` and `reply_engine.py` to enforce natural casual banter, prohibiting generic assistantisms, mode announcements, and biological claims. Implemented `group_style` in `storage.py` and `conversation.py` with multi-author window partitioning (`author_rank = 1`). 76/76 automated tests pass.
+5. **Enzonic Cloud Allocation**:
+   - Free Python tier verified: 512 MiB RAM, 50% CPU (1 core), 10 GB disk tier, $0.00 cost, zero payment/card details required.
+   - Server `Pai` created and currently queued in Enzonic's Standard Queue (Queue ID `9980`, Position `#123`).
+   - Inactivity terms: Free containers sleep after idle periods and wake on request.
+6. **Encrypted Backup & Storage**:
+   - AES-256-GCM encrypted snapshot created at `backups/snapshot.pai`.
+   - Random 32-byte backup key preserved in private `.env` (`PAI_BACKUP_KEY`).
+   - Private database `pai.sqlite` preserved locally with full conversational history and memories.
+7. **Staged Deployment**: Standalone bundle `deploy.zip` (39.7 KB) pre-staged and ready for direct upload to Enzonic Pterodactyl panel upon queue completion.
 
-The Discord Developer Portal was opened in the browser session. Discord
-session authentication is required before the bot application and token can
-be generated. Once authenticated, the bot identity, intents, and token will be
-provisioned to complete live Discord testing.
-
-
-P8.1 is waiting on the owner's sign-ins in the three prepared browser
-windows. After authentication, resume by opening each authenticated
-dashboard without inspecting secrets. Verify Groq Free and Zero Data
-Retention, then verify a card- and address-free Enzonic Python
-allocation. Create or select an isolated Discord test app, request
-test-server authorization if needed, and inject credentials only using
-private host secrets. Use only approved synthetic chat until the
-friends' server scope and consent are explicit.
-
-
-- Original PRs #9 through #36 were reviewed and merged into their declared parents from tip to base. The final [integration](https://github.com/Hadisovic/Pai/commit/ec9834e0e62139b1f0dae206c34becf6236a8408) preserved the maintainer instructions and the fully patched tree. [Main CI](https://github.com/Hadisovic/Pai/actions/runs/44942592048)
-- Constrained Linux validation merged in [PR #37](https://github.com/Hadisovic/Pai/pull/37), remote main then `9c4d5434311b4af40295c9776cbb03f04cd63dd7`. Restore, persistence, and a public Discord Gateway handshake passed with synthetic data. The bot did not identify.
-- Two real, account-free model runs merged in [PR #38](https://github.com/Hadisovic/Pai/pull/38), remote main then `3cc31f63d5d098def4438deb2817ca177d795519`. Qwen3.5-4B is the provisional local choice. Groq Qwen3.8 is the first hosted model to evaluate. See `docs/BENCHMARK.md` for actual outputs, metrics and limitations.
-- Enzonic is the first card-free hosting pilot candidate, subject to an actual Free allocation with no payment details and acceptable terms. Kerit is the fallback. Third-party access and billing status were not verified.
-- Remaining: P1.L needs a key from a confirmed Groq Free organization with no billing information and checked privacy controls. P6.1 needs access to a confirmed no-card/no-billing-address host. P7.2 needs an isolated Discord application, token and consented synthetic test server. P7.L remains a decision after live acceptance. No production launch or real Discord collection occurred.
-- Resume by fetching `origin/main` and comparing its SHA with the last verified merge. Run the Groq synthetic benchmark first when access is available. Then verify the actual host and authenticated test server using `docs/RUNBOOK.md`. Inject credentials through the owner's secret store. Keep real collection disabled without member consent.
+### Outstanding Next Steps Upon Resume ("Resume Pai"):
+1. Check Enzonic panel (`https://beta.panel.enzonic.com/` or `https://panel.enzonic.com/`) for server `Pai` container assignment.
+2. Upload `deploy.zip` to the Pterodactyl File Manager and extract.
+3. Inject `DISCORD_TOKEN` and `PAI_GROQ_KEY` in panel environment / startup settings.
+4. Start the hosted cloud server.
+5. Verify response from the hosted bot in `#moments`.
+6. Terminate the local Windows bot (Task 868) cleanly to prevent duplicate gateway connections.
+7. Confirm Pai continues operating 100% independently of the local PC.
 
 
 ### Live Discord Verification
