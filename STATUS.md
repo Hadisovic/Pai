@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P7.1, member-facing notice and consent procedure.
-- Active branch: `codex/P7.1-member-notice` (base: `codex/P6.3-encrypted-restore`, [PR #33](https://github.com/Hadisovic/Pai/pull/33)).
-- Changed `docs/MEMBER-NOTICE.md`. The draft explains channel scope, silent archive, model and media processing, retention, backup erasure, exports, and opt-out. Nothing was sent to Discord.
-- Resume: verify remote SHA and CI, then run credential-free end-to-end replay (P7.2a). Live Discord, live model scoring, hosted proof and launch approval are still blocked.
+- Active task: P7.2a, credential-free end-to-end replay of the core bot flow.
+- Active branch: `codex/P7.2a-offline-end-to-end` (base: `codex/P7.1-member-notice`, [PR #34](https://github.com/Hadisovic/Pai/pull/34)).
+- Changed `tests/test_end_to_end.py`, `docs/TESTING.md`. The replay uses the actual gateway, archive, router, prompt, media decoder and reply modules, with synthetic events and stubbed network boundaries.
+- Resume: verify remote SHA and CI, then finish the security and operational runbook, dependency audit and live benchmark entry point (P7.3). Live acceptance remains blocked.
 
 ## Checkpoint log
 
@@ -34,4 +34,5 @@
 | 2026-11-21 | P5.4 | DONE | `codex/P5.4-refresh-and-invalidation` | `3dc5596c8dfbd3a52e7b8c176ecf7cb65494293c` | Ruff lint, formatting, pytest (69 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918154107) passed.  |
 | 2026-11-21 | P6.2 | DONE | `codex/P6.2-runtime-reliability` | `682a35027ffec77c0fdc620be87b0c9cae87cc3a` | Ruff lint, formatting, pytest (71 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918341393) passed.  |
 | 2026-11-21 | P6.3 | DONE | `codex/P6.3-encrypted-restore` | `2bc855465c6cff47f040acfd976cc732c7fe11a0` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918539920) passed.  |
-| 2026-11-21 | P7.1 | IN_PROGRESS | `codex/P7.1-member-notice` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (73 tests) and diff check passed. CI pending. User must fill actual channels, settings and contact, then obtain affirmative consent before connecting. |
+| 2026-11-21 | P7.1 | DONE | `codex/P7.1-member-notice` | `c3783e292c832369b06e7665fb391d7a1062aa9c` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918619053) passed.  |
+| 2026-11-21 | P7.2a | IN_PROGRESS | `codex/P7.2a-offline-end-to-end` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (74 tests) and diff check passed. CI pending. The complete offline replay proved silent archiving, ACLs, historical provenance, ordered GIF analysis and deletion. No model or Discord connection. |
