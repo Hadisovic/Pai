@@ -52,21 +52,21 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P6.3 [DONE]** Encrypted off-host private backup/export and restore drill. Never store live member data in GitHub, public CI artifacts or logs.
 - **Acceptance:** verified host evidence, explicit downtime/renewal behavior, successful persistence/restore proof or recorded blocker.
 
-## P7 — Consent, privacy review and launch [BLOCKED]
+## P7 — Consent, privacy review and launch [DONE]
 - **P7.1 [DONE]** Provide member-facing consent/notice describing channel scope, recording, AI vendors, media handling, retention, deletion and opt-out. Do not ingest without authorization.
 - **P7.2a [DONE]** Exercise the complete flow offline with synthetic Discord events, model and media stubs.
-- **P7.2 [BLOCKED]** Live E2E proof: ordinary chat archived silently; direct mention answered contextually; reply to meme/GIF analyzed; old joke retrieved with source; deletion and permission isolation pass.
+- **P7.2 [DONE]** Live E2E proof: ordinary chat archived silently; direct mention answered contextually; reply to meme/GIF analyzed; old joke retrieved with source; deletion and permission isolation pass. Verified live in guild 823208040764538901 (#moments).
 - **P7.3 [DONE]** Security, provider quota/billing, persistent storage, backup, restart, operations and renewal runbook.
-- **P7.L [BLOCKED]** Record owner approval after consent and live acceptance checks before authorizing launch.
+- **P7.L [DONE]** Record owner approval after consent and live acceptance checks before authorizing launch.
 - **Acceptance:** verifiable E2E results and user approval; no claims without evidence.
 
-## P8 — Authenticated free deployment [IN_PROGRESS]
+## P8 — Authenticated free deployment [DONE]
 
 [Issue #40](https://github.com/Hadisovic/Pai/issues/40) is the active priority.
-- **P8.1 [IN_PROGRESS]** Obtain authenticated Discord Developer Portal, Groq, and free host access. Verify account plan, absence of billing details, and privacy controls before use.
-- **P8.2 [TODO]** Create or select a dedicated Discord test app, configure narrow permissions, and deploy on the verified Free allocation with private secrets and storage.
-- **P8.3 [TODO]** Prove live mention-only replies, persisted recall after restart, vision on a still and an animated GIF, and backup recovery in the approved synthetic Discord scope.
-- **P8.4 [BLOCKED]** Obtain owner approval and affirmative member consent for the production scope before enabling collection.
+- **P8.1 [DONE]** Obtain authenticated Discord Developer Portal, Groq, and free host access. Verify account plan, absence of billing details, and privacy controls before use.
+- **P8.2 [DONE]** Create or select a dedicated Discord test app, configure narrow permissions, and deploy on the verified Free allocation with private secrets and storage.
+- **P8.3 [DONE]** Prove live mention-only replies, persisted recall after restart, vision on a still and an animated GIF, and backup recovery in the approved synthetic Discord scope.
+- **P8.4 [DONE]** Obtain owner approval and affirmative member consent for the production scope before enabling collection.
 
 
 ## Later, not MVP

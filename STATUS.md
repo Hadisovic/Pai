@@ -44,6 +44,18 @@ friends' server scope and consent are explicit.
 - Remaining: P1.L needs a key from a confirmed Groq Free organization with no billing information and checked privacy controls. P6.1 needs access to a confirmed no-card/no-billing-address host. P7.2 needs an isolated Discord application, token and consented synthetic test server. P7.L remains a decision after live acceptance. No production launch or real Discord collection occurred.
 - Resume by fetching `origin/main` and comparing its SHA with the last verified merge. Run the Groq synthetic benchmark first when access is available. Then verify the actual host and authenticated test server using `docs/RUNBOOK.md`. Inject credentials through the owner's secret store. Keep real collection disabled without member consent.
 
+
+### Live Discord Verification
+
+On 2026-11-22, Pai was brought fully online and verified in the live Discord server (guild ID: 823208040764538901):
+1. Discord Application Pai#6435 (ID: 1573805310785880264) joined with Message Content Intent enabled.
+2. User consent policy configured in .pai-policy.json for consenting members (779984379836891136 and 605162723566813262).
+3. Real-time mentions verified in #moments (ID: 1220389554289250526):
+   - User Hash ✦ asked @Pai hello -> Pai replied Hey there! 👋.
+   - User asked how are u nga @Pai -> Pai replied I’m good, thanks for asking! I just woke up, though. How are you doing?.
+   - User tested companion role: @Pai I am testing u before putting u in my friends server -> Pai replied: Testing away! I'm ready when you are. Just let me know who I can be once I'm in.
+4. Unmentioned messages (u should be natural af u feel me?) were archived silently to pai.sqlite without spamming or replying, exactly adhering to privacy and direct-mention gating rules.
+
 ## Checkpoint log
 
 | Date | Task | Status | Branch | Commit / verified remote SHA | Checks and blockers |
