@@ -1,10 +1,12 @@
 """Discord transport with an explicit opt-in boundary."""
 
+import asyncio
 from collections.abc import Awaitable, Callable
 
 import discord
 
 from pai.policy import PrivacyPolicy
+from pai.storage import Archive, MessageRecord
 
 
 class PaiDiscordClient(discord.Client):
@@ -42,3 +44,29 @@ class PaiDiscordClient(discord.Client):
         ):
             return
         await self.handle_message(message)
+
+
+async def archive_message(archive: Archive, message: discord.Message) -> bool:
+    guild = message.guild
+    if guild is None:
+        return False
+    reference = message.reference
+    reply_to_id = None
+    if (
+        message.type == discord.MessageType.reply
+        and reference is not None
+        and reference.channel_id == message.channel.id
+        and reference.guild_id in (None, guild.id)
+    ):
+        reply_to_id = reference.message_id
+    record = MessageRecord(
+        message_id=message.id,
+        guild_id=guild.id,
+        channel_id=message.channel.id,
+        author_id=message.author.id,
+        author_display=message.author.display_name,
+        text=message.content,
+        created_at=message.created_at,
+        reply_to_id=reply_to_id,
+    )
+    return await asyncio.to_thread(archive.append, record)

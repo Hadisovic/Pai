@@ -106,3 +106,29 @@ def test_policy_loads_private_scope_and_defaults_closed(tmp_path):
     path.write_text(json.dumps(config), encoding="utf-8")
     with pytest.raises(ValueError, match="guild_id"):
         load_policy(path)
+
+
+def test_authorized_gateway_reaches_persistent_archive(tmp_path):
+    from datetime import UTC, datetime
+
+    from pai.discord_gateway import archive_message
+    from pai.storage import Archive
+
+    archive = Archive(tmp_path / "pai.sqlite")
+    message = sample_message()
+    message.id = 5
+    message.author.display_name = "Sam"
+    message.content = "Synthetic study note"
+    message.created_at = datetime(2026, 11, 21, tzinfo=UTC)
+    message.reference = None
+
+    async def handle(event):
+        return await archive_message(archive, event)
+
+    client = PaiDiscordClient(policy(), handle)
+    asyncio.run(client.on_message(message))
+    assert archive.get(5).text == "Synthetic study note"
+    message.id = 6
+    message.author.id = 99
+    asyncio.run(client.on_message(message))
+    assert archive.get(6) is None

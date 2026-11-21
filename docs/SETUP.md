@@ -29,3 +29,19 @@ channel permission overwrites in Discord as an independent scope control.
 Do not request Administrator. The guild message and privileged message
 content intents must be available for live use. See [Discord evidence](DISCORD.md)
 for channel permissions, platform policy and outstanding live checks.
+
+## Running the adapter
+
+Run the policy check without connecting:
+
+```sh
+uv run --locked python -m pai --policy /private/path/policy.json
+```
+
+An explicitly authorized pilot can use the same command with `--connect`
+and `--database /private/path/pai.sqlite`, with `DISCORD_TOKEN` injected from
+the operator's secret store. Restrict access to the database directory and
+its WAL files. Use a fresh archive for the first test. This stage stores
+only new authorized text events and same-channel reply references and has
+no model connection. Complete the remaining privacy and retention tasks
+before collecting real conversations.
