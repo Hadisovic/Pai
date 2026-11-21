@@ -1,9 +1,10 @@
 # Durable handoff state
 
-- Active task: P7.3, launch runbook, dependency remediation, and synthetic live benchmark entry point.
-- Active branch: `codex/P7.3-launch-readiness` (base: `codex/P7.2a-offline-end-to-end`, [PR #35](https://github.com/Hadisovic/Pai/pull/35)).
-- Changed `README.md`, `docs/RUNBOOK.md`, `docs/BENCHMARK.md`, `pyproject.toml`, `uv.lock`, `src/pai/benchmark.py`, `src/pai/providers.py`, `tests/test_benchmark.py`. Patched Pillow to 13.0.0 and cryptography to 50.0.2 after the locked audit reported vulnerabilities in prior releases. Added an explicitly enabled Groq benchmark restricted to generated fixtures.
-- Resume: verify remote SHA and CI, then verify the readiness PR commits and CI, then checkpoint the outstanding P1.L, P6.1 and P7.2 user-dependent proofs. Await owner approval and approved card-free account access before live tests.
+- Offline implementation and launch preparation have passed local and GitHub checks. The product is awaiting live approval, validation and launch.
+- Active branch: `codex/P7.3-launch-readiness`, [PR #36](https://github.com/Hadisovic/Pai/pull/36), stacked on [PR #35](https://github.com/Hadisovic/Pai/pull/35). The review stack starts at [PR #9](https://github.com/Hadisovic/Pai/pull/9). Pai's implementation is on the open branches. The owner controls merges.
+- Latest verified implementation checkpoint is `3989da3241b328fae8ffde2fb4a98d88c133b416`. Push CI passed on Python 3.12 and 3.13. [GitHub Actions](https://github.com/Hadisovic/Pai/actions/runs/44941578162)
+- Live blockers: P1.L needs an owner-controlled card-free model account and live synthetic scoring. P6.1 needs an approved card-free host and a host pilot. P7.2 needs an approved test Discord application and explicitly consented scope. P7.L needs owner approval after live acceptance.
+- Resume with `git fetch origin`, compare `git rev-parse HEAD` with `git ls-remote origin refs/heads/codex/P7.3-launch-readiness`, and inspect PR #36. After owner approval and verified Free Groq access, run the synthetic benchmark in `docs/BENCHMARK.md`. Then conduct the approved host and test-server pilots using `docs/RUNBOOK.md`. Inject credentials only through the operator's secret store. Keep collection off until the notice and scope are approved.
 
 ## Checkpoint log
 
@@ -36,4 +37,5 @@
 | 2026-11-21 | P6.3 | DONE | `codex/P6.3-encrypted-restore` | `2bc855465c6cff47f040acfd976cc732c7fe11a0` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918539920) passed.  |
 | 2026-11-21 | P7.1 | DONE | `codex/P7.1-member-notice` | `c3783e292c832369b06e7665fb391d7a1062aa9c` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918619053) passed.  |
 | 2026-11-21 | P7.2a | DONE | `codex/P7.2a-offline-end-to-end` | `fbb82b3a931ba02b6ea8aac3a84ad493931b3231` | Ruff lint, formatting, pytest (74 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918767018) passed.  |
-| 2026-11-21 | P7.3 | IN_PROGRESS | `codex/P7.3-launch-readiness` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (75 tests) and diff check passed. CI pending. Locked audit found no known vulnerabilities or adverse statuses in 23 packages after upgrades. Doctor and offline six-case benchmark passed. |
+| 2026-11-21 | P7.3 | DONE | `codex/P7.3-launch-readiness` | `3989da3241b328fae8ffde2fb4a98d88c133b416` | Ruff lint, format, pytest (75 tests), diff check, runtime doctor and offline six-case benchmark passed. Locked audit found no known vulnerabilities or adverse package statuses in 23 packages. [GitHub CI](https://github.com/Hadisovic/Pai/actions/runs/44941578162) passed on Python 3.12 and 3.13. |
+| 2026-11-21 | P1.L / P6.1 / P7.2 / P7.L | BLOCKED | `codex/P7.3-launch-readiness` | Live validation pending | The owner must approve the pilot and provide access through verified free accounts, with actual member consent before data collection. Start with the synthetic model benchmark. |
