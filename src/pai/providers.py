@@ -3,6 +3,7 @@
 import json
 import math
 from base64 import b64encode
+from collections.abc import Callable
 from functools import partial
 
 import aiohttp
@@ -24,11 +25,17 @@ _RESPONSE_BYTES = 65_536
 
 class Groq:
     def __init__(
-        self, session: aiohttp.ClientSession, key: str, *, free_plan_confirmed: bool
+        self,
+        session: aiohttp.ClientSession,
+        key: str,
+        *,
+        free_plan_confirmed: bool,
+        observe_usage: Callable[[int | None], None] | None = None,
     ) -> None:
         self.session = session
         self.key = key
         self.free_plan_confirmed = free_plan_confirmed
+        self.observe_usage = observe_usage
 
     def routes(self) -> tuple[ProviderRoute, ...]:
         if not self.free_plan_confirmed or not self.key.strip():
@@ -98,9 +105,16 @@ class Groq:
                         raise ProviderUnavailable(
                             "Groq response exceeded the size limit"
                         )
-            answer = json.loads(data)["choices"][0]["message"]["content"]
+            payload = json.loads(data)
+            answer = payload["choices"][0]["message"]["content"]
             if not isinstance(answer, str):
                 raise TypeError("Expected completion text")
+            if self.observe_usage is not None:
+                usage = payload.get("usage")
+                tokens = usage.get("total_tokens") if isinstance(usage, dict) else None
+                self.observe_usage(
+                    tokens if type(tokens) is int and tokens >= 0 else None
+                )
             return answer
         except (aiohttp.ClientError, ValueError, TypeError, KeyError, IndexError):
             raise ProviderUnavailable("Groq did not return a valid response") from None
