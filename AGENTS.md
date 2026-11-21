@@ -30,3 +30,11 @@
 ## Test policy
 Verify mention-only response, opt-in and channel isolation, deduplicated ingestion/reconnects, edits and deletions, SQLite persistence, reply context, search provenance, humor vs asserted facts, source ACLs, retention/forget-me, media size and URL safety, cache invalidation, provider 429/fallback, prompt injection, and restore.
 Aim for low-memory operation on constrained free hosts. No invented benchmarks or deployment claims.
+
+
+## Engineering discretion and reuse-first research
+- The plan is an **intent and acceptance guide, not a rigid technology mandate**. Choose better libraries, architecture, databases, hosts, model providers, milestones or ordering when evidence shows a material improvement. Preserve the core outcomes: genuinely free/no billing or card, strong conversational quality, privacy/consent, mention-only replies, dependable memory, media understanding, and verified resumable GitHub checkpoints.
+- **Search and assess existing open-source Discord AI bots, frameworks, memory/RAG and media tools before building from scratch.** Inspect maintenance, licensing, permissions, security posture, dependencies, features, and compatibility with free no-card hosting. Clone/fork/adapt a suitable repository where license permits and it meaningfully accelerates delivery; retain copyright notices, attribution, and license terms. Do not copy code from incompatible or unclear licenses.
+- Compare reuse against a small custom build. Favor the approach that yields the **best working free bot**, not the one with the most custom code. Avoid unnecessary complexity and premature engineering.
+- Document the shortlist, tradeoffs, selected approach, license obligations and any deviations from PLAN.md in `STATUS.md` or `docs/DECISIONS.md`. Update the roadmap when replacing an implementation tactic, but do not quietly drop a core user requirement.
+- Research and architectural refinement may happen before P0 scaffolding. Test candidate repos in isolation and never grant them credentials before inspection.
