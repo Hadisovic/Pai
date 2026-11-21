@@ -9,8 +9,8 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 
 ## P1 — Free provider and hosting research [IN_PROGRESS]
 - **P1.1 [DONE]** Confirm official Discord intent, bot permission, message content, edit/delete, reply reference, embed, attachment, sticker and rate-limit semantics.
-- **P1.R [IN_PROGRESS]** Evaluate open-source foundations and dependency reuse before core implementation. Record the decision and license obligations.
-- **P1.2** Verify current Gemini, Groq, OpenRouter free provider offerings, actual model IDs and text/vision capability, request and token limits, account/card restrictions, privacy/data-use and region rules. No paid accounts.
+- **P1.R [DONE]** Evaluate open-source foundations and dependency reuse before core implementation. Record the decision and license obligations.
+- **P1.2 [IN_PROGRESS]** Verify current Gemini, Groq, OpenRouter free provider offerings, actual model IDs and text/vision capability, request and token limits, account/card restrictions, privacy/data-use and region rules. No paid accounts.
 - **P1.3** Verify no-card hosting candidates Kerit Cloud, Bot-Hosting.net and FPS.ms and alternatives: RAM, storage, persistence, websockets, renewal, inactivity policy, uptime and backup. Claims are not proof.
 - **P1.4** Build repeatable **synthetic** model benchmark for natural English conversation, humor, contextual recall, some Arabic comprehension and memes/GIFs. Never send real private messages without permission.
 - **Acceptance:** dated official links and decision matrix, verified or explicitly unknown free quotas, recommended primary text+vision, fallback, and host candidates. Real live tests require user-controlled credentials.
