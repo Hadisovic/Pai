@@ -2,12 +2,21 @@
 
 import asyncio
 from collections.abc import Awaitable, Callable, Iterable
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import discord
 from discord.ext import tasks
 
-from pai.conversation import ConversationContext, direct_mention, prepare_context
+from pai.commands import controls
+from pai.conversation import (
+    ConversationContext,
+    MediaReading,
+    direct_mention,
+    prepare_context,
+)
+from pai.discord_media import discover_media
+from pai.observability import LOG, ReplyLimits
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
 
@@ -20,6 +29,10 @@ class PaiDiscordClient(discord.Client):
         *,
         archive: Archive | None = None,
         respond: Callable[[ConversationContext], Awaitable[str]] | None = None,
+        read_media: Callable[
+            [discord.Message, ConversationContext], Awaitable[MediaReading]
+        ]
+        | None = None,
     ) -> None:
         super().__init__(
             intents=discord.Intents(
@@ -33,6 +46,8 @@ class PaiDiscordClient(discord.Client):
         self.handle_message = handle_message
         self.archive = archive
         self.respond = respond
+        self.read_media = read_media
+        self.reply_limits = ReplyLimits()
         self.archive_lock = asyncio.Lock()
 
     async def on_message(self, message: discord.Message) -> None:
@@ -72,18 +87,20 @@ class PaiDiscordClient(discord.Client):
             )
         ):
             return
-        channel = message.channel
-        bot = message.guild.me
-        if bot is None or not channel.permissions_for(bot).send_messages:
+        with self.reply_limits.slot(message.author.id) as admitted:
+            if admitted:
+                await self._deliver_reply(message)
+
+    async def _deliver_reply(self, message: discord.Message) -> None:
+        if self.archive is None or self.respond is None:
             return
+        access = await self._current_reply_access(message)
+        if access is None:
+            return
+        _, can_read_history = access
         request = await asyncio.to_thread(self.archive.get, message.id)
         if request is None or request.text != message.content:
             return
-        can_read_history = (
-            isinstance(message.author, discord.Member)
-            and channel.permissions_for(message.author).read_message_history
-            and channel.permissions_for(bot).read_message_history
-        )
         context = ConversationContext(request)
         if can_read_history:
             context = await asyncio.to_thread(
@@ -93,20 +110,94 @@ class PaiDiscordClient(discord.Client):
                 request,
                 now=datetime.now(UTC),
             )
+        if self.read_media is not None:
+            media = await self.read_media(message, context)
+            if (
+                not can_read_history
+                and media.origin
+                and media.origin.message_id != request.message_id
+            ):
+                media = MediaReading(unavailable=True)
+            context = replace(context, media=media)
+        if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
+            return
         response = (await self.respond(context)).strip()
-        if response and channel.permissions_for(bot).send_messages:
-            await channel.send(
-                response[:2000], allowed_mentions=discord.AllowedMentions.none()
-            )
+        if not response:
+            return
+
+        access = await self._current_reply_access(message)
+        if access is None:
+            return
+        channel, can_read_history = access
+        if not can_read_history and any(
+            source.message_id != request.message_id for source in context.sources
+        ):
+            return
+        if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
+            return
+        await channel.send(
+            response[:2000], allowed_mentions=discord.AllowedMentions.none()
+        )
+
+    async def _current_reply_access(
+        self, message: discord.Message
+    ) -> tuple[discord.TextChannel, bool] | None:
+        channel = self.get_channel(message.channel.id)
+        if (
+            message.guild is None
+            or not isinstance(channel, discord.TextChannel)
+            or channel.guild.id != message.guild.id
+            or not self.policy.permits(channel.guild.id, channel.id, message.author.id)
+        ):
+            return None
+        bot = channel.guild.me
+        if bot is None:
+            return None
+        try:
+            requester = await channel.guild.fetch_member(message.author.id)
+        except discord.HTTPException:
+            return None
+        bot_permissions = channel.permissions_for(bot)
+        member_permissions = channel.permissions_for(requester)
+        if (
+            not bot_permissions.view_channel
+            or not bot_permissions.send_messages
+            or not member_permissions.view_channel
+        ):
+            return None
+        return (
+            channel,
+            bot_permissions.read_message_history
+            and member_permissions.read_message_history,
+        )
 
     async def setup_hook(self) -> None:
         if self.archive is not None:
             await asyncio.to_thread(self.archive.prune, self._retention_cutoff())
+            if self.policy.guild_id is not None:
+                self.control_tree = controls(self, self.archive, self.policy)
+                await self.control_tree.sync(
+                    guild=discord.Object(id=self.policy.guild_id)
+                )
             self._prune_archive.start()
 
     async def close(self) -> None:
         self._prune_archive.cancel()
         await super().close()
+
+    async def on_ready(self) -> None:
+        LOG.info("Discord gateway is ready")
+
+    async def on_resumed(self) -> None:
+        LOG.info("Discord gateway resumed")
+
+    async def on_disconnect(self) -> None:
+        LOG.info("Discord gateway disconnected")
+
+    async def on_error(
+        self, event_method: str, *args: object, **kwargs: object
+    ) -> None:
+        LOG.warning("Discord event handling failed")
 
     def _retention_cutoff(self) -> datetime:
         return datetime.now(UTC) - timedelta(days=self.policy.retention_days)
@@ -116,6 +207,10 @@ class PaiDiscordClient(discord.Client):
         if self.archive is not None:
             async with self.archive_lock:
                 await asyncio.to_thread(self.archive.prune, self._retention_cutoff())
+
+    @_prune_archive.error
+    async def _prune_failed(self, error: BaseException) -> None:
+        LOG.error("Archive maintenance stopped. Restart and check the local archive")
 
     def _permits_mutation(self, guild_id: int | None, channel_id: int) -> bool:
         if guild_id is None or not self.policy.permits_channel(guild_id, channel_id):
@@ -129,32 +224,57 @@ class PaiDiscordClient(discord.Client):
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
         archive = self.archive
         guild_id = payload.guild_id
-        content = payload.data.get("content")
-        timestamp = payload.data.get("edited_timestamp")
         if (
             archive is None
             or guild_id is None
             or not self._permits_mutation(guild_id, payload.channel_id)
-            or not isinstance(content, str)
-            or not isinstance(timestamp, str)
         ):
             return
+        content = payload.data.get("content")
+        timestamp = payload.data.get("edited_timestamp")
         try:
-            edited = datetime.fromisoformat(timestamp)
-        except ValueError:
-            return
-        if edited.utcoffset() is None:
-            return
-        async with self.archive_lock:
-            await asyncio.to_thread(
-                archive.edit,
-                payload.message_id,
-                guild_id,
-                payload.channel_id,
-                self.policy.consenting_member_ids,
-                content,
-                edited,
+            edited = (
+                datetime.fromisoformat(timestamp)
+                if isinstance(timestamp, str)
+                else None
             )
+        except ValueError:
+            edited = None
+        kinds = frozenset(
+            kind
+            for field, kind in (
+                ("attachments", "attachment"),
+                ("sticker_items", "sticker"),
+                ("embeds", "embed"),
+            )
+            if field in payload.data
+        )
+        async with self.archive_lock:
+            if (
+                isinstance(content, str)
+                and edited is not None
+                and edited.utcoffset() is not None
+            ):
+                await asyncio.to_thread(
+                    archive.edit,
+                    payload.message_id,
+                    guild_id,
+                    payload.channel_id,
+                    self.policy.consenting_member_ids,
+                    content,
+                    edited,
+                )
+            if self.policy.media_opt_in and kinds:
+                items = tuple(asset.item for asset in discover_media(payload.message))
+                await asyncio.to_thread(
+                    archive.update_media,
+                    payload.message_id,
+                    guild_id,
+                    payload.channel_id,
+                    self.policy.consenting_member_ids,
+                    kinds,
+                    items,
+                )
 
     async def on_raw_message_delete(
         self, payload: discord.RawMessageDeleteEvent
@@ -189,7 +309,9 @@ class PaiDiscordClient(discord.Client):
             )
 
 
-async def archive_message(archive: Archive, message: discord.Message) -> bool:
+async def archive_message(
+    archive: Archive, message: discord.Message, *, include_media: bool = False
+) -> bool:
     guild = message.guild
     if guild is None:
         return False
@@ -212,4 +334,7 @@ async def archive_message(archive: Archive, message: discord.Message) -> bool:
         created_at=message.created_at,
         reply_to_id=reply_to_id,
     )
-    return await asyncio.to_thread(archive.append, record)
+    media = (
+        tuple(asset.item for asset in discover_media(message)) if include_media else ()
+    )
+    return await asyncio.to_thread(archive.append, record, media=media)
