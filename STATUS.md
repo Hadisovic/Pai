@@ -12,14 +12,23 @@ unverified. Kerit remains the fallback and its registration is separate.
 No identity data was submitted, no account or allocation was created,
 and no credentials or payment details were entered by automation.
 
-The owner opened GitHub and Discord in Brave. Automated browser
-inspection and CDP troubleshooting were discontinued to avoid unnecessary
-tooling overhead. Minimal manual authentication instructions were prepared
-for the owner to provision the Discord application token, Groq Free API key,
-and hosting account directly in their active browser. The local test suite
-(75 passed), doctor, linting, and policy verification remain passing.
-Pai is staged to connect immediately once the private credentials and
-test policy are supplied in .env and .pai-policy.json.
+The owner opened GitHub and Discord in Brave. Antigravity's built-in
+browser subagent was executed against https://console.groq.com/ to inspect
+the authentication flow, but encountered PAYMENT_PAGE_BLOCKED due to Groq
+loading https://js.stripe.com/, which the sandbox security policy strictly
+prohibits. Automated headless/sandboxed authentication for Groq, Discord,
+and Enzonic is therefore confirmed blocked by provider security and sandbox
+policies.
+
+Outbound Discord Gateway v10 TLS/WebSocket connectivity, SQLite 3.49.1 with
+FTS5, and offline encrypted persistence/restore drills were re-verified
+successfully via scripts/host_smoke.py. A turnkey launcher (scripts/start.ps1)
+was added to securely load credentials from the private gitignored .env and
+.pai-policy.json files without token leakage.
+
+The next action is for the owner to provide the Discord bot token, Groq Free
+API key, and test server policy IDs in the local .env and .pai-policy.json
+files, enabling immediate live synthetic connection and validation.
 
 
 P8.1 is waiting on the owner's sign-ins in the three prepared browser
