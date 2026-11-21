@@ -24,3 +24,14 @@ For every implemented task save in STATUS.md: task identifier, branch, change, e
 - Restart persistence and deletion flow verified.
 - End-to-end mention/image/GIF/recall tests pass.
 - User approves deployment and any required manual free-plan renewals.
+
+## Offline end-to-end replay
+
+`uv run --offline --locked pytest -q tests/test_end_to_end.py` exercises the
+production dispatcher, archive, recall, prompt creation and media decoder.
+Synthetic messages replace Discord events and deterministic stubs replace
+downloads and model inference. The scenario covers silent archive,
+restricted-channel rejection, historical recall with a jump link, three
+ordered GIF frames, and removal from search after Discord deletion.
+Actual permissions, Gateway behavior, live model quality and host capacity
+still require the approved pilot.

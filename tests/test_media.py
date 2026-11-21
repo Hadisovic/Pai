@@ -154,3 +154,79 @@ def test_vision_reuses_identical_media_without_an_extra_model_call(tmp_path):
     assert archive.delete(2, 3, [1], now) == 1
     assert asyncio.run(vision.describe(data, second)).origin == second
     assert model.generate.await_count == 2
+
+
+def test_media_only_edit_clears_description_and_invalidates_old_snapshot(tmp_path):
+    archive = Archive(tmp_path / "pai.sqlite")
+    now = datetime.now(UTC)
+    source = MessageRecord(1, 2, 3, 4, "Sam", "GIF", now)
+    item = MediaItem("attachment", "25", "image/gif", 512)
+    assert archive.append(source, media=(item,))
+    assert archive.save_description(source, "digest", "Example", now)
+    assert not archive.update_media(
+        1, 2, 3, frozenset({99}), frozenset({"attachment"}), ()
+    )
+    assert archive.update_media(1, 2, 3, frozenset({4}), frozenset({"attachment"}), ())
+    assert archive.media_for(1) == ()
+    assert archive.find_description("digest", 2, 3, frozenset({4}), now) is None
+    assert not archive.records_unchanged((source,))
+    assert not archive.save_description(source, "digest", "Stale", now)
+
+
+def test_expired_media_refreshes_only_the_known_authorized_attachment(
+    tmp_path, monkeypatch
+):
+    from io import BytesIO
+
+    import discord
+    from PIL import Image
+
+    from pai.conversation import ConversationContext
+    from pai.policy import PrivacyPolicy
+    from pai.vision import MentionVision
+
+    archive = Archive(tmp_path / "pai.sqlite")
+    record = MessageRecord(1, 2, 3, 4, "Sam", "What is this?", datetime.now(UTC))
+    assert archive.append(
+        record, media=(MediaItem("attachment", "25", "image/png", 100),)
+    )
+    image = BytesIO()
+    Image.new("RGB", (16, 16), "blue").save(image, format="PNG")
+    download = AsyncMock(side_effect=[MediaError("expired"), image.getvalue()])
+    monkeypatch.setattr("pai.vision.fetch_image", download)
+    model = Mock(generate=AsyncMock(return_value="A blue square."))
+    policy = PrivacyPolicy(True, "v1", 2, frozenset({3}), frozenset({4}))
+    vision = MentionVision(archive, Mock(), model, policy)
+    channel = Mock(spec=discord.TextChannel, id=3)
+    channel.permissions_for.return_value = discord.Permissions(
+        read_message_history=True
+    )
+
+    def event(suffix):
+        message = Mock(spec=discord.Message)
+        message.id = 1
+        message.guild = Mock(id=2, me=Mock())
+        message.channel = channel
+        message.author = Mock(id=4)
+        message.content = record.text
+        message.edited_at = None
+        message.attachments = [
+            Mock(
+                id=25,
+                size=100,
+                filename="picture.png",
+                content_type="image/png",
+                url=f"https://cdn.discordapp.com/attachments/3/25/picture.png?{suffix}",
+            )
+        ]
+        message.embeds = message.stickers = []
+        return message
+
+    channel.fetch_message = AsyncMock(return_value=event("fresh"))
+    result = asyncio.run(vision(event("expired"), ConversationContext(record)))
+    assert result.description == "A blue square."
+    assert [call.args[1].split("?")[-1] for call in download.await_args_list] == [
+        "expired",
+        "fresh",
+    ]
+    channel.fetch_message.assert_awaited_once_with(1)
