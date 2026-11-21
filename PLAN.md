@@ -8,7 +8,8 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **Acceptance:** clean install; unit tests and CI pass; `git diff --check`; verified remote checkpoint.
 
 ## P1 — Free provider and hosting research [IN_PROGRESS]
-- **P1.1 [IN_PROGRESS]** Confirm official Discord intent, bot permission, message content, edit/delete, reply reference, embed, attachment, sticker and rate-limit semantics.
+- **P1.1 [DONE]** Confirm official Discord intent, bot permission, message content, edit/delete, reply reference, embed, attachment, sticker and rate-limit semantics.
+- **P1.R [IN_PROGRESS]** Evaluate open-source foundations and dependency reuse before core implementation. Record the decision and license obligations.
 - **P1.2** Verify current Gemini, Groq, OpenRouter free provider offerings, actual model IDs and text/vision capability, request and token limits, account/card restrictions, privacy/data-use and region rules. No paid accounts.
 - **P1.3** Verify no-card hosting candidates Kerit Cloud, Bot-Hosting.net and FPS.ms and alternatives: RAM, storage, persistence, websockets, renewal, inactivity policy, uptime and backup. Claims are not proof.
 - **P1.4** Build repeatable **synthetic** model benchmark for natural English conversation, humor, contextual recall, some Arabic comprehension and memes/GIFs. Never send real private messages without permission.
@@ -24,7 +25,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 ## P3 — Long-term searchable memory [TODO]
 - **P3.1** SQLite migrations, FTS5 for content search, indexes, safe queries, message-linked media metadata and cache.
 - **P3.2** Source-backed retrieval of old messages plus conversational context, correct user attribution and Discord jump links. Verify viewing permissions before quoting.
-- **P3.3** Slowly evolving memory candidates for shared events, nicknames, humor, recurring jokes and preferences; preserve supporting message IDs, inference status, confidence, corrections and expiry. Avoid treating sarcasm as factual profile.
+- **P3.3** Source-linked, group-level conversation context and explicit style feedback, within the platform policy documented in docs/DISCORD.md; preserve supporting message IDs, inference status, confidence, corrections and expiry. Avoid treating sarcasm as factual profile.
 - **P3.4** `/privacy`, `/memory`, `/forgetme`; admin configurable allowlist/retention; delete/export and backup-deletion policy. Ensure restricted-channel isolation.
 - **Acceptance:** tests for history retrieval, provenance, cross-channel ACL, sarcasm, corrections, deleted memories, retention and account removal.
 
