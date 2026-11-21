@@ -43,6 +43,7 @@ class ConversationContext:
     memory: tuple[MessageRecord, ...] = ()
     style_examples: tuple[MessageRecord, ...] = ()
     media: MediaReading = MediaReading()
+    group_style: tuple[MessageRecord, ...] = ()
 
     @property
     def sources(self) -> tuple[MessageRecord, ...]:
@@ -52,6 +53,7 @@ class ConversationContext:
             *self.recent,
             *self.memory,
             *self.style_examples,
+            *self.group_style,
             *((self.media.origin,) if self.media.origin is not None else ()),
         )
 
@@ -104,11 +106,20 @@ def prepare_context(
         through=request.created_at,
         omit=frozenset(seen),
     )
+    seen.update(row.message_id for row in memory)
     style_examples = archive.style_examples(
         request, policy.consenting_member_ids, cutoff
     )
+    group_style = archive.group_style(
+        request, policy.consenting_member_ids, cutoff, omit=frozenset(seen), limit=2
+    )
     return ConversationContext(
-        request, tuple(parents), tuple(reversed(visible)), memory, style_examples
+        request,
+        tuple(parents),
+        tuple(reversed(visible)),
+        memory,
+        style_examples,
+        group_style=group_style,
     )
 
 
