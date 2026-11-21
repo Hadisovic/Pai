@@ -45,6 +45,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **Acceptance:** synthetic still and animated fixtures, corrupted/oversize defense, no unrequested mass vision calls, analysis reuse and deletion safety.
 
 ## P6 — No-card hosting proof and resilience [BLOCKED]
+- **P6.1a [IN_PROGRESS]** Check a locked Linux install, public Discord egress, persistent storage across process restarts and an encrypted synthetic restore under a 256 MiB memory limit.
 - **P6.1 [BLOCKED]** Test minimally sized host only with user approval/account. Verify egress/websocket, process restarts, RAM/storage limits, volume persistence and renewal restrictions. No false 24/7 promises.
 - **P6.2 [DONE]** Health diagnostic, safe logs, secret redaction, per-user/per-guild limits, provider daily budget, graceful shutdown, reconnection and restart policies.
 - **P6.3 [DONE]** Encrypted off-host private backup/export and restore drill. Never store live member data in GitHub, public CI artifacts or logs.

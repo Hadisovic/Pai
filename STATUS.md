@@ -1,10 +1,9 @@
 # Durable handoff state
 
-- Offline implementation and launch preparation have passed local and GitHub checks. The product is awaiting live approval, validation and launch.
-- Active branch: `codex/P7.3-launch-readiness`, [PR #36](https://github.com/Hadisovic/Pai/pull/36), stacked on [PR #35](https://github.com/Hadisovic/Pai/pull/35). The review stack starts at [PR #9](https://github.com/Hadisovic/Pai/pull/9). Pai's implementation is on the open branches. The owner controls merges.
-- Latest verified implementation checkpoint is `3989da3241b328fae8ffde2fb4a98d88c133b416`. Push CI passed on Python 3.12 and 3.13. [GitHub Actions](https://github.com/Hadisovic/Pai/actions/runs/44941578162)
-- Live blockers: P1.L needs an owner-controlled card-free model account and live synthetic scoring. P6.1 needs an approved card-free host and a host pilot. P7.2 needs an approved test Discord application and explicitly consented scope. P7.L needs owner approval after live acceptance.
-- Resume with `git fetch origin`, compare `git rev-parse HEAD` with `git ls-remote origin refs/heads/codex/P7.3-launch-readiness`, and inspect PR #36. After owner approval and verified Free Groq access, run the synthetic benchmark in `docs/BENCHMARK.md`. Then conduct the approved host and test-server pilots using `docs/RUNBOOK.md`. Inject credentials only through the operator's secret store. Keep collection off until the notice and scope are approved.
+- Original PRs #9 through #36 were reviewed and merged into their declared parents from tip to base. Each resulting remote branch and tree was verified. The final [main integration](https://github.com/Hadisovic/Pai/commit/ec9834e0e62139b1f0dae206c34becf6236a8408) preserves the maintainer instructions and the fully audited tree. [Main CI](https://github.com/Hadisovic/Pai/actions/runs/44942592048)
+- Active task: P6.1a, a credential-free synthetic Linux pilot with a 256 MiB memory limit. The public Gateway handshake succeeded from Windows without Identify.
+- Third-party inference and hosting accounts and the authenticated Discord pilot remain unavailable. No real messages were accessed. The account-free local model benchmark is in progress.
+- Resume: verify the P6.1a branch and its Linux job. Review measured memory and persistence before updating the host shortlist. Then record the real synthetic model benchmarks and remaining authenticated pilot requirements.
 
 ## Checkpoint log
 
@@ -39,3 +38,5 @@
 | 2026-11-21 | P7.2a | DONE | `codex/P7.2a-offline-end-to-end` | `fbb82b3a931ba02b6ea8aac3a84ad493931b3231` | Ruff lint, formatting, pytest (74 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918767018) passed.  |
 | 2026-11-21 | P7.3 | DONE | `codex/P7.3-launch-readiness` | `3989da3241b328fae8ffde2fb4a98d88c133b416` | Ruff lint, format, pytest (75 tests), diff check, runtime doctor and offline six-case benchmark passed. Locked audit found no known vulnerabilities or adverse package statuses in 23 packages. [GitHub CI](https://github.com/Hadisovic/Pai/actions/runs/44941578162) passed on Python 3.12 and 3.13. |
 | 2026-11-21 | P1.L / P6.1 / P7.2 / P7.L | BLOCKED | `codex/P7.3-launch-readiness` | Live validation pending | The owner must approve the pilot and provide access through verified free accounts, with actual member consent before data collection. Start with the synthetic model benchmark. |
+| 2026-11-21 | Stack integration | DONE | `main` | `ec9834e0e62139b1f0dae206c34becf6236a8408` | Verified dependencies, file scopes and per-PR CI. Merged #36 through #9 to their declared parents. The final main tree and CI passed. |
+| 2026-11-21 | P6.1a | IN_PROGRESS | `codex/P6.1a-synthetic-host-validation` | See next checkpoint | Windows public WebSocket HELLO verified. Local split-process restore, Ruff and 75 pytest tests passed. Linux job pending. |
