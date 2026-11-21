@@ -5,7 +5,6 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from pai.media import MediaReading
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
 
@@ -29,6 +28,14 @@ def direct_mention(text: str, recognized_targets: Iterable[int], bot_id: int) ->
 
 
 @dataclass(frozen=True)
+class MediaReading:
+    unavailable: bool = False
+    description: str = ""
+    origin: MessageRecord | None = None
+    source: MessageRecord | None = None
+
+
+@dataclass(frozen=True)
 class ConversationContext:
     request: MessageRecord
     parents: tuple[MessageRecord, ...] = ()
@@ -45,6 +52,7 @@ class ConversationContext:
             *self.recent,
             *self.memory,
             *self.style_examples,
+            *((self.media.origin,) if self.media.origin is not None else ()),
         )
 
 

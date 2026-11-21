@@ -27,3 +27,19 @@ Report the two media cases separately and require both to pass before calling
 a model vision-ready. Publish model ID, evaluation date, scores, token use
 and time together. Live runs and human scoring remain pending an approved
 card-free account.
+
+## Approved synthetic Groq run
+
+After verifying a dedicated Free organization, its no-billing status and
+privacy controls, set `PAI_GROQ_KEY` using the local secret store and run:
+
+```sh
+uv run --locked python -m pai.benchmark --groq-free --quota-db /private/benchmark.sqlite
+```
+
+This sends only the generated cases and runs independently of Discord. It
+uses one primary route without fallback, records the provider's total
+tokens when returned, and waits up to just over one minute before the
+three-frame case to respect the rolling quota. Use the same private quota
+database on repeat runs. Record human rubric scores after the run. The
+command stops if the route cannot complete within the free limits.

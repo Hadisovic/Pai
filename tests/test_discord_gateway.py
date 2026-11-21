@@ -183,8 +183,8 @@ def test_raw_events_apply_edits_and_bulk_deletes_without_message_cache(tmp_path)
 def test_gateway_responds_only_once_to_direct_mentions(tmp_path):
     from datetime import UTC, datetime
 
+    from pai.conversation import MediaReading
     from pai.discord_gateway import archive_message
-    from pai.media import MediaReading
     from pai.storage import Archive
 
     archive = Archive(tmp_path / "pai.sqlite")

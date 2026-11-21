@@ -15,6 +15,8 @@ from PIL import Image, ImageOps
 MAX_DOWNLOAD_BYTES = 3 * 1024 * 1024
 MAX_MEDIA_ITEMS = 6
 MAX_IMAGE_PIXELS = 4_000_000
+_MAX_ANIMATION_PIXELS = 24_000_000
+_MAX_FRAMES_SCANNED = 48
 _IMAGE_FORMATS = ("PNG", "JPEG", "GIF", "WEBP")
 _IMAGE_TYPES = frozenset(
     {"image/png", "image/apng", "image/jpeg", "image/gif", "image/webp"}
@@ -44,12 +46,6 @@ class MediaAsset:
     url: str
 
 
-@dataclass(frozen=True)
-class MediaReading:
-    frames: tuple[bytes, ...] = ()
-    unavailable: bool = False
-
-
 def _check_dimensions(image: Image.Image) -> None:
     if image.width * image.height > MAX_IMAGE_PIXELS:
         raise MediaError("Image exceeds the pixel limit")
@@ -63,17 +59,53 @@ def _encode_frame(image: Image.Image) -> bytes:
     return output.getvalue()
 
 
-def decode_still(data: bytes) -> bytes:
+def decode_frames(data: bytes) -> tuple[bytes, ...]:
     if not data or len(data) > MAX_DOWNLOAD_BYTES:
         raise MediaError("Image exceeds the byte limit or is empty")
     try:
         with Image.open(BytesIO(data), formats=_IMAGE_FORMATS) as image:
-            _check_dimensions(image)
-            if getattr(image, "is_animated", False):
-                raise MediaError("Animated image analysis is unavailable")
-            return _encode_frame(image)
+            durations = []
+            decoded_pixels = 0
+            for index in range(_MAX_FRAMES_SCANNED + 1):
+                try:
+                    image.seek(index)
+                except EOFError:
+                    break
+                _check_dimensions(image)
+                decoded_pixels += image.width * image.height
+                if (
+                    index >= _MAX_FRAMES_SCANNED
+                    or decoded_pixels > _MAX_ANIMATION_PIXELS
+                ):
+                    raise MediaError("Animation exceeds the frame or pixel budget")
+                durations.append(
+                    max(20, min(5000, int(image.info.get("duration", 100))))
+                )
+            indices = _sample_indices(durations)
+            outputs = []
+            for index in indices:
+                image.seek(index)
+                frame = _encode_frame(image)
+                if not outputs or frame != outputs[-1]:
+                    outputs.append(frame)
+            if not outputs:
+                raise MediaError("Animation contains no frames")
+            return tuple(outputs)
     except (OSError, ValueError, Image.DecompressionBombError, SyntaxError):
         raise MediaError("Unable to decode the image") from None
+
+
+def _sample_indices(durations: list[int]) -> tuple[int, ...]:
+    if len(durations) <= 3:
+        return tuple(range(len(durations)))
+    halfway = sum(durations) / 2
+    elapsed = 0
+    for index, duration in enumerate(durations):
+        elapsed += duration
+        if elapsed >= halfway:
+            middle = min(max(index, 1), len(durations) - 2)
+            return (0, middle, len(durations) - 1)
+    raise MediaError("Animation timing is invalid")
 
 
 def allowed_url(url: str) -> bool:
