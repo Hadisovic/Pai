@@ -19,3 +19,7 @@ The architecture and task sequence are starting proposals, **not strict implemen
 **Before writing the core from scratch, research existing open-source Discord AI bots and related memory/vision frameworks.** Evaluate maintenance, licensing, security, resource usage, free API compatibility, and how well they fit our requirements. Clone/fork/adapt permissively licensed projects where beneficial, keeping legal notices and attribution; otherwise implement from scratch. Avoid reinventing useful, well-tested components.
 
 Explain your choice and any justified architecture/roadmap deviations in `docs/DECISIONS.md` or `STATUS.md`. Adjust the implementation plan when warranted, without silently dropping key features or the no-cost/no-billing constraint. Keep the existing push-test-verify checkpoint system mandatory.
+
+
+## Current owner priority — actual launch
+The owner explicitly wants Pai **operational**, not additional offline-only testing. Follow [P8 live deployment issue #40](https://github.com/Hadisovic/Pai/issues/40) as the active execution objective. Attempt real no-card hosting, free-model account and authenticated Discord test integration using available tools, requesting only unavoidable owner verification/consent, and keep checkpointing. Do not declare complete until the verified live acceptance conditions in #40 pass.
