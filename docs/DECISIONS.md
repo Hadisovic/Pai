@@ -36,3 +36,13 @@ application code was imported. If we distribute or adapt third-party code,
 preserve the applicable licenses, copyrights and notices. Track installed
 dependencies and their licenses when introduced. No candidate was given
 credentials or run against a server.
+
+## 2026-11-21 · Learn group style from examples shared by their authors
+
+A member can designate their own consented message as an example of the
+channel's humor. The archive keeps only a tag and source reference. The
+responder sees a small sample labeled as style, separate from factual
+evidence. Changes to the text invalidate the tag, and deleting or expiring
+the message removes it. Ordinary chat still informs the immediate context.
+Provider prompts will need to treat both kinds of context as untrusted and
+avoid interpreting jokes or sarcastic statements as established facts.
