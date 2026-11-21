@@ -35,6 +35,15 @@ Development and CI use the committed lockfile. The baseline needs no Discord
 account, token, or AI credentials. See [the roadmap](PLAN.md) for live setup prerequisites.
 
 
+Run only the offline Discord and AI smoke test with:
+
+```sh
+uv run --offline --locked pytest -q tests/test_mock_gateway.py
+```
+
+The test replays synthetic messages through a fake gateway, calls a
+deterministic provider stub on a direct mention, and checks a temporary SQLite archive.
+
 ## Privacy
 Repository should preferably be **private**. Never commit private chat logs, AI API keys, tokens, databases, caches, logs, screenshots or identifiable member information. Keep operational data in private off-repo storage. Read-only publicly visible planning documentation contains no server credentials.
 

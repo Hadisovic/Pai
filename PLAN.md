@@ -3,8 +3,8 @@
 Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after its acceptance checks pass, a commit is pushed, and the remote branch SHA is verified. Record results in STATUS.md. Never treat planning completion as implemented functionality.
 
 ## P0 — Reproducible development baseline [IN_PROGRESS]
-- **P0.1 [IN_PROGRESS]** Initialize Python 3.12+ project, `src/`, `tests/`, `pyproject.toml`, locked dependencies, `.env.example`, lint/format/tests, CI, and concise developer instructions. No credentials.
-- **P0.2** Mock Discord gateway/events and fake AI providers; synthetic chat fixtures and a complete local smoke test independent of network or accounts.
+- **P0.1 [DONE]** Initialize Python 3.12+ project, `src/`, `tests/`, `pyproject.toml`, locked dependencies, `.env.example`, lint/format/tests, CI, and concise developer instructions. No credentials.
+- **P0.2 [IN_PROGRESS]** Mock Discord gateway/events and fake AI providers; synthetic chat fixtures and a complete local smoke test independent of network or accounts.
 - **Acceptance:** clean install; unit tests and CI pass; `git diff --check`; verified remote checkpoint.
 
 ## P1 — Free provider and hosting research [TODO]
