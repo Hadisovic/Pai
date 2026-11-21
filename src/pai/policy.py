@@ -13,6 +13,8 @@ class PrivacyPolicy:
     channel_ids: frozenset[int] = frozenset()
     consenting_member_ids: frozenset[int] = frozenset()
     retention_days: int = 30
+    external_ai_opt_in: bool = False
+    media_opt_in: bool = False
 
     @property
     def is_enabled(self) -> bool:
@@ -73,6 +75,12 @@ def load_policy(path: Path) -> PrivacyPolicy:
     retention_days = config.get("retention_days", 30)
     if type(retention_days) is not int or not 1 <= retention_days <= 365:
         raise ValueError("retention_days must be an integer between 1 and 365")
+    external_ai_opt_in = config.get("external_ai_opt_in", False)
+    if type(external_ai_opt_in) is not bool:
+        raise ValueError("external_ai_opt_in must be a boolean")
+    media_opt_in = config.get("media_opt_in", False)
+    if type(media_opt_in) is not bool:
+        raise ValueError("media_opt_in must be a boolean")
     return PrivacyPolicy(
         admin_opt_in=admin_opt_in,
         notice_version=notice_version,
@@ -80,4 +88,6 @@ def load_policy(path: Path) -> PrivacyPolicy:
         channel_ids=_snowflakes(config, "channel_ids"),
         consenting_member_ids=_snowflakes(config, "consenting_member_ids"),
         retention_days=retention_days,
+        external_ai_opt_in=external_ai_opt_in,
+        media_opt_in=media_opt_in,
     )
