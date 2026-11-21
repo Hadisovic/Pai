@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P6.3, encrypted SQLite backups and restore with erasure replay.
-- Active branch: `codex/P6.3-encrypted-restore` (base: `codex/P6.2-runtime-reliability`, [PR #32](https://github.com/Hadisovic/Pai/pull/32)).
-- Changed `.gitignore`, `docs/BACKUP.md`, `pyproject.toml`, `uv.lock`, `src/pai/backup.py`, `tests/test_backup.py`. Backup and restore are offline and stream AES-256-GCM. Restore requires a newer encrypted erasure checkpoint, reapplies current policy, and never overwrites an existing destination. Off-host storage is user-owned.
-- Resume: verify remote SHA and CI, then prepare member consent notice and launch verification materials (P7.1). P6.1 live host proof remains blocked.
+- Active task: P7.1, member-facing notice and consent procedure.
+- Active branch: `codex/P7.1-member-notice` (base: `codex/P6.3-encrypted-restore`, [PR #33](https://github.com/Hadisovic/Pai/pull/33)).
+- Changed `docs/MEMBER-NOTICE.md`. The draft explains channel scope, silent archive, model and media processing, retention, backup erasure, exports, and opt-out. Nothing was sent to Discord.
+- Resume: verify remote SHA and CI, then run credential-free end-to-end replay (P7.2a). Live Discord, live model scoring, hosted proof and launch approval are still blocked.
 
 ## Checkpoint log
 
@@ -33,4 +33,5 @@
 | 2026-11-21 | P5.3 | DONE | `codex/P5.3-gif-and-cache` | `a60c335405da51805fd37768980cf1aa65699abd` | Ruff lint, formatting, pytest (67 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44917952870) passed.  |
 | 2026-11-21 | P5.4 | DONE | `codex/P5.4-refresh-and-invalidation` | `3dc5596c8dfbd3a52e7b8c176ecf7cb65494293c` | Ruff lint, formatting, pytest (69 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918154107) passed.  |
 | 2026-11-21 | P6.2 | DONE | `codex/P6.2-runtime-reliability` | `682a35027ffec77c0fdc620be87b0c9cae87cc3a` | Ruff lint, formatting, pytest (71 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918341393) passed.  |
-| 2026-11-21 | P6.3 | IN_PROGRESS | `codex/P6.3-encrypted-restore` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (73 tests) and diff check passed. CI pending. Synthetic restore preserved retained messages and rejected stale deletions, opt-outs, wrong keys, tampering and overwrites. No private data or uploads. |
+| 2026-11-21 | P6.3 | DONE | `codex/P6.3-encrypted-restore` | `2bc855465c6cff47f040acfd976cc732c7fe11a0` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918539920) passed.  |
+| 2026-11-21 | P7.1 | IN_PROGRESS | `codex/P7.1-member-notice` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (73 tests) and diff check passed. CI pending. User must fill actual channels, settings and contact, then obtain affirmative consent before connecting. |

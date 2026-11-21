@@ -47,12 +47,13 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 ## P6 — No-card hosting proof and resilience [IN_PROGRESS]
 - **P6.1 [BLOCKED]** Test minimally sized host only with user approval/account. Verify egress/websocket, process restarts, RAM/storage limits, volume persistence and renewal restrictions. No false 24/7 promises.
 - **P6.2 [DONE]** Health diagnostic, safe logs, secret redaction, per-user/per-guild limits, provider daily budget, graceful shutdown, reconnection and restart policies.
-- **P6.3 [IN_PROGRESS]** Encrypted off-host private backup/export and restore drill. Never store live member data in GitHub, public CI artifacts or logs.
+- **P6.3 [DONE]** Encrypted off-host private backup/export and restore drill. Never store live member data in GitHub, public CI artifacts or logs.
 - **Acceptance:** verified host evidence, explicit downtime/renewal behavior, successful persistence/restore proof or recorded blocker.
 
-## P7 — Consent, privacy review and launch [TODO]
-- **P7.1** Provide member-facing consent/notice describing channel scope, recording, AI vendors, media handling, retention, deletion and opt-out. Do not ingest without authorization.
-- **P7.2** E2E proof: ordinary chat archived silently; direct mention answered contextually; reply to meme/GIF analyzed; old joke retrieved with source; deletion and permission isolation pass.
+## P7 — Consent, privacy review and launch [IN_PROGRESS]
+- **P7.1 [IN_PROGRESS]** Provide member-facing consent/notice describing channel scope, recording, AI vendors, media handling, retention, deletion and opt-out. Do not ingest without authorization.
+- **P7.2a** Exercise the complete flow offline with synthetic Discord events, model and media stubs.
+- **P7.2 [BLOCKED]** Live E2E proof: ordinary chat archived silently; direct mention answered contextually; reply to meme/GIF analyzed; old joke retrieved with source; deletion and permission isolation pass.
 - **P7.3** Security, provider quota/billing, persistent storage, backup, restart, operations and renewal runbook; user authorizes launch.
 - **Acceptance:** verifiable E2E results and user approval; no claims without evidence.
 
