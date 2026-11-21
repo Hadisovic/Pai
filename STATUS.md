@@ -56,6 +56,13 @@ On 2026-11-22, Pai was brought fully online and verified in the live Discord ser
    - User tested companion role: @Pai I am testing u before putting u in my friends server -> Pai replied: Testing away! I'm ready when you are. Just let me know who I can be once I'm in.
 4. Unmentioned messages (u should be natural af u feel me?) were archived silently to pai.sqlite without spamming or replying, exactly adhering to privacy and direct-mention gating rules.
 
+### Known Deferred Issues (Post-MVP)
+
+The following known issues are documented and explicitly deferred for future milestones:
+1. **External GIF links (e.g. Klipy)**: External GIF URLs outside Discord's direct CDN/Giphy are not currently decoded for vision analysis.
+2. **Custom Discord emojis/emotes**: Custom server emotes (`<:name:id>`) are stripped during prompt minimization and not semantically understood.
+3. **Implicit replies without mentions**: Discord reply chains where Pai is replied to without an explicit `@Pai` mention tag do not trigger an automatic response under the strict direct-mention gate.
+
 ## Checkpoint log
 
 | Date | Task | Status | Branch | Commit / verified remote SHA | Checks and blockers |
