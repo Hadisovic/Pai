@@ -52,9 +52,9 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 
 ## P7 — Consent, privacy review and launch [IN_PROGRESS]
 - **P7.1 [DONE]** Provide member-facing consent/notice describing channel scope, recording, AI vendors, media handling, retention, deletion and opt-out. Do not ingest without authorization.
-- **P7.2a [IN_PROGRESS]** Exercise the complete flow offline with synthetic Discord events, model and media stubs.
+- **P7.2a [DONE]** Exercise the complete flow offline with synthetic Discord events, model and media stubs.
 - **P7.2 [BLOCKED]** Live E2E proof: ordinary chat archived silently; direct mention answered contextually; reply to meme/GIF analyzed; old joke retrieved with source; deletion and permission isolation pass.
-- **P7.3** Security, provider quota/billing, persistent storage, backup, restart, operations and renewal runbook; user authorizes launch.
+- **P7.3 [IN_PROGRESS]** Security, provider quota/billing, persistent storage, backup, restart, operations and renewal runbook; user authorizes launch.
 - **Acceptance:** verifiable E2E results and user approval; no claims without evidence.
 
 ## Later, not MVP

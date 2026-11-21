@@ -1,9 +1,9 @@
 # Durable handoff state
 
-- Active task: P7.2a, credential-free end-to-end replay of the core bot flow.
-- Active branch: `codex/P7.2a-offline-end-to-end` (base: `codex/P7.1-member-notice`, [PR #34](https://github.com/Hadisovic/Pai/pull/34)).
-- Changed `tests/test_end_to_end.py`, `docs/TESTING.md`. The replay uses the actual gateway, archive, router, prompt, media decoder and reply modules, with synthetic events and stubbed network boundaries.
-- Resume: verify remote SHA and CI, then finish the security and operational runbook, dependency audit and live benchmark entry point (P7.3). Live acceptance remains blocked.
+- Active task: P7.3, launch runbook, dependency remediation, and synthetic live benchmark entry point.
+- Active branch: `codex/P7.3-launch-readiness` (base: `codex/P7.2a-offline-end-to-end`, [PR #35](https://github.com/Hadisovic/Pai/pull/35)).
+- Changed `README.md`, `docs/RUNBOOK.md`, `docs/BENCHMARK.md`, `pyproject.toml`, `uv.lock`, `src/pai/benchmark.py`, `src/pai/providers.py`, `tests/test_benchmark.py`. Patched Pillow to 13.0.0 and cryptography to 50.0.2 after the locked audit reported vulnerabilities in prior releases. Added an explicitly enabled Groq benchmark restricted to generated fixtures.
+- Resume: verify remote SHA and CI, then verify the readiness PR commits and CI, then checkpoint the outstanding P1.L, P6.1 and P7.2 user-dependent proofs. Await owner approval and approved card-free account access before live tests.
 
 ## Checkpoint log
 
@@ -35,4 +35,5 @@
 | 2026-11-21 | P6.2 | DONE | `codex/P6.2-runtime-reliability` | `682a35027ffec77c0fdc620be87b0c9cae87cc3a` | Ruff lint, formatting, pytest (71 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918341393) passed.  |
 | 2026-11-21 | P6.3 | DONE | `codex/P6.3-encrypted-restore` | `2bc855465c6cff47f040acfd976cc732c7fe11a0` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918539920) passed.  |
 | 2026-11-21 | P7.1 | DONE | `codex/P7.1-member-notice` | `c3783e292c832369b06e7665fb391d7a1062aa9c` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918619053) passed.  |
-| 2026-11-21 | P7.2a | IN_PROGRESS | `codex/P7.2a-offline-end-to-end` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (74 tests) and diff check passed. CI pending. The complete offline replay proved silent archiving, ACLs, historical provenance, ordered GIF analysis and deletion. No model or Discord connection. |
+| 2026-11-21 | P7.2a | DONE | `codex/P7.2a-offline-end-to-end` | `fbb82b3a931ba02b6ea8aac3a84ad493931b3231` | Ruff lint, formatting, pytest (74 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918767018) passed.  |
+| 2026-11-21 | P7.3 | IN_PROGRESS | `codex/P7.3-launch-readiness` | See next checkpoint for verified SHA | Ruff lint, formatting, pytest (75 tests) and diff check passed. CI pending. Locked audit found no known vulnerabilities or adverse statuses in 23 packages after upgrades. Doctor and offline six-case benchmark passed. |
