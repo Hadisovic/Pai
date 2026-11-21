@@ -60,6 +60,15 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P7.L [BLOCKED]** Record owner approval after consent and live acceptance checks before authorizing launch.
 - **Acceptance:** verifiable E2E results and user approval; no claims without evidence.
 
+## P8 — Authenticated free deployment [IN_PROGRESS]
+
+[Issue #40](https://github.com/Hadisovic/Pai/issues/40) is the active priority.
+- **P8.1 [IN_PROGRESS]** Obtain authenticated Discord Developer Portal, Groq, and free host access. Verify account plan, absence of billing details, and privacy controls before use.
+- **P8.2 [TODO]** Create or select a dedicated Discord test app, configure narrow permissions, and deploy on the verified Free allocation with private secrets and storage.
+- **P8.3 [TODO]** Prove live mention-only replies, persisted recall after restart, vision on a still and an animated GIF, and backup recovery in the approved synthetic Discord scope.
+- **P8.4 [BLOCKED]** Obtain owner approval and affirmative member consent for the production scope before enabling collection.
+
+
 ## Later, not MVP
 Optional richer dashboards, opt-in per-person profiles, embeddings if feasible under hard free limits, and additional guilds. No voice recording or unsolicited messages.
 

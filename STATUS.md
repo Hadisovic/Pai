@@ -1,5 +1,27 @@
 # Durable handoff state
 
+## Current priority · Issue #40
+
+On 2026-11-21, browser automation opened the Discord Developer Portal
+and advanced to Discord login, initiated Groq's GitHub sign-in, and
+reached Enzonic's signup page. Existing browser access did not establish
+an authenticated Discord session. Enzonic offers Google or username,
+email and password on the observed signup screen. The actual free
+allocation, billing-address requirement and privacy controls are still
+unverified. Kerit remains the fallback and its registration is separate.
+No identity data was submitted, no account or allocation was created,
+and no credentials or payment details were entered by automation.
+
+P8.1 is waiting on the owner's sign-ins in the three prepared browser
+windows. After authentication, resume by opening each authenticated
+dashboard without inspecting secrets. Verify Groq Free and Zero Data
+Retention, then verify a card- and address-free Enzonic Python
+allocation. Create or select an isolated Discord test app, request
+test-server authorization if needed, and inject credentials only using
+private host secrets. Use only approved synthetic chat until the
+friends' server scope and consent are explicit.
+
+
 - Original PRs #9 through #36 were reviewed and merged into their declared parents from tip to base. The final [integration](https://github.com/Hadisovic/Pai/commit/ec9834e0e62139b1f0dae206c34becf6236a8408) preserved the maintainer instructions and the fully patched tree. [Main CI](https://github.com/Hadisovic/Pai/actions/runs/44942592048)
 - Constrained Linux validation merged in [PR #37](https://github.com/Hadisovic/Pai/pull/37), remote main then `9c4d5434311b4af40295c9776cbb03f04cd63dd7`. Restore, persistence, and a public Discord Gateway handshake passed with synthetic data. The bot did not identify.
 - Two real, account-free model runs merged in [PR #38](https://github.com/Hadisovic/Pai/pull/38), remote main then `3cc31f63d5d098def4438deb2817ca177d795519`. Qwen3.5-4B is the provisional local choice. Groq Qwen3.8 is the first hosted model to evaluate. See `docs/BENCHMARK.md` for actual outputs, metrics and limitations.
