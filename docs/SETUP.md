@@ -111,3 +111,11 @@ consent cover this provider and the use of selected chat text and display
 names. The CLI exits before Discord login when the flag lacks consent or a
 key. A local mock verified routing and prompt assembly. Live model access
 and conversational quality are still unverified.
+
+Media metadata is off unless the approved notice and private policy include
+`media_opt_in: true`. The archive can retain a small number of media IDs
+or embed fingerprints for each message. It stores neither media bytes nor
+signed URLs. The download boundary admits only supported image MIME types
+from Discord's media CDN and selected GIF CDNs with public DNS resolution,
+no redirects, a 3 MiB cap and a six-second deadline. Actual format and pixel
+verification is added with mention-triggered analysis.

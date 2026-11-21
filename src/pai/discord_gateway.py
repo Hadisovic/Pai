@@ -9,6 +9,7 @@ from discord.ext import tasks
 
 from pai.commands import controls
 from pai.conversation import ConversationContext, direct_mention, prepare_context
+from pai.discord_media import discover_media
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
 
@@ -232,7 +233,9 @@ class PaiDiscordClient(discord.Client):
             )
 
 
-async def archive_message(archive: Archive, message: discord.Message) -> bool:
+async def archive_message(
+    archive: Archive, message: discord.Message, *, include_media: bool = False
+) -> bool:
     guild = message.guild
     if guild is None:
         return False
@@ -255,4 +258,7 @@ async def archive_message(archive: Archive, message: discord.Message) -> bool:
         created_at=message.created_at,
         reply_to_id=reply_to_id,
     )
-    return await asyncio.to_thread(archive.append, record)
+    media = (
+        tuple(asset.item for asset in discover_media(message)) if include_media else ()
+    )
+    return await asyncio.to_thread(archive.append, record, media=media)

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from pai.media import MAX_MEDIA_ITEMS, MediaItem
 from pai.policy import PrivacyPolicy
 
 _MIGRATIONS = (
@@ -105,6 +106,19 @@ _MIGRATIONS = (
         )
         """,
     ),
+    (
+        """
+        CREATE TABLE message_media (
+            message_id TEXT NOT NULL REFERENCES messages(message_id) ON DELETE CASCADE,
+            position INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            external_id TEXT NOT NULL,
+            mime TEXT,
+            size INTEGER,
+            PRIMARY KEY (message_id, position)
+        )
+        """,
+    ),
 )
 
 
@@ -160,7 +174,9 @@ class Archive:
         connection.execute("PRAGMA foreign_keys = ON")
         return connection
 
-    def append(self, message: MessageRecord) -> bool:
+    def append(
+        self, message: MessageRecord, *, media: tuple[MediaItem, ...] = ()
+    ) -> bool:
         scope = (
             str(message.message_id),
             str(message.guild_id),
@@ -210,13 +226,43 @@ class Archive:
                     """,
                     (count - self.max_messages,),
                 )
-                return (
+                if (
                     connection.execute(
                         "SELECT 1 FROM messages WHERE message_id = ?", (scope[0],)
                     ).fetchone()
-                    is not None
+                    is None
+                ):
+                    return False
+            if media:
+                connection.executemany(
+                    """
+                    INSERT INTO message_media (message_id, position, kind, external_id, mime, size)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        (
+                            scope[0],
+                            index,
+                            item.kind,
+                            item.external_id,
+                            item.mime,
+                            item.size,
+                        )
+                        for index, item in enumerate(media[:MAX_MEDIA_ITEMS])
+                    ),
                 )
             return True
+
+    def media_for(self, message_id: int) -> tuple[MediaItem, ...]:
+        with closing(self.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT kind, external_id, mime, size
+                FROM message_media WHERE message_id = ? ORDER BY position
+                """,
+                (str(message_id),),
+            ).fetchall()
+        return tuple(MediaItem(*row) for row in rows)
 
     def edit(
         self,

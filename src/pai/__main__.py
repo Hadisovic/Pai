@@ -22,7 +22,9 @@ async def _run(
     policy: PrivacyPolicy, archive: Archive, token: str, groq_key: str | None
 ) -> None:
     async def handle(message: discord.Message) -> bool:
-        return await archive_message(archive, message)
+        return await archive_message(
+            archive, message, include_media=policy.media_opt_in
+        )
 
     async with AsyncExitStack() as resources:
         client = await resources.enter_async_context(

@@ -30,15 +30,15 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P3.4 [DONE]** `/privacy`, `/memory`, `/forgetme`; admin configurable allowlist/retention; delete/export and backup-deletion policy. Ensure restricted-channel isolation.
 - **Acceptance:** tests for history retrieval, provenance, cross-channel ACL, sarcasm, corrections, deleted memories, retention and account removal.
 
-## P4 — Natural model-assisted conversation [IN_PROGRESS]
+## P4 — Natural model-assisted conversation [DONE]
 - **P4.1 [DONE]** Provider interface with model capabilities (text/image/frames), timeouts, quota counters, backoff and circuit breakers; reject all paid endpoints and unverified billing.
 - **P4.2 [DONE]** Select primary/fallback from P1 evidence; route to compatible free provider only; on exhausted quotas give one brief notice while ingestion continues.
 - **P4.3 [DONE]** Assemble bounded prompts from direct mention, reply chain, current channel context and authorized memory search; trim tokens, minimize sensitive content and provide provenance.
-- **P4.4 [IN_PROGRESS]** Hybrid English-first personality; understand occasional Arabic/Arabizi where possible; naturally adapt to server humor, tease lightly, avoid repetitive catchphrases; support tone correction/feedback and resist chat prompt injection.
+- **P4.4 [DONE]** Hybrid English-first personality; understand occasional Arabic/Arabizi where possible; naturally adapt to server humor, tease lightly, avoid repetitive catchphrases; support tone correction/feedback and resist chat prompt injection.
 - **Acceptance:** deterministic fake-provider dialogue tests and human-scored quality, provider failover, data minimization and no cross-channel leaks.
 
-## P5 — Images, memes, stickers and GIFs [TODO]
-- **P5.1** Store Discord attachment IDs and metadata, embed/GIF provider links, original message context; enforce URL allowlists, MIME, size, pixel and time bounds. Avoid SSRF.
+## P5 — Images, memes, stickers and GIFs [IN_PROGRESS]
+- **P5.1 [IN_PROGRESS]** Store Discord attachment IDs and metadata, embed/GIF provider links, original message context; enforce URL allowlists, MIME, size, pixel and time bounds. Avoid SSRF.
 - **P5.2** Selectively analyze relevant images on mentions or explicitly approved importance rules; don't call AI for every attachment; stickers and custom emoji descriptions when feasible.
 - **P5.3** Sample bounded meaningful GIF frames, preserve ordering/motion explanation, cache with fingerprint and provenance, reuse analysis for recurring memes.
 - **P5.4** Re-fetch authorized media via message ID when URLs expire; handle removed/unavailable content honestly; invalidate caches on deletion/forget.
