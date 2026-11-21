@@ -1,0 +1,53 @@
+name: Synthetic Linux host smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/host-smoke.yml
+      - scripts/host_smoke.py
+      - src/**
+      - pyproject.toml
+      - uv.lock
+
+permissions:
+  contents: read
+
+jobs:
+  host-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Exercise two processes with a 256 MiB memory limit
+        env:
+          PAI_IMAGE: python:3.12-slim-trixie@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+        run: |
+          set -euo pipefail
+          volume=$(docker volume create)
+          trap 'docker volume rm "$volume" >/dev/null' EXIT
+          run_pai() {
+            docker run --rm --memory=256m --memory-swap=256m --cpus=0.5 \
+              --mount "type=volume,source=$volume,target=/pilot" \
+              --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+              --env UV_PROJECT_ENVIRONMENT=/pilot/.venv \
+              --env UV_CACHE_DIR=/pilot/cache \
+              --workdir /workspace "$PAI_IMAGE" sh -ec "$1"
+          }
+          run_pai '
+            python -m pip install --no-cache-dir uv==0.12.21
+            uv sync --locked --no-dev
+            /pilot/.venv/bin/python -m pai --doctor
+            /pilot/.venv/bin/python scripts/host_smoke.py seed /pilot
+            printf "Install and seed memory peak (bytes): "
+            cat /sys/fs/cgroup/memory.peak
+          '
+          run_pai '
+            /pilot/.venv/bin/python scripts/host_smoke.py verify /pilot
+            /pilot/.venv/bin/python scripts/host_smoke.py gateway
+            printf "Restart and restore memory peak (bytes): "
+            cat /sys/fs/cgroup/memory.peak
+            du -sh /pilot
+          '
