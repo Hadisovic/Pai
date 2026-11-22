@@ -80,3 +80,31 @@ def test_ordinary_question_does_not_expose_citations_for_matching_chat():
     prompt = build_prompt(context)
     assert prompt.sources == ()
     assert render_answer("yellow [s1]", prompt) == "yellow"
+
+
+def test_renderer_removes_quote_tag_and_ai_mirroring_boilerplate():
+    prompt = build_prompt(ConversationContext(row(1, "yes u dumbass")))
+    answer = render_answer(
+        "[quote]\nwho u calling dumbass 💀\nI was just mirroring your tone.",
+        prompt,
+    )
+    assert answer == "who u calling dumbass 💀"
+
+
+def test_active_assistant_conversation_does_not_mark_reply_chain_as_citable():
+    from pai.conversation import AssistantTurn
+
+    # User asks a 'what did' follow-up to Pai
+    turn = AssistantTurn(
+        "I misread wsg as a specific term",
+        row(98, "wdym"),
+        (),
+    )
+    context = ConversationContext(
+        row(99, "what did u misread it as"),
+        parents=(row(98, "I misread wsg as a specific term"),),
+        assistant_turn=turn,
+    )
+    prompt = build_prompt(context)
+    assert prompt.sources == ()
+    assert render_answer("nothing bro [s1]", prompt) == "nothing bro"

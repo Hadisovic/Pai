@@ -1,6 +1,21 @@
 # Durable handoff state
 
-## Current priority · P9 friend-group conversations (2026-11-22)
+## Current priority · Gen Z Personality Overhaul & Benchmark (2026-11-22)
+
+- Deep research into Gen Z Discord linguistic dynamics and conversational LLM steering completed:
+  * Established Discord friend-group communication patterns: all-lowercase baseline, emotional punctuation (omitting stiff trailing periods, using `?`, `!`, `...`, `💀`, or zero punctuation), concise 2–10 word default cadence, and authentic banter.
+  * Identified root causes of prior awkward behavior: negative-only prompt rules without few-shot dialogue grounding caused the model to treat casual greetings (e.g. `wsg g`) as unanswerable factual queries ("I don't know it."), raw JSON payload triggered structured extraction mode, and citation scoping marked active `reply_chain` messages as citable sources (`[s1]`), leading to hallucinated source links during banter.
+  * Formulated few-shot dialogue grounding in `src/pai/prompts.py`: anchors conversational cadence, anti-assistant posture, friendly teasing, Arabizi/Arabic code-switching (`wllh`, `ya5i`, `sho tsawi`), sincere empathy, and casual memory admissions without exceeding token budget (budget preserved at <=8,000 reserved tokens across 3 media frames).
+  * Fixed citation scoping in `src/pai/prompts.py`: active conversational turns (`context.assistant_turn is not None`) exclude `reply_chain` from citable sources so normal back-and-forth conversation never generates artificial `[source]` links.
+  * Added `[quote]` and robotic boilerplate filtering to `render_answer` and `_BOILERPLATE`.
+  * Configured sampling parameters in `src/pai/providers.py`: `temperature=0.8` and `top_p=0.9` for Groq inference.
+- **Comprehensive 14-Category Benchmark Evaluated Against Live Groq Inference**:
+  * Built evaluation harness in `scripts/evaluate_personality.py` and `scripts/run_benchmark.py` covering greetings, slang, banter, memes, brevity, empathy, celebrations, recovery, memory, Arabizi, and multi-user contexts.
+  * Baseline vs Candidate results saved in `docs/EVALUATION_REPORT.json`: Candidate scored 140/140 (100.0%) vs Baseline 139/140 (99.3% raw, but Baseline exhibited severe qualitative failures including outputting `[s1]` to bad news, `[system: empty channel]` to Arabizi, and robotic explanations).
+  * Candidate produced natural, sharp responses: `wsg g` -> `chillin, wyd`; `yes u dumbass` -> `who u calling dumbass 💀`; `lollllll` -> `im dead 💀`; `what's my favorite game?` -> `hollow knight [s1]`; unknown game -> `you never told me`.
+- Automated test suite passed 87/87 tests (`uv run pytest`), Ruff linting and formatting 100% clean across all 59 files. Added regression tests `test_renderer_removes_quote_tag_and_ai_mirroring_boilerplate` and `test_active_assistant_conversation_does_not_mark_reply_chain_as_citable`.
+
+## P9 friend-group conversations (2026-11-22)
 
 - The P9 branch starts from Antigravity's verified `e0cdaa7` checkpoint on `codex/P8-live-account-access`. Stack its PR on P8 [PR #41](https://github.com/Hadisovic/Pai/pull/41).
 - Pai accepts authorized direct mentions and native same-channel replies to its own messages. Ordinary chat still passes through the silent archive gate. Short bursts use a bounded FIFO queue with up to two active channels. The verified Free route retains per-minute and daily budget checks and uses reported token usage to reconcile reservations.
