@@ -1,52 +1,11 @@
 # Durable handoff state
 
-## Current priority · Session Pause Checkpoint (2026-11-22)
+## P8 Discord test baseline (2026-11-22)
 
-Pai is fully online and active in Discord. Today's live development session is paused per owner instruction.
-
-### Current Verified System State:
-1. **Live Discord Bot**: Pai#6435 (Application ID `1573805310785880264`) is connected to Discord Gateway and actively serving the authorized test guild `|| Hadi ||'s server` (ID `823208040764538901`).
-2. **Current Local Process**: Running continuously in background via PowerShell turnkey runner `scripts/start.ps1` (Task 868) with Python 3.12, SQLite 3.49.1 with FTS5, and Discord Gateway v10.
-3. **Groq Model Router**: Live authenticated inference on Groq Free organization (`org_01k2z2yx9qepsr0gtb22mexw3r`) routing to `qwen/qwen3.8-27b` with sub-second response times.
-4. **Natural Persona & Group Style**: Updated `prompts.py` and `reply_engine.py` to enforce natural casual banter, prohibiting generic assistantisms, mode announcements, and biological claims. Implemented `group_style` in `storage.py` and `conversation.py` with multi-author window partitioning (`author_rank = 1`). 76/76 automated tests pass.
-5. **Enzonic Cloud Allocation**:
-   - Free Python tier verified: 512 MiB RAM, 50% CPU (1 core), 10 GB disk tier, $0.00 cost, zero payment/card details required.
-   - Server `Pai` created and currently queued in Enzonic's Standard Queue (Queue ID `9980`, Position `#121`).
-   - Uptime terms: Official Enzonic product documentation explicitly advertises 24/7 always-on hosting without sleeping for Python Discord bots (general ToS inactivity rules apply to game servers). Runtime behavior will be verified directly once the node is assigned.
-6. **Encrypted Backup & Storage**:
-   - AES-256-GCM encrypted snapshot created at `backups/snapshot.pai`.
-   - Random 32-byte backup key preserved in private `.env` (`PAI_BACKUP_KEY`).
-   - Private database `pai.sqlite` preserved locally with full conversational history and memories.
-7. **Staged Deployment**: Standalone bundle `deploy.zip` (39.7 KB) pre-staged and ready for direct upload to Enzonic Pterodactyl panel upon queue completion.
-8. **Hosting Architecture Decision**: Kerit Cloud was evaluated and rejected due to its mandatory 24h Discord gate, daily heartbeat renewals, and offline free node. Enzonic allocation (Queue ID 9980) remains the designated cloud candidate, prioritizing stability and zero renewals over temporary workarounds. Local process (Task 868) serves as the persistent primary baseline.
-
-### Outstanding Next Steps Upon Resume ("Resume Pai"):
-1. Check Enzonic panel (`https://beta.panel.enzonic.com/` or `https://panel.enzonic.com/`) for server `Pai` container assignment.
-2. Upload `deploy.zip` to the Pterodactyl File Manager and extract.
-3. Inject `DISCORD_TOKEN` and `PAI_GROQ_KEY` in panel environment / startup settings.
-4. Start the hosted cloud server.
-5. Verify response from the hosted bot in `#moments`.
-6. Terminate the local Windows bot (Task 868) cleanly to prevent duplicate gateway connections.
-7. Confirm Pai continues operating 100% independently of the local PC.
-
-
-### Live Discord Verification
-
-On 2026-11-22, Pai was brought fully online and verified in the live Discord server (guild ID: 823208040764538901):
-1. Discord Application Pai#6435 (ID: 1573805310785880264) joined with Message Content Intent enabled.
-2. User consent policy configured in .pai-policy.json for consenting members (779984379836891136 and 605162723566813262).
-3. Real-time mentions verified in #moments (ID: 1220389554289250526):
-   - User Hash ✦ asked @Pai hello -> Pai replied Hey there! 👋.
-   - User asked how are u nga @Pai -> Pai replied I’m good, thanks for asking! I just woke up, though. How are you doing?.
-   - User tested companion role: @Pai I am testing u before putting u in my friends server -> Pai replied: Testing away! I'm ready when you are. Just let me know who I can be once I'm in.
-4. Unmentioned messages (u should be natural af u feel me?) were archived silently to pai.sqlite without spamming or replying, exactly adhering to privacy and direct-mention gating rules.
-
-### Known Deferred Issues (Post-MVP)
-
-The following known issues are documented and explicitly deferred for future milestones:
-1. **External GIF links (e.g. Klipy)**: External GIF URLs outside Discord's direct CDN/Giphy are not currently decoded for vision analysis.
-2. **Custom Discord emojis/emotes**: Custom server emotes (`<:name:id>`) are stripped during prompt minimization and not semantically understood.
-3. **Implicit replies without mentions**: Discord reply chains where Pai is replied to without an explicit `@Pai` mention tag do not trigger an automatic response under the strict direct-mention gate.
+- The consenting Discord test scope was validated on Windows with the Groq Free route. Explicit mentions responded and ordinary chat was archived silently. Account, member and channel details belong in the operator's local policy.
+- DNS and Gateway access, Groq inference, the existing SQLite archive and an encrypted backup were verified during P8. The hosting history and resource checks are recorded in [docs/HOSTING.md](docs/HOSTING.md).
+- The hosted process and persistence remain unverified. Production activation still requires separate owner approval and affirmative scope consent.
+- The merge review removed a private chat inspection script, restricted the deploy procedure to tracked source and replaced pilot identifiers with a disabled template. Keep private configuration, messages, media and archive files on the operator's machine.
 
 ## Checkpoint log
 
