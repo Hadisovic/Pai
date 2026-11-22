@@ -35,8 +35,8 @@ This handoff document captures the exact runtime, deployment, and codebase state
   - Node capacity expansion in progress; notification email will be sent to `hadiouss4@gmail.com` when container is provisioned.
 - **Fallback Host (Kerit Cloud)**:
   - Inspected at `https://billing.kerit.cloud/`.
-  - Specs: 256 MB RAM, 2 GB NVMe, 24/7 zero-sleep, card-free.
-  - Note: Discord OAuth requires first creating an account with email and linking Discord from profile.
+  - Specs: 256 MB RAM, 1 GB Disk, 30% CPU, card-free.
+  - Eligibility gates verified: account registered (`hadiouss4@gmail.com`), but claiming requires Discord linking, 30+ day account age, joining Kerit Discord server with a **mandatory 1-day (24h) membership waiting period**, hCaptcha completion, and current node status is reported offline.
 
 ---
 

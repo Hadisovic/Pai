@@ -84,9 +84,14 @@ Live browser inspection verified both primary and fallback cloud host offerings:
    - Control architecture: Hydrodactyl V6.1 (Pterodactyl fork) with console, file manager, and SFTP access once assigned.
 
 2. **Kerit Cloud** (`https://kerit.cloud`):
-   - Confirmed free plan: 256 MB RAM, 2 GB NVMe, 24/7 zero-sleep mode, DDoS protected, card-free.
-   - Authentication: Discord OAuth, Google OAuth, or email/password (`https://billing.kerit.cloud/register`).
-   - Claim rule: requires joining community Discord server to provision free bot slot.
+   - Confirmed free plan: 256 MB RAM, 1 GB NVMe, 30% CPU, 7-day heartbeat renewal, card-free.
+   - Panel: Pterodactyl at `https://panel.kerit.cloud/` (login protected by reCAPTCHA).
+   - Claim requirements & gates verified:
+     - Account created and logged in (`hadiouss4@gmail.com`).
+     - Discord OAuth linking required (Discord account must be 30+ days old).
+     - Must join Kerit Discord community (`https://discord.gg/7x9MQgFrCT`) and remain a member for **at least 1 full day (24h)** before the claim button unlocks.
+     - Form submission requires solving an hCaptcha challenge.
+     - Node status currently reported as `free-node · discord bot hosting · offline`.
 
 3. **Deployment Bundle**:
    - Packaged standalone bundle `deploy.zip` (39.7 KB) via `scripts/bundle_deploy.py` containing `main.py`, locked `requirements.txt`, `src/pai/`, and active `.pai-policy.json` + `pai.sqlite` memory snapshot.
