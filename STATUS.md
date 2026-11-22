@@ -9,6 +9,8 @@
 - Local validation passed 81 tests, Ruff, the SQLite/FTS5 doctor and a locked dependency audit. In the final synthetic model run, Groq Free completed seven calls using 4,777 reported tokens. Both favorite games were attributed correctly after a display-name collision and rename. Banter and sincerity were recognizable, while Arabic phrasing and continuity varied. The model recognized the yellow object in a three-frame GIF but invented an extra movement. The calls sent only synthetic data.
 - The Windows deployment and Enzonic queue were left in place. The P9 Gateway behavior is covered by synthetic Discord events. For an authorized live rollout, use a controlled single-instance cutover in the existing test scope, then check mentions, ping-off replies, ordinary-chat silence, separate recall, and media. See [SESSION_HANDOFF.md](SESSION_HANDOFF.md) for the P8 baseline.
 
+- Verified P9 implementation checkpoint [b65ffed](https://github.com/Hadisovic/Pai/commit/b65ffed8b7d862adf6d8bb1385daff7f39a38e42). Resume from the remote P9 branch and start with the controlled Discord test cutover once available.
+
 ## Historical · P8 session pause checkpoint (2026-11-22)
 
 Pai is fully online and active in Discord. Today's live development session is paused per owner instruction.
