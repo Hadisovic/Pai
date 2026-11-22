@@ -96,3 +96,19 @@ Live browser inspection verified both primary and fallback cloud host offerings:
 3. **Deployment Bundle**:
    - Packaged standalone bundle `deploy.zip` (39.7 KB) via `scripts/bundle_deploy.py` containing `main.py`, locked `requirements.txt`, `src/pai/`, and active `.pai-policy.json` + `pai.sqlite` memory snapshot.
    - Encrypted off-host backup created: `backups/snapshot.pai` via AES-256-GCM (`PAI_BACKUP_KEY` preserved in private `.env`).
+
+## 2026-11-22 · Permanent Free Hosting Architectural Review & Decision
+
+Per owner directive, the project prioritizes **long-term stability, persistent SQLite integrity, automatic restarts, and zero credit-card/billing requirements** over temporary workarounds:
+
+1. **Kerit Cloud Dropped as Workaround**:
+   - Verified that Kerit Cloud requires continuous heartbeats, manual anti-bot solving, a mandatory 24h Discord server waiting gate, and currently has offline free nodes. It is rejected as an unstable short-term workaround.
+
+2. **Enzonic Allocation Preserved in Queue**:
+   - Server `Pai` (Queue ID 9980) remains queued on Enzonic. Enzonic offers 512 MB RAM, 10 GB disk, and no manual renewal button/fee, though free nodes sleep after idle periods.
+
+3. **Structural Analysis of Card-Free Cloud Hosting**:
+   - **True 24/7 Always-On Cloud VMs** (Oracle Cloud Always Free, Fly.io, Google Cloud e2-micro): All require a valid credit card on file for identity verification.
+   - **Card-Free Community Bot Hosts** (Wispbyte, HyeHost, Bot-Hosting.net, FPS.ms): All enforce periodic manual check-ins (14 days, 30 days, 4 days, or 24 hours) under penalty of container deletion.
+   - **Ephemeral Web Hosts** (Render, Koyeb free, Glitch): Filesystems reset on restarts, destroying SQLite databases without paid external database add-ons.
+   - **Dedicated Local/Self-Host Service**: Zero credit card, zero renewals, zero third-party privacy leakage, and 100% persistent SQLite. Ideal baseline while cloud allocation queues process.

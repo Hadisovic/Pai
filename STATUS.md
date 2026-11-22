@@ -18,6 +18,7 @@ Pai is fully online and active in Discord. Today's live development session is p
    - Random 32-byte backup key preserved in private `.env` (`PAI_BACKUP_KEY`).
    - Private database `pai.sqlite` preserved locally with full conversational history and memories.
 7. **Staged Deployment**: Standalone bundle `deploy.zip` (39.7 KB) pre-staged and ready for direct upload to Enzonic Pterodactyl panel upon queue completion.
+8. **Hosting Architecture Decision**: Kerit Cloud was evaluated and rejected due to its mandatory 24h Discord gate, daily heartbeat renewals, and offline free node. Enzonic allocation (Queue ID 9980) remains the designated cloud candidate, prioritizing stability and zero renewals over temporary workarounds. Local process (Task 868) serves as the persistent primary baseline.
 
 ### Outstanding Next Steps Upon Resume ("Resume Pai"):
 1. Check Enzonic panel (`https://beta.panel.enzonic.com/` or `https://panel.enzonic.com/`) for server `Pai` container assignment.
