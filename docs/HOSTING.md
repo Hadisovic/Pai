@@ -79,8 +79,11 @@ Live browser inspection verified both primary and fallback cloud host offerings:
 1. **Enzonic** (`https://panel.enzonic.com`):
    - Confirmed free plan: 512 MB RAM, 10 GB disk, 50% CPU, $0.00 cost, no card or billing details.
    - Server created: `Pai` under Discord Bot -> Python (startup file: `main.py`).
-   - Provisioning Status: Enzonic Free Queue ID 9980, Position #122 in line (estimated queue delay: 242–726 minutes due to node hardware expansion).
-   - Inactivity policy: Free tier containers sleep after idle periods and wake on request or panel access.
+   - Provisioning Status: Enzonic Free Queue ID 9980, Position #121 in line. Waiting on node expansion arriving early this week.
+   - Uptime & Sleep Policy Reconciliation:
+     - Official product pages (`https://www.enzonic.com/python` and `https://enzonic.com/discord-bots`) explicitly advertise 24/7 always-on hosting without sleep for Python Discord bots.
+     - General platform terms (`https://enzonic.com/legal/tos`) define inactivity sleep rules for game servers (e.g. Minecraft) when zero players are connected.
+     - Conclusion: Discord bots maintain an outbound Gateway connection rather than inbound player ports. Actual runtime persistence and whether the free container is kept alive indefinitely will be verified empirically once the container is provisioned.
    - Control architecture: Hydrodactyl V6.1 (Pterodactyl fork) with console, file manager, and SFTP access once assigned.
 
 2. **Kerit Cloud** (`https://kerit.cloud`):
@@ -105,7 +108,7 @@ Per owner directive, the project prioritizes **long-term stability, persistent S
    - Verified that Kerit Cloud requires continuous heartbeats, manual anti-bot solving, a mandatory 24h Discord server waiting gate, and currently has offline free nodes. It is rejected as an unstable short-term workaround.
 
 2. **Enzonic Allocation Preserved in Queue**:
-   - Server `Pai` (Queue ID 9980) remains queued on Enzonic. Enzonic offers 512 MB RAM, 10 GB disk, and no manual renewal button/fee, though free nodes sleep after idle periods.
+   - Server `Pai` (Queue ID 9980) remains queued on Enzonic. Enzonic offers 512 MB RAM, 10 GB disk, and no manual renewal button or fee, with official product documentation explicitly advertising 24/7 always-on uptime for Python Discord bots. Runtime sleep behavior will be verified directly once the node assigns the container.
 
 3. **Structural Analysis of Card-Free Cloud Hosting**:
    - **True 24/7 Always-On Cloud VMs** (Oracle Cloud Always Free, Fly.io, Google Cloud e2-micro): All require a valid credit card on file for identity verification.

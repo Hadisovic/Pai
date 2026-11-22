@@ -28,7 +28,7 @@ This handoff document captures the exact runtime, deployment, and codebase state
   - CPU: 50% CPU / 1 Core.
   - Disk: 10 GB tier.
   - Cost: $0.00, no credit card or billing address required.
-  - Inactivity terms: Free containers sleep after idle periods and wake on request/panel access.
+  - Uptime terms: Official Enzonic product documentation explicitly advertises 24/7 always-on hosting without sleeping for Python Discord bots (general ToS inactivity rules apply to game servers). Runtime behavior will be verified directly once the node is assigned.
 - **Server "Pai" Queue Status**:
   - Server created under Discord Bot -> Python (`main.py`).
   - Current Queue ID: `9980`, Position `#123` in line (estimated wait time: ~2 hours / standard queue).

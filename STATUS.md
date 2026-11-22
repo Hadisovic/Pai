@@ -11,8 +11,8 @@ Pai is fully online and active in Discord. Today's live development session is p
 4. **Natural Persona & Group Style**: Updated `prompts.py` and `reply_engine.py` to enforce natural casual banter, prohibiting generic assistantisms, mode announcements, and biological claims. Implemented `group_style` in `storage.py` and `conversation.py` with multi-author window partitioning (`author_rank = 1`). 76/76 automated tests pass.
 5. **Enzonic Cloud Allocation**:
    - Free Python tier verified: 512 MiB RAM, 50% CPU (1 core), 10 GB disk tier, $0.00 cost, zero payment/card details required.
-   - Server `Pai` created and currently queued in Enzonic's Standard Queue (Queue ID `9980`, Position `#123`).
-   - Inactivity terms: Free containers sleep after idle periods and wake on request.
+   - Server `Pai` created and currently queued in Enzonic's Standard Queue (Queue ID `9980`, Position `#121`).
+   - Uptime terms: Official Enzonic product documentation explicitly advertises 24/7 always-on hosting without sleeping for Python Discord bots (general ToS inactivity rules apply to game servers). Runtime behavior will be verified directly once the node is assigned.
 6. **Encrypted Backup & Storage**:
    - AES-256-GCM encrypted snapshot created at `backups/snapshot.pai`.
    - Random 32-byte backup key preserved in private `.env` (`PAI_BACKUP_KEY`).
