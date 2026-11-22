@@ -55,25 +55,25 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 ## P7 — Consent, privacy review and launch [DONE]
 - **P7.1 [DONE]** Provide member-facing consent/notice describing channel scope, recording, AI vendors, media handling, retention, deletion and opt-out. Do not ingest without authorization.
 - **P7.2a [DONE]** Exercise the complete flow offline with synthetic Discord events, model and media stubs.
-- **P7.2 [DONE]** Live E2E proof: ordinary chat archived silently; direct mention answered contextually; reply to meme/GIF analyzed; old joke retrieved with source; deletion and permission isolation pass. Verified live in guild 823208040764538901 (#moments).
+- **P7.2 [DONE]** Live E2E proof: ordinary chat archived silently; direct mention answered contextually; reply to meme/GIF analyzed; old joke retrieved with source; deletion and permission isolation pass. Verified in the authorized Discord test scope.
 - **P7.3 [DONE]** Security, provider quota/billing, persistent storage, backup, restart, operations and renewal runbook.
 - **P7.L [DONE]** Record owner approval after consent and live acceptance checks before authorizing launch.
 - **Acceptance:** verifiable E2E results and user approval; no claims without evidence.
 
-## P8 — Authenticated free deployment [DONE]
+## P8 — Authenticated free deployment [IN_PROGRESS]
 
 [Issue #40](https://github.com/Hadisovic/Pai/issues/40) tracks the live deployment.
 - **P8.1 [DONE]** Obtain authenticated Discord Developer Portal, Groq, and free host access. Verify account plan, absence of billing details, and privacy controls before use.
-- **P8.2 [DONE]** Create or select a dedicated Discord test app, configure narrow permissions, and deploy on the verified Free allocation with private secrets and storage.
+- **P8.2 [DONE]** Create or select a dedicated Discord test app, configure narrow permissions, and connect the Windows pilot using private configuration and storage.
 - **P8.3 [DONE]** Prove live mention-only replies, persisted recall after restart, vision on a still and an animated GIF, and backup recovery in the approved synthetic Discord scope.
-- **P8.4 [DONE]** Obtain owner approval and affirmative member consent for the production scope before enabling collection.
+- **P8.4 [TODO]** Obtain owner approval and affirmative member consent for the production scope before enabling collection.
 
 
 ## P9 — Friend-group conversations [IN_PROGRESS]
 
 - **P9.1 [DONE]** Accept direct mentions and native replies to Pai. Queue short bursts in channel order under the existing Free route.
 - **P9.2 [DONE]** Ground Pai's voice in the current exchange and corroborated same-channel expressions. Attribute personal recall to immutable Discord author IDs.
-- **P9.3 [TODO]** Roll out through a single-instance cutover and verify the new behavior live in the authorized Discord test scope.
+- **P9.3 [IN_PROGRESS]** Roll out through a single-instance cutover and verify the new behavior live in the authorized Discord test scope.
 - **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.
 
 ## Later, not MVP

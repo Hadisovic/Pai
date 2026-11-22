@@ -22,3 +22,4 @@ chat-exports/
 .pai-policy.json
 *.pai
 deploy.zip
+deploy-code.zip

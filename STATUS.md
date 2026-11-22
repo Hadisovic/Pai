@@ -7,57 +7,17 @@
 - First-person recall uses the asking member's immutable Discord ID. Prompts use request-local speaker labels that preserve attribution through display-name collisions and renames. The voice uses recurring cross-member expressions as group context. Pai keeps no inferred per-person humor profiles.
 - Recent Pai turns are transient and used only while their authorized sources are current. After a restart, native replies still trigger Pai and can use eligible human chat history. The exact prior Pai output requires that turn's in-process source tracking.
 - Local validation passed 81 tests, Ruff, the SQLite/FTS5 doctor and a locked dependency audit. In the final synthetic model run, Groq Free completed seven calls using 4,777 reported tokens. Both favorite games were attributed correctly after a display-name collision and rename. Banter and sincerity were recognizable, while Arabic phrasing and continuity varied. The model recognized the yellow object in a three-frame GIF but invented an extra movement. The calls sent only synthetic data.
-- The Windows deployment and Enzonic queue were left in place. The P9 Gateway behavior is covered by synthetic Discord events. For an authorized live rollout, use a controlled single-instance cutover in the existing test scope, then check mentions, ping-off replies, ordinary-chat silence, separate recall, and media. See [SESSION_HANDOFF.md](SESSION_HANDOFF.md) for the P8 baseline.
+- Windows TEST rollout started on verified PR #42 commit `c3c5864` on 2026-11-22. No prior connector was running. After startup, one connector process tree reached Discord Gateway ready. The existing private environment, policy, archive and prior backups were preserved. A fresh encrypted pre-cutover backup passed the archive integrity check.
+- **Live acceptance pending**. Verify direct mentions, native replies with ping off, back-to-back requests, two consenting authors with different synthetic memories, silence on ordinary chat, and tone fit. Gateway ready proves connection. These behavioral checks need messages from the two approved participants.
+- The local Windows bot uses a persistent checkout and the existing private archive directory. The Enzonic allocation and final server were outside this rollout.
+- PR #42 depends on the [P8 merge safety checkpoint](https://github.com/Hadisovic/Pai/commit/1bae18b9819b5703f74c0d6143adde5f82263dab). Keep both PRs open until live evidence and refreshed checks are available.
 
-- Verified P9 implementation checkpoint [b65ffed](https://github.com/Hadisovic/Pai/commit/b65ffed8b7d862adf6d8bb1385daff7f39a38e42). Resume from the remote P9 branch and start with the controlled Discord test cutover once available.
+## P8 Discord test baseline (2026-11-22)
 
-## Historical · P8 session pause checkpoint (2026-11-22)
-
-Pai is fully online and active in Discord. Today's live development session is paused per owner instruction.
-
-### Current Verified System State:
-1. **Live Discord Bot**: Pai#6435 (Application ID `1573805310785880264`) is connected to Discord Gateway and actively serving the authorized test guild `|| Hadi ||'s server` (ID `823208040764538901`).
-2. **Current Local Process**: Running continuously in background via PowerShell turnkey runner `scripts/start.ps1` (Task 868) with Python 3.12, SQLite 3.49.1 with FTS5, and Discord Gateway v10.
-3. **Groq Model Router**: Live authenticated inference on Groq Free organization (`org_01k2z2yx9qepsr0gtb22mexw3r`) routing to `qwen/qwen3.8-27b` with sub-second response times.
-4. **Natural Persona & Group Style**: Updated `prompts.py` and `reply_engine.py` to enforce natural casual banter, prohibiting generic assistantisms, mode announcements, and biological claims. Implemented `group_style` in `storage.py` and `conversation.py` with multi-author window partitioning (`author_rank = 1`). 76/76 automated tests pass.
-5. **Enzonic Cloud Allocation**:
-   - Free Python tier verified: 512 MiB RAM, 50% CPU (1 core), 10 GB disk tier, $0.00 cost, zero payment/card details required.
-   - Server `Pai` created and currently queued in Enzonic's Standard Queue (Queue ID `9980`, Position `#121`).
-   - Uptime terms: Official Enzonic product documentation explicitly advertises 24/7 always-on hosting without sleeping for Python Discord bots (general ToS inactivity rules apply to game servers). Runtime behavior will be verified directly once the node is assigned.
-6. **Encrypted Backup & Storage**:
-   - AES-256-GCM encrypted snapshot created at `backups/snapshot.pai`.
-   - Random 32-byte backup key preserved in private `.env` (`PAI_BACKUP_KEY`).
-   - Private database `pai.sqlite` preserved locally with full conversational history and memories.
-7. **Staged Deployment**: Standalone bundle `deploy.zip` (39.7 KB) pre-staged and ready for direct upload to Enzonic Pterodactyl panel upon queue completion.
-8. **Hosting Architecture Decision**: Kerit Cloud was evaluated and rejected due to its mandatory 24h Discord gate, daily heartbeat renewals, and offline free node. Enzonic allocation (Queue ID 9980) remains the designated cloud candidate, prioritizing stability and zero renewals over temporary workarounds. Local process (Task 868) serves as the persistent primary baseline.
-
-### Outstanding Next Steps Upon Resume ("Resume Pai"):
-1. Check Enzonic panel (`https://beta.panel.enzonic.com/` or `https://panel.enzonic.com/`) for server `Pai` container assignment.
-2. Upload `deploy.zip` to the Pterodactyl File Manager and extract.
-3. Inject `DISCORD_TOKEN` and `PAI_GROQ_KEY` in panel environment / startup settings.
-4. Start the hosted cloud server.
-5. Verify response from the hosted bot in `#moments`.
-6. Terminate the local Windows bot (Task 868) cleanly to prevent duplicate gateway connections.
-7. Confirm Pai continues operating 100% independently of the local PC.
-
-
-### Live Discord Verification
-
-On 2026-11-22, Pai was brought fully online and verified in the live Discord server (guild ID: 823208040764538901):
-1. Discord Application Pai#6435 (ID: 1573805310785880264) joined with Message Content Intent enabled.
-2. User consent policy configured in .pai-policy.json for consenting members (779984379836891136 and 605162723566813262).
-3. Real-time mentions verified in #moments (ID: 1220389554289250526):
-   - User Hash ✦ asked @Pai hello -> Pai replied Hey there! 👋.
-   - User asked how are u nga @Pai -> Pai replied I’m good, thanks for asking! I just woke up, though. How are you doing?.
-   - User tested companion role: @Pai I am testing u before putting u in my friends server -> Pai replied: Testing away! I'm ready when you are. Just let me know who I can be once I'm in.
-4. Unmentioned messages (u should be natural af u feel me?) were archived silently to pai.sqlite without spamming or replying, exactly adhering to privacy and direct-mention gating rules.
-
-### Known Deferred Issues (Post-MVP)
-
-The following known issues are documented and explicitly deferred for future milestones:
-1. **External GIF links (e.g. Klipy)**: External GIF URLs outside Discord's direct CDN/Giphy are not currently decoded for vision analysis.
-2. **Custom Discord emojis/emotes**: Custom server emotes (`<:name:id>`) are stripped during prompt minimization and not semantically understood.
-3. **Implicit replies without mentions**: Discord reply chains where Pai is replied to without an explicit `@Pai` mention tag do not trigger an automatic response under the strict direct-mention gate.
+- The consenting Discord test scope was validated on Windows with the Groq Free route. Explicit mentions responded and ordinary chat was archived silently. Account, member and channel details belong in the operator's local policy.
+- DNS and Gateway access, Groq inference, the existing SQLite archive and an encrypted backup were verified during P8. The hosting history and resource checks are recorded in [docs/HOSTING.md](docs/HOSTING.md).
+- The hosted process and persistence remain unverified. Production activation still requires separate owner approval and affirmative scope consent.
+- The merge review removed a private chat inspection script, restricted the deploy procedure to tracked source and replaced pilot identifiers with a disabled template. Keep private configuration, messages, media and archive files on the operator's machine.
 
 ## Checkpoint log
 

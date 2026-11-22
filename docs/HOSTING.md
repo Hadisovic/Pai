@@ -82,7 +82,7 @@ Live browser inspection verified both primary and fallback cloud host offerings:
 1. **Enzonic** (`https://panel.enzonic.com`):
    - Confirmed free plan: 512 MB RAM, 10 GB disk, 50% CPU, $0.00 cost, no card or billing details.
    - Server created: `Pai` under Discord Bot -> Python (startup file: `main.py`).
-   - Provisioning Status: Enzonic Free Queue ID 9980, Position #121 in line. Waiting on node expansion arriving early this week.
+   - Provisioning Status: the Free allocation was queued at the time of inspection.
    - Uptime & Sleep Policy Reconciliation:
      - Official product pages (`https://www.enzonic.com/python` and `https://enzonic.com/discord-bots`) explicitly advertise 24/7 always-on hosting without sleep for Python Discord bots.
      - General platform terms (`https://enzonic.com/legal/tos`) define inactivity sleep rules for game servers (e.g. Minecraft) when zero players are connected.
@@ -93,15 +93,20 @@ Live browser inspection verified both primary and fallback cloud host offerings:
    - Confirmed free plan: 256 MB RAM, 1 GB NVMe, 30% CPU, 7-day heartbeat renewal, card-free.
    - Panel: Pterodactyl at `https://panel.kerit.cloud/` (login protected by reCAPTCHA).
    - Claim requirements & gates verified:
-     - Account created and logged in (`hadiouss4@gmail.com`).
+     - Account created and logged in.
      - Discord OAuth linking required (Discord account must be 30+ days old).
      - Must join Kerit Discord community (`https://discord.gg/7x9MQgFrCT`) and remain a member for **at least 1 full day (24h)** before the claim button unlocks.
      - Form submission requires solving an hCaptcha challenge.
      - Node status currently reported as `free-node · discord bot hosting · offline`.
 
 3. **Deployment Bundle**:
-   - Packaged standalone bundle `deploy.zip` (39.7 KB) via `scripts/bundle_deploy.py` containing `main.py`, locked `requirements.txt`, `src/pai/`, and active `.pai-policy.json` + `pai.sqlite` memory snapshot.
-   - Encrypted off-host backup created: `backups/snapshot.pai` via AES-256-GCM (`PAI_BACKUP_KEY` preserved in private `.env`).
+   - Build a code-only bundle from the verified revision using Git's tracked paths.
+
+     ```powershell
+     git archive --format=zip --output=deploy-code.zip HEAD -- main.py requirements.txt .pai-policy.json.example src/pai/
+     ```
+
+   - Keep the existing private archive, encrypted snapshots and credentials local. Provision a fresh synthetic scope for any authorized future host validation.
 
 ## 2026-11-22 · Permanent Free Hosting Architectural Review & Decision
 
@@ -111,7 +116,7 @@ Per owner directive, the project prioritizes **long-term stability, persistent S
    - Verified that Kerit Cloud requires continuous heartbeats, manual anti-bot solving, a mandatory 24h Discord server waiting gate, and currently has offline free nodes. It is rejected as an unstable short-term workaround.
 
 2. **Enzonic Allocation Preserved in Queue**:
-   - Server `Pai` (Queue ID 9980) remains queued on Enzonic. Enzonic offers 512 MB RAM, 10 GB disk, and no manual renewal button or fee, with official product documentation explicitly advertising 24/7 always-on uptime for Python Discord bots. Runtime sleep behavior will be verified directly once the node assigns the container.
+   - The allocation was queued when inspected. Enzonic offers 512 MB RAM, 10 GB disk, and no manual renewal button or fee, with official product documentation explicitly advertising 24/7 always-on uptime for Python Discord bots. Runtime sleep behavior will be verified directly once the node assigns the container.
 
 3. **Structural Analysis of Card-Free Cloud Hosting**:
    - **True 24/7 Always-On Cloud VMs** (Oracle Cloud Always Free, Fly.io, Google Cloud e2-micro): All require a valid credit card on file for identity verification.
