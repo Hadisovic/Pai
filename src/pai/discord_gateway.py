@@ -157,15 +157,7 @@ class PaiDiscordClient(discord.Client):
         request = await asyncio.to_thread(self.archive.get, message.id)
         if request is None or request.text != message.content:
             return
-        context = ConversationContext(request)
-        if can_read_history:
-            context = await asyncio.to_thread(
-                prepare_context,
-                self.archive,
-                self.policy,
-                request,
-                now=datetime.now(UTC),
-            )
+        assistant_turn = None
         if bot_reply and (turn := self.assistant_turns.get(parent.id)) is not None:
             cutoff = self._retention_cutoff()
             if (
@@ -175,17 +167,24 @@ class PaiDiscordClient(discord.Client):
                     and self.policy.permits(
                         source.guild_id, source.channel_id, source.author_id
                     )
-                    and source.created_at >= cutoff
-                    and (
-                        not context.self_recall or source.author_id == request.author_id
-                    )
+                    and cutoff <= source.created_at <= request.created_at
                     for source in turn.sources
                 )
                 and await asyncio.to_thread(
                     self.archive.records_unchanged, turn.sources
                 )
             ):
-                context = replace(context, assistant_turn=turn)
+                assistant_turn = turn
+        context = ConversationContext(request)
+        if can_read_history:
+            context = await asyncio.to_thread(
+                prepare_context,
+                self.archive,
+                self.policy,
+                request,
+                now=datetime.now(UTC),
+                assistant_turn=assistant_turn,
+            )
         if self.read_media is not None:
             media = await self.read_media(message, context)
             if (
@@ -211,14 +210,23 @@ class PaiDiscordClient(discord.Client):
             return
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
+        outgoing_reference = (
+            discord.MessageReference(
+                message_id=message.id, channel_id=channel.id, guild_id=channel.guild.id
+            )
+            if can_read_history
+            else None
+        )
         sent = await channel.send(
-            response[:2000], allowed_mentions=discord.AllowedMentions.none()
+            response[:2000],
+            reference=outgoing_reference,
+            allowed_mentions=discord.AllowedMentions.none(),
         )
         if type(sent.id) is int and len(context.sources) <= 32:
             if len(self.assistant_turns) >= 64:
                 self.assistant_turns.pop(next(iter(self.assistant_turns)))
             self.assistant_turns[sent.id] = AssistantTurn(
-                response[:2000], context.sources
+                response[:2000], request, context.sources, context.recall_question
             )
 
     async def _current_reply_access(

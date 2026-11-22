@@ -60,8 +60,10 @@ Pai responds to a literal, Discord-recognized bot mention or to a native
 Discord reply to one of its own messages in the same channel. The reply
 works with the Discord reply ping toggled off. Replies to other members
 need a direct mention to trigger Pai. When the bot and requester can read
-channel history, Pai uses up to four authorized reply ancestors and eight
-recent messages. The CLI requires the approved Groq mode for model replies.
+channel history, Pai sends a native reply to the message that addressed it
+with reply pings disabled. It uses up to four authorized reply ancestors
+and selects nearby messages relevant to the request. The CLI requires the
+approved Groq mode for model replies.
 
 Search uses SQLite 3.42+ with FTS5 and its secure-delete option. Check
 `uv run --locked python -c "import sqlite3; print(sqlite3.sqlite_version)"`
@@ -81,10 +83,11 @@ a separate opt-in.
 Pai attributes archived statements to immutable Discord author IDs.
 Prompts use short speaker labels and current message display names. On
 recognized first-person recall questions, Pai searches the requester's own
-messages. Authorized group context can include other members' messages on
-ordinary conversation turns. Nearby replies from Pai are available during
-the current process while their supporting messages remain authorized and
-unchanged.
+messages. In a reply to Pai, a question like “what about mine?” can keep
+the previous topic while searching facts from the current member. The
+quoted exchange remains available during the current process while its
+supporting messages are authorized and unchanged. Pai links archive
+evidence for recall and relevant media.
 
 For shared style, Pai considers short expressions seen in at least three
 authorized messages by at least two distinct people in the same channel.

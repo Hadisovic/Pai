@@ -17,7 +17,7 @@ _QUERY_WORDS = re.compile(r"[^\W_]+")
 _DISCORD_TAG = re.compile(r"<[@#][!&]?[0-9]+>")
 _STOP_WORDS = frozenset(
     "a an and are as at be by can could did do does for from had has have hey how i in "
-    "is it me of on or our pai say tell than that the their them there they this to us "
+    "is it me mine my of on or our pai say tell than that the their them there they this tho to us "
     "was we were what when where which who why will with would you your".split()
 )
 
@@ -29,6 +29,36 @@ _SELF_RECALL = re.compile(
     r"|(?:شو|ايش|إيش|ما)\s+(?:اسمي|اسمي؟|لعبتي المفضلة)",
     re.IGNORECASE,
 )
+
+
+_MINE = re.compile(
+    r"\b(?:what(?:['’]s|\s+(?:is|about))\s+mine|and\s+mine)\b", re.IGNORECASE
+)
+_CONTINUE_RECALL = re.compile(
+    r"\s*(?:(?:uhm?|umm?|okay|ok|bro)[ ,]+)?(?:just\s+)?"
+    r"(?:say (?:it|that again)(?: in lowercase)?|tell me|what is it)[.!?]*\s*",
+    re.IGNORECASE,
+)
+_HISTORY_RECALL = re.compile(
+    r"\b(?:(?:what|which|where|when|who)\s+(?:did|was|were|had)|"
+    r"did (?:we|you)|remember|remind|recall|earlier|last time)\b"
+    r"|\b(?:what|where)(?:['’]s| is) our\b|ذكّ?رني",
+    re.IGNORECASE,
+)
+_QUERY_ALIASES = {"fav": "favorite", "fave": "favorite", "favourite": "favorite"}
+
+
+def requests_history(text: str) -> bool:
+    return bool(_SELF_RECALL.search(text) or _HISTORY_RECALL.search(text))
+
+
+def _query_terms(text: str) -> tuple[str, ...]:
+    words = _QUERY_WORDS.findall(_DISCORD_TAG.sub("", text).lower())
+    return tuple(
+        _QUERY_ALIASES.get(word, word)
+        for word in words
+        if word not in _STOP_WORDS and len(word) > 1
+    )
 
 
 def direct_mention(text: str, recognized_targets: Iterable[int], bot_id: int) -> bool:
@@ -48,7 +78,9 @@ class MediaReading:
 @dataclass(frozen=True)
 class AssistantTurn:
     text: str
+    request: MessageRecord
     sources: tuple[MessageRecord, ...]
+    recall_question: MessageRecord | None = None
 
 
 @dataclass(frozen=True)
@@ -68,6 +100,7 @@ class ConversationContext:
     group_style: tuple[GroupExpression, ...] = ()
     self_recall: bool = False
     assistant_turn: AssistantTurn | None = None
+    recall_question: MessageRecord | None = None
 
     @property
     def sources(self) -> tuple[MessageRecord, ...]:
@@ -83,6 +116,7 @@ class ConversationContext:
                 for source in expression.sources
             ),
             *(self.assistant_turn.sources if self.assistant_turn is not None else ()),
+            *((self.recall_question,) if self.recall_question is not None else ()),
             *((self.media.origin,) if self.media.origin is not None else ()),
         )
         return tuple(dict.fromkeys(included))
@@ -94,11 +128,26 @@ def prepare_context(
     request: MessageRecord,
     *,
     now: datetime | None = None,
+    assistant_turn: AssistantTurn | None = None,
 ) -> ConversationContext:
     if not policy.permits(request.guild_id, request.channel_id, request.author_id):
         raise ValueError("The request is outside authorized scope")
     cutoff = (now or request.created_at) - timedelta(days=policy.retention_days)
-    self_recall = bool(_SELF_RECALL.search(request.text))
+    recall_question = request if _SELF_RECALL.search(request.text) else None
+    mine = bool(_MINE.search(request.text))
+    if (
+        recall_question is None
+        and assistant_turn is not None
+        and (
+            mine
+            or (
+                assistant_turn.request.author_id == request.author_id
+                and _CONTINUE_RECALL.fullmatch(request.text)
+            )
+        )
+    ):
+        recall_question = assistant_turn.recall_question
+    self_recall = recall_question is not None or mine
     authors = (
         frozenset({request.author_id}) if self_recall else policy.consenting_member_ids
     )
@@ -122,15 +171,24 @@ def prepare_context(
         parents.append(parent)
         parent_id = parent.reply_to_id
 
-    recent = archive.recent(request, authors, cutoff, _RECENT_LIMIT + len(parents))
-    visible = tuple(row for row in recent if row.message_id not in seen)[:_RECENT_LIMIT]
-    seen.update(row.message_id for row in visible)
-    terms = _QUERY_WORDS.findall(_DISCORD_TAG.sub("", request.text).lower())
-    query = " ".join(
-        term
-        for term in terms
-        if term not in _STOP_WORDS and term != "my" and len(term) > 1
+    recent = (
+        ()
+        if self_recall or assistant_turn is not None
+        else archive.recent(request, authors, cutoff, _RECENT_LIMIT + len(parents))
     )
+    terms = _query_terms((recall_question or request).text)
+    focus_terms = frozenset(terms)
+    visible = tuple(
+        row
+        for row in recent
+        if row.message_id not in seen
+        and (
+            len(focus_terms) < 3
+            or len(focus_terms.intersection(_query_terms(row.text))) >= 2
+        )
+    )[:_RECENT_LIMIT]
+    seen.update(row.message_id for row in visible)
+    query = " ".join(terms) if self_recall or requests_history(request.text) else ""
     memory = archive.search(
         query,
         guild_id=request.guild_id,
@@ -163,6 +221,8 @@ def prepare_context(
         style_examples,
         group_style=group_style,
         self_recall=self_recall,
+        assistant_turn=None if self_recall else assistant_turn,
+        recall_question=recall_question,
     )
 
 

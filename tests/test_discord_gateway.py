@@ -224,6 +224,8 @@ def test_gateway_responds_only_once_to_direct_mentions(tmp_path):
     assert [row.message_id for row in respond.call_args.args[0].recent] == [5]
     event.channel.send.assert_awaited_once()
     assert event.channel.send.call_args.args == ("Synthetic answer",)
+    reference = event.channel.send.call_args.kwargs["reference"]
+    assert (reference.message_id, reference.channel_id, reference.guild_id) == (6, 2, 1)
     assert event.channel.send.call_args.kwargs["allowed_mentions"].to_dict() == {
         "parse": []
     }

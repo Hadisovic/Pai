@@ -69,3 +69,14 @@ def test_renderer_removes_generic_mode_announcement_and_signoff_but_preserves_ba
         prompt,
     )
     assert answer == "BROOO that demo was a weather event 💀"
+
+
+def test_ordinary_question_does_not_expose_citations_for_matching_chat():
+    context = ConversationContext(
+        row(99, "one word, what color is a ripe banana?"),
+        recent=(row(1, "The color picker is broken."),),
+        memory=(row(2, "Your last answer was banana."),),
+    )
+    prompt = build_prompt(context)
+    assert prompt.sources == ()
+    assert render_answer("yellow [s1]", prompt) == "yellow"
