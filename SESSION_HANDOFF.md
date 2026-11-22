@@ -1,6 +1,6 @@
 # Pai Session Handoff · 2026-11-22
 
-This handoff document captures the exact runtime, deployment, and codebase state for resuming Pai without repeating research or rebuilding existing work.
+This handoff records the P8 deployment baseline. See [STATUS.md](STATUS.md) for newer branch and validation evidence.
 
 ---
 

@@ -509,7 +509,7 @@ class Archive:
         tokens: int,
         request_limits: tuple[int, int],
         token_limits: tuple[int, int],
-    ) -> bool:
+    ) -> int | None:
         current = _utc_text(now)
         minute = _utc_text(now - timedelta(minutes=1))
         day = _utc_text(now - timedelta(days=1))
@@ -520,7 +520,7 @@ class Archive:
                 (route, current),
             ).fetchone()
             if blocked:
-                return False
+                return None
             connection.execute(
                 "DELETE FROM model_attempts WHERE route = ? AND occurred_at < ?",
                 (route, day),
@@ -540,12 +540,19 @@ class Archive:
                 or minute_tokens + tokens > token_limits[0]
                 or day_tokens + tokens > token_limits[1]
             ):
-                return False
-            connection.execute(
+                return None
+            attempt = connection.execute(
                 "INSERT INTO model_attempts (route, occurred_at, tokens) VALUES (?, ?, ?)",
                 (route, current, tokens),
             )
-            return True
+            return attempt.lastrowid
+
+    def settle_model_attempt(self, attempt_id: int, route: str, tokens: int) -> None:
+        with closing(self.connect()) as connection, connection:
+            connection.execute(
+                "UPDATE model_attempts SET tokens = ? WHERE rowid = ? AND route = ?",
+                (tokens, attempt_id, route),
+            )
 
     def block_model_route(self, route: str, until: datetime) -> None:
         with closing(self.connect()) as connection, connection:
@@ -595,6 +602,7 @@ class Archive:
         limit: int = 8,
         through: datetime | None = None,
         omit: frozenset[int] = frozenset(),
+        statements_only: bool = False,
     ) -> tuple[MessageRecord, ...]:
         terms = list(dict.fromkeys(_WORDS.findall(query[:2000].lower())))[:12]
         if not terms or not authors or limit < 1:
@@ -612,6 +620,7 @@ class Archive:
                   AND messages.created_at BETWEEN ? AND ?
                   AND messages.message_id NOT IN (SELECT value FROM json_each(?))
                   AND messages.message_id NOT IN (SELECT message_id FROM style_examples)
+                  AND (NOT ? OR (instr(messages.text, '?') = 0 AND instr(messages.text, '؟') = 0))
                 ORDER BY bm25(messages_fts), messages.created_at DESC, messages.rowid DESC
                 LIMIT ?
                 """,
@@ -623,6 +632,7 @@ class Archive:
                     _utc_text(cutoff),
                     _utc_text(through) if through is not None else "9999",
                     json.dumps([str(message_id) for message_id in omit]),
+                    statements_only,
                     min(limit, 32),
                 ),
             ).fetchall()
@@ -684,48 +694,31 @@ class Archive:
             ).fetchall()
         return tuple(_record(row) for row in rows)
 
-    def group_style(
-        self,
-        request: MessageRecord,
-        authors: frozenset[int],
-        cutoff: datetime,
-        omit: frozenset[int] = frozenset(),
-        limit: int = 2,
+    def style_candidates(
+        self, request: MessageRecord, authors: frozenset[int], cutoff: datetime
     ) -> tuple[MessageRecord, ...]:
-        if limit <= 0 or not authors:
-            return ()
-        omitted = [str(item) for item in (omit | {request.message_id})]
         with closing(self.connect()) as connection:
             rows = connection.execute(
                 """
-                WITH candidates AS (
-                    SELECT messages.message_id, messages.guild_id, messages.channel_id,
-                           messages.author_id, messages.author_display, messages.text,
-                           messages.created_at, messages.reply_to_id, messages.edited_at, messages.media_revision,
-                           ROW_NUMBER() OVER (PARTITION BY messages.author_id ORDER BY messages.created_at DESC) as author_rank
-                    FROM messages
-                    WHERE guild_id = ? AND channel_id = ?
-                      AND author_id IN (SELECT value FROM json_each(?))
-                      AND message_id NOT IN (SELECT value FROM json_each(?))
-                      AND created_at BETWEEN ? AND ?
-                      AND length(text) >= 8 AND length(text) <= 160
-                      AND text NOT GLOB '[/!.]*'
-                      AND text NOT LIKE '%http://%' AND text NOT LIKE '%https://%'
-                )
                 SELECT message_id, guild_id, channel_id, author_id,
                        author_display, text, created_at, reply_to_id, edited_at, media_revision
-                FROM candidates
-                WHERE author_rank = 1
-                ORDER BY created_at DESC LIMIT ?
+                FROM messages
+                WHERE guild_id = ? AND channel_id = ? AND message_id <> ?
+                  AND author_id IN (SELECT value FROM json_each(?))
+                  AND created_at BETWEEN ? AND ?
+                  AND length(text) BETWEEN 4 AND 70
+                  AND text NOT GLOB '[/!.]*'
+                  AND lower(text) NOT LIKE '%http%'
+                  AND lower(text) NOT LIKE '%www.%'
+                ORDER BY created_at DESC, rowid DESC LIMIT 96
                 """,
                 (
                     str(request.guild_id),
                     str(request.channel_id),
+                    str(request.message_id),
                     json.dumps([str(author) for author in authors]),
-                    json.dumps(omitted),
                     _utc_text(cutoff),
                     _utc_text(request.created_at),
-                    limit,
                 ),
             ).fetchall()
         return tuple(_record(row) for row in rows)

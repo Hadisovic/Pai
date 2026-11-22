@@ -31,10 +31,11 @@ def test_context_is_untrusted_bounded_and_cites_only_supplied_sources():
     assert "example.com" not in plan.request.payload
     assert "<@123>" not in plan.request.payload
     answer = render_answer(
-        "Sam called it Waffle. [s1] [s999] https://example.com", plan
+        "Sam called it Waffle. [s1] [s999] [/s2] https://example.com", plan
     )
     assert "[source](<https://discord.com/channels/101/102/1>)" in answer
     assert "[s999]" not in answer and "https://example.com" not in answer
+    assert "[/s2]" not in answer
 
 
 def test_three_frame_prompt_uses_minimum_context_that_fits_free_limit():
@@ -46,3 +47,25 @@ def test_three_frame_prompt_uses_minimum_context_that_fits_free_limit():
     assert plan.request.reserved_tokens <= 8000
     assert plan.request.frames == (b"a", b"b", b"c")
     assert json.loads(plan.request.payload)["request"]["text"].startswith("why?")
+
+
+def test_prompt_distinguishes_same_display_name_and_unifies_renamed_speaker():
+    from dataclasses import replace
+
+    last = row(1, "My favorite is Cyberpunk.")
+    other = replace(row(2, "My favorite is Minecraft."), author_id=123456789012345678)
+    renamed = replace(row(3, "What did I say?"), author_display="New name")
+    payload = json.loads(
+        build_prompt(ConversationContext(renamed, recent=(last, other))).request.payload
+    )
+    assert payload["request"]["speaker_id"] == payload["recent"][0]["speaker_id"]
+    assert payload["request"]["speaker_id"] != payload["recent"][1]["speaker_id"]
+
+
+def test_renderer_removes_generic_mode_announcement_and_signoff_but_preserves_banter():
+    prompt = build_prompt(ConversationContext(row(1, "bro what")))
+    answer = render_answer(
+        "Natural mode: on.\nBROOO that demo was a weather event 💀\nLet me know if you need anything.",
+        prompt,
+    )
+    assert answer == "BROOO that demo was a weather event 💀"

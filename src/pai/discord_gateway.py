@@ -10,6 +10,7 @@ from discord.ext import tasks
 
 from pai.commands import controls
 from pai.conversation import (
+    AssistantTurn,
     ConversationContext,
     MediaReading,
     direct_mention,
@@ -48,6 +49,7 @@ class PaiDiscordClient(discord.Client):
         self.respond = respond
         self.read_media = read_media
         self.reply_limits = ReplyLimits()
+        self.assistant_turns: dict[int, AssistantTurn] = {}
         self.archive_lock = asyncio.Lock()
 
     async def on_message(self, message: discord.Message) -> None:
@@ -72,32 +74,86 @@ class PaiDiscordClient(discord.Client):
         async with self.archive_lock:
             inserted = await self.handle_message(message)
         if inserted and self.respond is not None:
-            await self._respond_if_mentioned(message)
+            await self._respond_if_addressed(message)
 
-    async def _respond_if_mentioned(self, message: discord.Message) -> None:
-        if (
-            self.user is None
-            or self.archive is None
-            or self.respond is None
-            or message.guild is None
-            or not direct_mention(
-                message.content,
-                (target.id for target in message.mentions),
-                self.user.id,
-            )
+    async def _respond_if_addressed(self, message: discord.Message) -> None:
+        if self.user is None or self.archive is None or message.guild is None:
+            return
+        mentioned = direct_mention(
+            message.content, (target.id for target in message.mentions), self.user.id
+        )
+        reference = message.reference
+        is_reply = (
+            message.type == discord.MessageType.reply
+            and reference is not None
+            and reference.message_id is not None
+            and reference.channel_id == message.channel.id
+            and reference.guild_id in (None, message.guild.id)
+        )
+        known_parent = (
+            self._is_pai_message(reference.resolved, message) if is_reply else False
+        )
+        if not mentioned and not (
+            is_reply and (known_parent or reference.resolved is None)
         ):
             return
-        with self.reply_limits.slot(message.author.id) as admitted:
-            if admitted:
-                await self._deliver_reply(message)
 
-    async def _deliver_reply(self, message: discord.Message) -> None:
+        async with self.reply_limits.slot(
+            message.channel.id, message.author.id
+        ) as admitted:
+            if admitted:
+                await self._deliver_reply(
+                    message, mentioned, reference if is_reply else None
+                )
+            elif (mentioned or known_parent) and self.reply_limits.announce_busy(
+                message.channel.id
+            ):
+                access = await self._current_reply_access(message)
+                if access is not None:
+                    await access[0].send(
+                        "too many pings at once. try me again in a sec",
+                        allowed_mentions=discord.AllowedMentions.none(),
+                    )
+
+    def _is_pai_message(self, parent: object, message: discord.Message) -> bool:
+        return (
+            self.user is not None
+            and isinstance(parent, discord.Message)
+            and parent.id == message.reference.message_id
+            and parent.channel.id == message.channel.id
+            and parent.guild is not None
+            and parent.guild.id == message.guild.id
+            and parent.author.id == self.user.id
+            and parent.webhook_id is None
+        )
+
+    async def _deliver_reply(
+        self,
+        message: discord.Message,
+        mentioned: bool,
+        reference: discord.MessageReference | None,
+    ) -> None:
         if self.archive is None or self.respond is None:
             return
         access = await self._current_reply_access(message)
         if access is None:
             return
-        _, can_read_history = access
+        channel, can_read_history = access
+        parent = (
+            reference.resolved if reference is not None and can_read_history else None
+        )
+        if reference is not None and can_read_history and parent is None:
+            try:
+                parent = await channel.fetch_message(reference.message_id)
+            except discord.HTTPException:
+                pass
+        bot_reply = (
+            reference is not None
+            and can_read_history
+            and self._is_pai_message(parent, message)
+        )
+        if not mentioned and not bot_reply:
+            return
         request = await asyncio.to_thread(self.archive.get, message.id)
         if request is None or request.text != message.content:
             return
@@ -110,6 +166,26 @@ class PaiDiscordClient(discord.Client):
                 request,
                 now=datetime.now(UTC),
             )
+        if bot_reply and (turn := self.assistant_turns.get(parent.id)) is not None:
+            cutoff = self._retention_cutoff()
+            if (
+                parent.content == turn.text
+                and all(
+                    source.channel_id == request.channel_id
+                    and self.policy.permits(
+                        source.guild_id, source.channel_id, source.author_id
+                    )
+                    and source.created_at >= cutoff
+                    and (
+                        not context.self_recall or source.author_id == request.author_id
+                    )
+                    for source in turn.sources
+                )
+                and await asyncio.to_thread(
+                    self.archive.records_unchanged, turn.sources
+                )
+            ):
+                context = replace(context, assistant_turn=turn)
         if self.read_media is not None:
             media = await self.read_media(message, context)
             if (
@@ -135,9 +211,15 @@ class PaiDiscordClient(discord.Client):
             return
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
-        await channel.send(
+        sent = await channel.send(
             response[:2000], allowed_mentions=discord.AllowedMentions.none()
         )
+        if type(sent.id) is int and len(context.sources) <= 32:
+            if len(self.assistant_turns) >= 64:
+                self.assistant_turns.pop(next(iter(self.assistant_turns)))
+            self.assistant_turns[sent.id] = AssistantTurn(
+                response[:2000], context.sources
+            )
 
     async def _current_reply_access(
         self, message: discord.Message

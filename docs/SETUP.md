@@ -56,11 +56,12 @@ retain allocated disk pages for reuse, so verify disk headroom in the pilot.
 This stage neither stores nor downloads media. A live pilot still needs
 explicit approval and the remaining privacy workflows.
 
-The mocked responder requires a literal, Discord-recognized bot mention.
-Reply notification pings and code examples do not trigger it. When both
-the requester and the bot can read channel history, it can see up to four
-authorized reply ancestors and eight recent messages in that same channel.
-The CLI leaves model replies disabled unless the operator enables the approved Groq mode.
+Pai responds to a literal, Discord-recognized bot mention or to a native
+Discord reply to one of its own messages in the same channel. The reply
+works with the Discord reply ping toggled off. Replies to other members
+need a direct mention to trigger Pai. When the bot and requester can read
+channel history, Pai uses up to four authorized reply ancestors and eight
+recent messages. The CLI requires the approved Groq mode for model replies.
 
 Search uses SQLite 3.42+ with FTS5 and its secure-delete option. Check
 `uv run --locked python -c "import sqlite3; print(sqlite3.sqlite_version)"`
@@ -74,12 +75,26 @@ links. It fetches current guild membership and checks channel permissions
 before selecting history and again before sending. It discards a response if
 a source changed or was removed during generation. Use history-enabled
 channels only when their audience is authorized to receive the historical
-context in an ordinary channel reply. The provider-backed responder requires a separate opt-in.
+context in an ordinary channel reply. The provider-backed responder requires
+a separate opt-in.
+
+Pai attributes archived statements to immutable Discord author IDs.
+Prompts use short speaker labels and current message display names. On
+recognized first-person recall questions, Pai searches the requester's own
+messages. Authorized group context can include other members' messages on
+ordinary conversation turns. Nearby replies from Pai are available during
+the current process while their supporting messages remain authorized and
+unchanged.
+
+For shared style, Pai considers short expressions seen in at least three
+authorized messages by at least two distinct people in the same channel.
+It passes up to two expressions without attribution or profile data.
+Members can explicitly share a style example using the command below.
 
 ## Member privacy controls
 
 Only explicit command invocations receive these private responses. Social
-replies still require a direct bot mention.
+replies require a direct mention or a native reply to Pai.
 
 - `/privacy` shows your collection state and the current retention window.
 - `/memory` exports up to 100 of your own recent authorized messages in the
@@ -118,10 +133,10 @@ or embed fingerprints for each message. It stores neither media bytes nor
 signed URLs. The download boundary admits only supported image MIME types
 from Discord's media CDN and selected GIF CDNs with public DNS resolution,
 no redirects, a 3 MiB cap and a six-second deadline. Actual format and pixel
-verification is added with mention-triggered analysis.
+verification runs when Pai is addressed and finds relevant media.
 
 With AI and media enabled, Pai considers one still image or supported
-sticker on an authorized direct mention or its directly referenced
+sticker on the message addressing Pai or its directly referenced
 authorized message. It verifies the actual file format and bounds the
 decoded image to four million pixels, then sends a normalized frame of at
 most 512 × 512 pixels. It performs no downloads during ordinary collection.

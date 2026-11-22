@@ -1,6 +1,15 @@
 # Durable handoff state
 
-## Current priority · Session Pause Checkpoint (2026-11-22)
+## Current priority · P9 friend-group conversations (2026-11-22)
+
+- The P9 branch starts from Antigravity's verified `e0cdaa7` checkpoint on `codex/P8-live-account-access`. Stack its PR on P8 [PR #41](https://github.com/Hadisovic/Pai/pull/41).
+- Pai accepts authorized direct mentions and native same-channel replies to its own messages. Ordinary chat still passes through the silent archive gate. Short bursts use a bounded FIFO queue with up to two active channels. The verified Free route retains per-minute and daily budget checks and uses reported token usage to reconcile reservations.
+- First-person recall uses the asking member's immutable Discord ID. Prompts use request-local speaker labels that preserve attribution through display-name collisions and renames. The voice uses recurring cross-member expressions as group context. Pai keeps no inferred per-person humor profiles.
+- Recent Pai turns are transient and used only while their authorized sources are current. After a restart, native replies still trigger Pai and can use eligible human chat history. The exact prior Pai output requires that turn's in-process source tracking.
+- Local validation passed 81 tests, Ruff, the SQLite/FTS5 doctor and a locked dependency audit. In the final synthetic model run, Groq Free completed seven calls using 4,777 reported tokens. Both favorite games were attributed correctly after a display-name collision and rename. Banter and sincerity were recognizable, while Arabic phrasing and continuity varied. The model recognized the yellow object in a three-frame GIF but invented an extra movement. The calls sent only synthetic data.
+- The Windows deployment and Enzonic queue were left in place. The P9 Gateway behavior is covered by synthetic Discord events. For an authorized live rollout, use a controlled single-instance cutover in the existing test scope, then check mentions, ping-off replies, ordinary-chat silence, separate recall, and media. See [SESSION_HANDOFF.md](SESSION_HANDOFF.md) for the P8 baseline.
+
+## Historical · P8 session pause checkpoint (2026-11-22)
 
 Pai is fully online and active in Discord. Today's live development session is paused per owner instruction.
 

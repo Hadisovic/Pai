@@ -95,8 +95,6 @@ def test_offline_discord_archive_recall_gif_and_deletion_flow(tmp_path, monkeypa
     )
     client._connection.user = Mock(id=42)
     client.get_channel = Mock(return_value=channel)
-    clock = [0]
-    client.reply_limits.clock = lambda: clock[0]
 
     async def replay():
         await client.on_message(
@@ -122,7 +120,6 @@ def test_offline_discord_archive_recall_gif_and_deletion_flow(tmp_path, monkeypa
         assert channel.send.call_args.args[0] == (
             "Sam named the router Waffle. [source](<https://discord.com/channels/1/2/1>)"
         )
-        clock[0] += 15
         gif = message(31, "Watch this.", date=now + timedelta(seconds=1))
         gif.attachments = [
             Mock(

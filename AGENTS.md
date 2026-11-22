@@ -28,12 +28,12 @@
 - If an integration requires unavailable resources or violates no-card criteria, mark `BLOCKED` and propose alternatives rather than silently compromising requirements.
 
 ## Test policy
-Verify mention-only response, opt-in and channel isolation, deduplicated ingestion/reconnects, edits and deletions, SQLite persistence, reply context, search provenance, humor vs asserted facts, source ACLs, retention/forget-me, media size and URL safety, cache invalidation, provider 429/fallback, prompt injection, and restore.
+Verify responses to direct mentions and replies to Pai, silent handling of other chat, opt-in and channel isolation, deduplicated ingestion/reconnects, edits and deletions, SQLite persistence, reply context, search provenance, humor vs asserted facts, source ACLs, retention/forget-me, media size and URL safety, cache invalidation, provider 429/fallback, prompt injection, and restore.
 Aim for low-memory operation on constrained free hosts. No invented benchmarks or deployment claims.
 
 
 ## Engineering discretion and reuse-first research
-- The plan is an **intent and acceptance guide, not a rigid technology mandate**. Choose better libraries, architecture, databases, hosts, model providers, milestones or ordering when evidence shows a material improvement. Preserve the core outcomes: genuinely free/no billing or card, strong conversational quality, privacy/consent, mention-only replies, dependable memory, media understanding, and verified resumable GitHub checkpoints.
+- The plan is an **intent and acceptance guide, not a rigid technology mandate**. Choose better libraries, architecture, databases, hosts, model providers, milestones or ordering when evidence shows a material improvement. Preserve the core outcomes: genuinely free/no billing or card, strong conversational quality, privacy/consent, replies only when addressed, dependable memory, media understanding, and verified resumable GitHub checkpoints.
 - **Search and assess existing open-source Discord AI bots, frameworks, memory/RAG and media tools before building from scratch.** Inspect maintenance, licensing, permissions, security posture, dependencies, features, and compatibility with free no-card hosting. Clone/fork/adapt a suitable repository where license permits and it meaningfully accelerates delivery; retain copyright notices, attribution, and license terms. Do not copy code from incompatible or unclear licenses.
 - Compare reuse against a small custom build. Favor the approach that yields the **best working free bot**, not the one with the most custom code. Avoid unnecessary complexity and premature engineering.
 - Document the shortlist, tradeoffs, selected approach, license obligations and any deviations from PLAN.md in `STATUS.md` or `docs/DECISIONS.md`. Update the roadmap when replacing an implementation tactic, but do not quietly drop a core user requirement.

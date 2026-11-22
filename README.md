@@ -1,10 +1,10 @@
 # Pai — Discord AI Companion
 
-Pai is a Discord companion with consent-gated chat memory, direct-mention replies, and selective image and GIF understanding. The offline pilot is tested. Live access, model quality, and hosting await owner approval and verification.
+Pai is a Discord companion with consent-gated chat memory, mention and reply triggers, and selective image and GIF understanding. See [STATUS.md](STATUS.md) for the deployed version and test evidence.
 
 ## Product contract
 - Observe and archive messages only in explicitly allowlisted channels after members are informed and consent is configured. No DMs or other servers.
-- Respond **only on direct bot mentions** or explicit authorized slash commands. Understand Discord reply chains, nearby context, and user attribution.
+- Respond to direct bot mentions, native replies to Pai, and authorized slash commands. Use Discord reply chains, nearby context, and stable author IDs.
 - English-first replies with occasional Arabic/Arabizi comprehension if supported. Personality starts friendly and develops naturally from the group's humor; teasing should be light, responsive to feedback, and never forced.
 - Searchable long-term message archive, evidence-backed memories, selective image/GIF/sticker handling, cached meme understanding.
 - **Zero-cost and no billing information** are hard product constraints. Free 24/7 hosting is a goal, not a guarantee; validate provider terms and renewals rather than claiming permanent uptime.

@@ -33,7 +33,7 @@ def test_groq_uses_fixed_api_and_verified_free_model_list():
     assert primary.max_frames == 3
     assert fallback.max_frames == 0
     request = ModelRequest("rules", "synthetic payload", (b"frame-a", b"frame-b"))
-    assert asyncio.run(primary.complete(request)) == "Synthetic reply"
+    assert asyncio.run(primary.complete(request)).text == "Synthetic reply"
     assert session.post.call_args.args == (
         "https://api.groq.com/openai/v1/chat/completions",
     )

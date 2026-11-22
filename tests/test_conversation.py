@@ -89,3 +89,43 @@ def test_old_recall_preserves_source_and_excludes_future_content(tmp_path):
     context = prepare_context(archive, policy, request)
     assert context.memory == (old,)
     assert context.memory[0].jump_url == "https://discord.com/channels/10/20/1"
+
+
+def test_first_person_recall_uses_immutable_author_across_shared_names_and_renames(
+    tmp_path,
+):
+    archive = Archive(tmp_path / "pai.sqlite")
+    now = datetime.now(UTC)
+    policy = PrivacyPolicy(True, "v1", 10, frozenset({20}), frozenset({30, 31}))
+    own = MessageRecord(1, 10, 20, 31, "Old Jo", "My favorite game is Cyberpunk.", now)
+    other = MessageRecord(2, 10, 20, 30, "Sam", "My favorite game is Minecraft.", now)
+    ask = MessageRecord(
+        3,
+        10,
+        20,
+        31,
+        "Sam",
+        "Pai, what's my favorite game?",
+        now + timedelta(seconds=1),
+    )
+    for record in (own, other, ask):
+        archive.append(record)
+    context = prepare_context(archive, policy, ask)
+    assert own in (*context.memory, *context.recent)
+    assert other not in (*context.memory, *context.recent)
+
+    earlier_question = ask
+    ask = MessageRecord(
+        4,
+        10,
+        20,
+        30,
+        "Old Jo",
+        "what did I say my favorite game was?",
+        now + timedelta(seconds=2),
+    )
+    archive.append(ask)
+    context = prepare_context(archive, policy, ask)
+    assert other in (*context.memory, *context.recent)
+    assert own not in (*context.memory, *context.recent)
+    assert earlier_question not in (*context.memory, *context.recent)
