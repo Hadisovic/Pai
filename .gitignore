@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 *.sqlite
+*.sqlite-*
 *.sqlite3
 *.db
 *.db-*
@@ -20,3 +21,5 @@ chat-exports/
 *.key
 .pai-policy.json
 *.pai
+deploy.zip
+deploy-code.zip

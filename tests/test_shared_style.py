@@ -37,3 +37,98 @@ def test_deliberate_style_examples_remain_source_linked_and_separate_from_facts(
     assert share_style_example(reopened, policy, 10, 20, 30, 1)
     assert reopened.delete(10, 20, [1], request.created_at) == 1
     assert prepare_context(reopened, policy, request).style_examples == ()
+
+
+def test_automatic_group_style_learns_expressions_with_author_diversity(tmp_path):
+    path = tmp_path / "pai.sqlite"
+    archive = Archive(path)
+    base_time = datetime(2026, 11, 21, 12, 0, tzinfo=UTC)
+    policy = PrivacyPolicy(True, "v1", 10, frozenset({20}), frozenset({30, 31}))
+
+    # Sam (30) posts multiple messages
+    sam_msgs = [
+        MessageRecord(1, 10, 20, 30, "Sam", "oldest banter", base_time),
+        MessageRecord(
+            2,
+            10,
+            20,
+            30,
+            "Sam",
+            "https://example.com/link",
+            base_time + timedelta(seconds=1),
+        ),
+        MessageRecord(
+            3, 10, 20, 30, "Sam", "!command bot", base_time + timedelta(seconds=2)
+        ),
+        MessageRecord(
+            4,
+            10,
+            20,
+            30,
+            "Sam",
+            "that demo was an absolute disaster lol",
+            base_time + timedelta(seconds=3),
+        ),
+    ]
+    # Jo (31) posts banter
+    jo_msgs = [
+        MessageRecord(
+            5,
+            10,
+            20,
+            31,
+            "Jo",
+            "weather event incoming for real",
+            base_time + timedelta(seconds=4),
+        ),
+    ]
+    # Bob (32) is non-consenting
+    bob_msg = MessageRecord(
+        6, 10, 20, 32, "Bob", "unconsented banter", base_time + timedelta(seconds=5)
+    )
+    # Outsider channel message
+    other_ch_msg = MessageRecord(
+        7, 10, 21, 30, "Sam", "other channel banter", base_time + timedelta(seconds=6)
+    )
+
+    for m in (*sam_msgs, *jo_msgs, bob_msg, other_ch_msg):
+        archive.append(m)
+
+    cutoff = base_time - timedelta(days=1)
+    req = MessageRecord(
+        8,
+        10,
+        20,
+        31,
+        "Jo",
+        "what did we call the demo?",
+        base_time + timedelta(seconds=10),
+    )
+    archive.append(req)
+
+    # Test group_style directly
+    expressions = archive.group_style(
+        req, policy.consenting_member_ids, cutoff, limit=2
+    )
+    assert len(expressions) == 2
+    authors = {e.author_id for e in expressions}
+    assert authors == {30, 31}  # Diversity: 1 from Sam, 1 from Jo
+    texts = {e.text for e in expressions}
+    assert "that demo was an absolute disaster lol" in texts
+    assert "weather event incoming for real" in texts
+    assert "unconsented banter" not in texts
+
+    # Verify build_prompt incorporates group_expressions without citation tags
+    import json
+
+    from pai.conversation import ConversationContext
+    from pai.prompts import build_prompt
+
+    ctx = ConversationContext(request=req, group_style=expressions)
+    prompt = build_prompt(ctx)
+    payload = json.loads(prompt.request.payload)
+    assert "group_expressions" in payload
+    assert len(payload["group_expressions"]) == 2
+    # Ensure no citations were created for group expressions
+    for item in payload["group_expressions"]:
+        assert "source" not in item

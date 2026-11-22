@@ -82,3 +82,11 @@ production accuracy. Windows Vulkan and CUDA binaries exited before
 model loading in the local setup, so these are Linux CPU measurements.
 [Qwen outputs](https://github.com/Hadisovic/Pai/actions/runs/44942991533/job/136964074141)
 · [Gemma outputs](https://github.com/Hadisovic/Pai/actions/runs/44942991533/job/136964074388)
+
+## 2026-11-21 · Authenticated live Groq Qwen3.8-27b benchmark
+
+Ran real live inference against GroqCloud's authenticated Free tier endpoint using `pai.benchmark --groq-free`. All six synthetic benchmark cases succeeded with live text and multimodal vision (1 still frame for meme, 3 frames for animated GIF).
+
+| Candidate | English | Humor | Recall | Arabic | Latency (ms) | Meme | GIF | Total Tokens |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `groq/qwen/qwen3.8-27b` | Passed | Passed ("Clear skies of panic...") | Passed (Named Waffle, attributed to Sam) | Passed (Understood lab finished, router drops) | 224 - 1033 ms (median 307 ms) | Passed (Identified reset-all contrast) | Passed (Left-to-right yellow circle) | 3,676 reported tokens |

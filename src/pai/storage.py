@@ -684,6 +684,52 @@ class Archive:
             ).fetchall()
         return tuple(_record(row) for row in rows)
 
+    def group_style(
+        self,
+        request: MessageRecord,
+        authors: frozenset[int],
+        cutoff: datetime,
+        omit: frozenset[int] = frozenset(),
+        limit: int = 2,
+    ) -> tuple[MessageRecord, ...]:
+        if limit <= 0 or not authors:
+            return ()
+        omitted = [str(item) for item in (omit | {request.message_id})]
+        with closing(self.connect()) as connection:
+            rows = connection.execute(
+                """
+                WITH candidates AS (
+                    SELECT messages.message_id, messages.guild_id, messages.channel_id,
+                           messages.author_id, messages.author_display, messages.text,
+                           messages.created_at, messages.reply_to_id, messages.edited_at, messages.media_revision,
+                           ROW_NUMBER() OVER (PARTITION BY messages.author_id ORDER BY messages.created_at DESC) as author_rank
+                    FROM messages
+                    WHERE guild_id = ? AND channel_id = ?
+                      AND author_id IN (SELECT value FROM json_each(?))
+                      AND message_id NOT IN (SELECT value FROM json_each(?))
+                      AND created_at BETWEEN ? AND ?
+                      AND length(text) >= 8 AND length(text) <= 160
+                      AND text NOT GLOB '[/!.]*'
+                      AND text NOT LIKE '%http://%' AND text NOT LIKE '%https://%'
+                )
+                SELECT message_id, guild_id, channel_id, author_id,
+                       author_display, text, created_at, reply_to_id, edited_at, media_revision
+                FROM candidates
+                WHERE author_rank = 1
+                ORDER BY created_at DESC LIMIT ?
+                """,
+                (
+                    str(request.guild_id),
+                    str(request.channel_id),
+                    json.dumps([str(author) for author in authors]),
+                    json.dumps(omitted),
+                    _utc_text(cutoff),
+                    _utc_text(request.created_at),
+                    limit,
+                ),
+            ).fetchall()
+        return tuple(_record(row) for row in rows)
+
     def records_unchanged(self, sources: tuple[MessageRecord, ...]) -> bool:
         with closing(self.connect()) as connection:
             rows = connection.execute(

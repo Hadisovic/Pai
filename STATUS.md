@@ -1,11 +1,11 @@
 # Durable handoff state
 
-- Original PRs #9 through #36 were reviewed and merged into their declared parents from tip to base. The final [integration](https://github.com/Hadisovic/Pai/commit/ec9834e0e62139b1f0dae206c34becf6236a8408) preserved the maintainer instructions and the fully patched tree. [Main CI](https://github.com/Hadisovic/Pai/actions/runs/44942592048)
-- Constrained Linux validation merged in [PR #37](https://github.com/Hadisovic/Pai/pull/37), remote main then `9c4d5434311b4af40295c9776cbb03f04cd63dd7`. Restore, persistence, and a public Discord Gateway handshake passed with synthetic data. The bot did not identify.
-- Two real, account-free model runs merged in [PR #38](https://github.com/Hadisovic/Pai/pull/38), remote main then `3cc31f63d5d098def4438deb2817ca177d795519`. Qwen3.5-4B is the provisional local choice. Groq Qwen3.8 is the first hosted model to evaluate. See `docs/BENCHMARK.md` for actual outputs, metrics and limitations.
-- Enzonic is the first card-free hosting pilot candidate, subject to an actual Free allocation with no payment details and acceptable terms. Kerit is the fallback. Third-party access and billing status were not verified.
-- Remaining: P1.L needs a key from a confirmed Groq Free organization with no billing information and checked privacy controls. P6.1 needs access to a confirmed no-card/no-billing-address host. P7.2 needs an isolated Discord application, token and consented synthetic test server. P7.L remains a decision after live acceptance. No production launch or real Discord collection occurred.
-- Resume by fetching `origin/main` and comparing its SHA with the last verified merge. Run the Groq synthetic benchmark first when access is available. Then verify the actual host and authenticated test server using `docs/RUNBOOK.md`. Inject credentials through the owner's secret store. Keep real collection disabled without member consent.
+## P8 Discord test baseline (2026-11-22)
+
+- The consenting Discord test scope was validated on Windows with the Groq Free route. Explicit mentions responded and ordinary chat was archived silently. Account, member and channel details belong in the operator's local policy.
+- DNS and Gateway access, Groq inference, the existing SQLite archive and an encrypted backup were verified during P8. The hosting history and resource checks are recorded in [docs/HOSTING.md](docs/HOSTING.md).
+- The hosted process and persistence remain unverified. Production activation still requires separate owner approval and affirmative scope consent.
+- The merge review removed a private chat inspection script, restricted the deploy procedure to tracked source and replaced pilot identifiers with a disabled template. Keep private configuration, messages, media and archive files on the operator's machine.
 
 ## Checkpoint log
 
@@ -39,7 +39,8 @@
 | 2026-11-21 | P7.1 | DONE | `codex/P7.1-member-notice` | `c3783e292c832369b06e7665fb391d7a1062aa9c` | Ruff lint, formatting, pytest (73 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918619053) passed.  |
 | 2026-11-21 | P7.2a | DONE | `codex/P7.2a-offline-end-to-end` | `fbb82b3a931ba02b6ea8aac3a84ad493931b3231` | Ruff lint, formatting, pytest (74 tests), diff check, and [CI](https://github.com/Hadisovic/Pai/actions/runs/44918767018) passed.  |
 | 2026-11-21 | P7.3 | DONE | `codex/P7.3-launch-readiness` | `3989da3241b328fae8ffde2fb4a98d88c133b416` | Ruff lint, format, pytest (75 tests), diff check, runtime doctor and offline six-case benchmark passed. Locked audit found no known vulnerabilities or adverse package statuses in 23 packages. [GitHub CI](https://github.com/Hadisovic/Pai/actions/runs/44941578162) passed on Python 3.12 and 3.13. |
-| 2026-11-21 | P1.L / P6.1 / P7.2 / P7.L | BLOCKED | `codex/P7.3-launch-readiness` | Live validation pending | The owner must approve the pilot and provide access through verified free accounts, with actual member consent before data collection. Start with the synthetic model benchmark. |
+| 2026-11-21 | P1.L | DONE | `codex/P8-live-account-access` | Verified live Groq Qwen3.8-27b | Real authenticated inference passed 6/6 synthetic cases (English, humor, memory, Arabic, meme vision, 3-frame GIF). |
+| 2026-11-22 | P6.1 / P8.2 | IN_PROGRESS | `codex/P8-live-account-access` | Enzonic server Pai queued (#122) | Free 512 MiB allocation verified ($0/card-free). Server in node queue. Inactivity sleep terms documented. Local bot running continuously as primary until cloud activation. |
 | 2026-11-21 | Stack integration | DONE | `main` | `ec9834e0e62139b1f0dae206c34becf6236a8408` | Verified dependencies, file scopes and per-PR CI. Merged #36 through #9 to their declared parents. The final main tree and CI passed. |
 | 2026-11-21 | P6.1a | DONE | `main` | `9c4d5434311b4af40295c9776cbb03f04cd63dd7` | Ruff, formatting, pytest (75), [Windows/Linux synthetic task via PR #37](https://github.com/Hadisovic/Pai/pull/37), [Linux host smoke](https://github.com/Hadisovic/Pai/actions/runs/44942850593) and [main CI](https://github.com/Hadisovic/Pai/actions/runs/44943143660) passed. Public Gateway only. |
 | 2026-11-21 | P1.La | DONE | `main` | `3cc31f63d5d098def4438deb2817ca177d795519` | Ruff, formatting, pytest (75), and [12 real synthetic completions on Linux](https://github.com/Hadisovic/Pai/actions/runs/44942991533) passed. Two public models, SHA-256 checks and no provider account. |

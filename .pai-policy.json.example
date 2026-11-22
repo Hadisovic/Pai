@@ -1,0 +1,10 @@
+{
+  "admin_opt_in": false,
+  "notice_version": "",
+  "guild_id": null,
+  "channel_ids": [],
+  "consenting_member_ids": [],
+  "retention_days": 30,
+  "external_ai_opt_in": false,
+  "media_opt_in": false
+}
