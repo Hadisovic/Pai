@@ -16,7 +16,7 @@ def context():
     return ConversationContext(ask, memory=(older,))
 
 
-def test_reply_engine_uses_bounded_english_first_prompt_and_renders_source(tmp_path):
+def test_reply_engine_sends_original_script_and_renders_source(tmp_path):
     generate = AsyncMock(return_value="You called it Waffle. [s1]")
     route = ProviderRoute("test", 0, True, Quota(10, 10, 8000, 30_000), generate)
     engine = ReplyEngine(Router(Archive(tmp_path / "pai.sqlite"), (route,)))
@@ -26,7 +26,7 @@ def test_reply_engine_uses_bounded_english_first_prompt_and_renders_source(tmp_p
         == "You called it Waffle. [source](<https://discord.com/channels/10/20/1>)"
     )
     request = generate.call_args.args[0]
-    assert "English" in request.instructions and "Arabizi" in request.instructions
+    assert "speaker's language and script" in request.instructions
     assert "الراوتر" in json.loads(request.payload)["request"]["text"]
 
 

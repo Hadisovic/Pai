@@ -11,6 +11,7 @@ from pathlib import Path
 
 from pai.media import MAX_MEDIA_ITEMS, MediaItem
 from pai.policy import PrivacyPolicy
+from pai.voice import STYLE_OPTIONS
 
 _MIGRATIONS = (
     (
@@ -146,6 +147,20 @@ _MIGRATIONS = (
         BEGIN
             DELETE FROM media_descriptions WHERE message_id = old.message_id;
         END
+        """,
+    ),
+    (
+        """
+        CREATE TABLE style_settings (
+            guild_id TEXT NOT NULL,
+            channel_id TEXT NOT NULL,
+            author_id TEXT NOT NULL,
+            setting TEXT NOT NULL,
+            value TEXT NOT NULL,
+            notice_version TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (guild_id, channel_id, author_id, setting)
+        )
         """,
     ),
 )
@@ -450,6 +465,9 @@ class Archive:
                 """,
                 (*scope, _utc_text(now)),
             )
+            connection.execute(
+                "DELETE FROM style_settings WHERE guild_id = ? AND author_id = ?", scope
+            )
             return connection.execute(
                 "DELETE FROM messages WHERE guild_id = ? AND author_id = ?", scope
             ).rowcount
@@ -469,6 +487,23 @@ class Archive:
             if not policy.media_opt_in:
                 connection.execute("DELETE FROM media_descriptions")
                 connection.execute("DELETE FROM message_media")
+            connection.execute(
+                """
+                DELETE FROM style_settings
+                WHERE NOT ? OR guild_id <> ? OR notice_version <> ?
+                   OR channel_id NOT IN (SELECT value FROM json_each(?))
+                   OR author_id NOT IN (SELECT value FROM json_each(?))
+                """,
+                (
+                    policy.is_enabled,
+                    str(policy.guild_id),
+                    policy.notice_version,
+                    json.dumps([str(channel) for channel in policy.channel_ids]),
+                    json.dumps(
+                        [str(author) for author in policy.consenting_member_ids]
+                    ),
+                ),
+            )
             return connection.execute(
                 """
                 DELETE FROM messages
@@ -485,6 +520,81 @@ class Archive:
                     ),
                 ),
             ).rowcount
+
+    def style_settings(
+        self, policy: PrivacyPolicy, channel_id: int, author_id: int, now: datetime
+    ) -> dict[str, str]:
+        if policy.guild_id is None or not policy.permits(
+            policy.guild_id, channel_id, author_id
+        ):
+            return {}
+        scope = (str(policy.guild_id), str(channel_id), str(author_id))
+        cutoff = _utc_text(now - timedelta(days=policy.retention_days))
+        with closing(self.connect()) as connection:
+            rows = connection.execute(
+                """
+                SELECT setting, value FROM style_settings
+                WHERE guild_id = ? AND channel_id = ? AND author_id = ?
+                  AND notice_version = ? AND updated_at >= ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM member_opt_outs
+                      WHERE guild_id = ? AND author_id = ?
+                  )
+                """,
+                (*scope, policy.notice_version, cutoff, scope[0], scope[2]),
+            ).fetchall()
+        return {
+            key: value for key, value in rows if value in STYLE_OPTIONS.get(key, ())
+        }
+
+    def set_style_settings(
+        self,
+        policy: PrivacyPolicy,
+        channel_id: int,
+        author_id: int,
+        updates: dict[str, str],
+        now: datetime,
+        *,
+        reset: bool = False,
+    ) -> bool:
+        if policy.guild_id is None or not policy.permits(
+            policy.guild_id, channel_id, author_id
+        ):
+            return False
+        if any(
+            value not in STYLE_OPTIONS.get(key, ()) for key, value in updates.items()
+        ):
+            return False
+        scope = (str(policy.guild_id), str(channel_id), str(author_id))
+        with closing(self.connect()) as connection, connection:
+            connection.execute("BEGIN IMMEDIATE")
+            if connection.execute(
+                "SELECT 1 FROM member_opt_outs WHERE guild_id = ? AND author_id = ?",
+                (scope[0], scope[2]),
+            ).fetchone():
+                return False
+            if reset:
+                connection.execute(
+                    "DELETE FROM style_settings WHERE guild_id = ? AND channel_id = ? AND author_id = ?",
+                    scope,
+                )
+            for key, value in updates.items():
+                if value == "auto":
+                    connection.execute(
+                        "DELETE FROM style_settings WHERE guild_id = ? AND channel_id = ? AND author_id = ? AND setting = ?",
+                        (*scope, key),
+                    )
+                else:
+                    connection.execute(
+                        """
+                        INSERT INTO style_settings VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT (guild_id, channel_id, author_id, setting) DO UPDATE SET
+                            value = excluded.value, notice_version = excluded.notice_version,
+                            updated_at = excluded.updated_at
+                        """,
+                        (*scope, key, value, policy.notice_version, _utc_text(now)),
+                    )
+        return True
 
     def export_author(
         self, guild_id: int, channel_id: int, author_id: int, cutoff: datetime
@@ -567,6 +677,9 @@ class Archive:
     def prune(self, cutoff: datetime) -> None:
         timestamp = _utc_text(cutoff)
         with closing(self.connect()) as connection, connection:
+            connection.execute(
+                "DELETE FROM style_settings WHERE updated_at < ?", (timestamp,)
+            )
             connection.execute(
                 "DELETE FROM messages WHERE created_at < ?", (timestamp,)
             )
@@ -667,6 +780,21 @@ class Archive:
                 ),
             )
             return row.rowcount == 1
+
+    def remove_style_example(
+        self, guild_id: int, channel_id: int, author_id: int, message_id: int
+    ) -> bool:
+        with closing(self.connect()) as connection, connection:
+            result = connection.execute(
+                """
+                DELETE FROM style_examples WHERE message_id IN (
+                    SELECT message_id FROM messages WHERE message_id = ?
+                    AND guild_id = ? AND channel_id = ? AND author_id = ?
+                )
+                """,
+                (str(message_id), str(guild_id), str(channel_id), str(author_id)),
+            )
+            return result.rowcount == 1
 
     def style_examples(
         self, request: MessageRecord, authors: frozenset[int], cutoff: datetime

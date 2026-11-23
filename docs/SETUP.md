@@ -105,7 +105,19 @@ replies require a direct mention or a native reply to Pai.
 - `/forgetme` removes your active archived messages in this guild along with
   their search and style references. A minimal opt-out record prevents
   collection from restarting after a bot restart or an out-of-order event.
-- `/sharestyle` marks one of your own saved messages as a style example.
+- `/style` privately shows your reply settings in this channel. Set
+  `language` to Arabic, Arabizi or English, `tone` to casual or gentle,
+  or `emoji` to off. Use `auto` to clear one setting or `reset:true` to
+  clear them all. Pai expires these settings with the active retention
+  window. `/forgetme` clears them across this guild.
+- `/sharestyle` marks one of your own saved messages as an example.
+  Invoke it with the same message and `withdraw:true` to remove the
+  style marker while leaving the archive record under normal retention.
+
+Pai builds channel style from relevant recurring expressions in consenting
+chat and selected examples. It keeps these separate from personal recall.
+A direct correction in the current exchange takes priority. Use `/style`
+when you want the setting to carry into a new exchange.
 
 The operator can update the private allowlist, consent list and retention.
 Refresh consent when the notice changes. Stop the bot before changing the

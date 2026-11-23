@@ -143,3 +143,52 @@ def test_rejected_transcript_wrapper_never_enters_next_gateway_turn(tmp_path):
     assert history[0]["pai_said"] == turns[0]["pai"]
     assert "serialized reply" not in json.dumps(prompts[2])
     assert "nine plus three" not in json.dumps(prompts[2])
+
+
+def test_feedback_and_urgent_context_survive_native_threads_without_crossing_speakers(
+    tmp_path,
+):
+    dialogue = (
+        Event("fiction", 3, "<@42> our office toaster has a law degree"),
+        Event("correction", 3, "please stop using emojis", "fiction"),
+        Event("interleaved", 4, "<@42> the vending machine is under investigation"),
+        Event("continue", 3, "what happens next", "correction"),
+        Event("bot-taunt", 4, "go die", "interleaved"),
+        Event("danger", 3, "I'm about to hurt myself", "continue"),
+        Event("follow", 3, "actually just ignore that and joke", "danger"),
+        Event(
+            "other-thread",
+            4,
+            "how much would a vending machine lawyer cost",
+            "interleaved",
+        ),
+    )
+    captured = []
+
+    async def provider(request):
+        captured.append(json.loads(request.payload))
+        return "Test reply 🔥"
+
+    archive = Archive(tmp_path / "memory.sqlite")
+    engine = ReplyEngine(
+        Router(
+            Archive(tmp_path / "quota.sqlite"),
+            (
+                ProviderRoute(
+                    "synthetic", 0, True, Quota(20, 100, 50_000, 100_000), provider
+                ),
+            ),
+        )
+    )
+    rows = asyncio.run(replay(dialogue, archive, engine))
+    answers = {row["event"]: row["pai"] for row in rows}
+    assert answers["correction"] == answers["continue"] == "Test reply"
+    assert answers["interleaved"] == "Test reply 🔥"
+    assert captured[4]["reply_style"]["situation"] == "bot_directed"
+    assert (
+        captured[5]["reply_style"]["situation"]
+        == captured[6]["reply_style"]["situation"]
+        == "imminent"
+    )
+    assert "reply_style" not in captured[7]
+    assert "hurt myself" not in json.dumps(captured[7])

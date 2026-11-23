@@ -6,7 +6,7 @@ bracketed fields with the approved pilot details.
 Pai is a bot that helps us remember conversations and responds when someone
 tags it. We will enable it only in **[list channels]**. It saves new
 messages from people who explicitly agree. It can save an agreed message
-without replying to it. It will only reply to chat when directly tagged.
+without replying to it. It replies to chat only when directly tagged or directly replied to.
 The privacy commands are deliberate requests and their replies are private.
 
 The archive can hold your text, display name, Discord IDs, timestamps, and
@@ -15,7 +15,11 @@ When media is enabled, Pai can record a small amount of attachment or
 sticker metadata and may check an image or a few ordered GIF frames
 connected to a direct mention. It keeps short, source-linked descriptions
 for repeated media. You can explicitly share one of your own saved messages
-as an example of the channel's humor.
+as an example of the channel's humor. You can withdraw this marker
+with `/sharestyle`. Pai uses relevant examples and recurring expressions
+from authorized messages to adapt to the channel's style. You can choose
+how Pai replies to you with `/style`. Pai saves those settings in this
+channel until you reset them, opt out, or they expire.
 
 **AI processing [enabled or disabled].** If enabled, Pai sends selected
 messages, display names, and relevant images or GIF frames to **[approved

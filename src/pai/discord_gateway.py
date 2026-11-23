@@ -175,16 +175,15 @@ class PaiDiscordClient(discord.Client):
                 )
             ):
                 assistant_turn = turn
-        context = ConversationContext(request)
-        if can_read_history:
-            context = await asyncio.to_thread(
-                prepare_context,
-                self.archive,
-                self.policy,
-                request,
-                now=datetime.now(UTC),
-                assistant_turn=assistant_turn,
-            )
+        context = await asyncio.to_thread(
+            prepare_context,
+            self.archive,
+            self.policy,
+            request,
+            now=datetime.now(UTC),
+            assistant_turn=assistant_turn,
+            read_history=can_read_history,
+        )
         if self.read_media is not None:
             media = await self.read_media(message, context)
             if (
