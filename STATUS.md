@@ -2,7 +2,7 @@
 
 ## P9.7 · Grounded multilingual follow-ups and held-out replay (2026-11-23)
 
-- Review branch `codex/P9.7-context-recall` builds on the P9.6 checkpoint `9c79a19` in PR #42. The approved Windows TEST runtime remains on its existing revision.
+- [PR #43](https://github.com/Hadisovic/Pai/pull/43) contains the verified implementation checkpoint [`390219d`](https://github.com/Hadisovic/Pai/commit/390219d43570f0c29460ab5b7681e1564eea1122). Review branch `codex/P9.7-context-recall` builds on the P9.6 checkpoint `9c79a19` in PR #42. The approved Windows TEST runtime remains on its existing revision.
 - Arabic, Arabizi and English recall questions use the current member's Discord author ID for retrieval. Recognized topics have cross-language search aliases. Follow-ups carry safe topic labels and revalidate their sources. At the provenance limit Pai keeps the verified prior question without reusing an answer whose complete evidence no longer fits.
 - The prompt presents a single chronological reply history, interprets slang through context, and follows the current speaker's language. Qwen remains primary, with the existing provider quotas and vision path.
 - The independent audit invalidated P9.6's regex percentage as a conversational-quality measure. Its script now replays held-out synthetic events through the gateway, SQLite retrieval, router and renderer. CI asserts mechanics with a stub. The optional Free Qwen transcript is for human review.

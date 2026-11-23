@@ -74,7 +74,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P9.1 [DONE]** Accept direct mentions and native replies to Pai. Queue short bursts in channel order under the existing Free route.
 - **P9.2 [DONE]** Ground Pai's voice in the current exchange and corroborated same-channel expressions. Attribute personal recall to immutable Discord author IDs.
 - **P9.3 [IN_PROGRESS]** Roll out through a single-instance cutover and verify the new behavior live in the authorized Discord test scope. Retest message attribution, cross-member follow-ups, citation relevance and tone after the first live pilot exposed gaps.
-- **P9.7 [IN_PROGRESS]** Ship the independent-audit fixes for multilingual attribution, bounded reply continuity, and held-out gateway replay on a review branch stacked on PR #42. Live rollout is a separate approval.
+- **P9.7 [DONE]** Ship the independent-audit fixes for multilingual attribution, bounded reply continuity, and held-out gateway replay on a review branch stacked on PR #42. Live rollout is a separate approval.
 - **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.
 
 ## Later, not MVP
