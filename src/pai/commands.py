@@ -4,6 +4,7 @@ import asyncio
 import json
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
+from typing import Literal
 
 import discord
 from discord import app_commands
@@ -127,14 +128,67 @@ def controls(
             ephemeral=True,
         )
 
+    @tree.command(guild=guild, description="View or change how Pai replies to you here")
+    async def style(
+        interaction: discord.Interaction,
+        language: Literal["auto", "english", "arabic", "arabizi"] | None = None,
+        tone: Literal["auto", "casual", "gentle"] | None = None,
+        emoji: Literal["auto", "off"] | None = None,
+        reset: bool = False,
+    ) -> None:
+        channel_id, author = interaction.channel_id, interaction.user.id
+        if (
+            channel_id is None
+            or not visible(interaction)
+            or not policy.permits(guild.id, channel_id, author)
+        ):
+            return await unavailable(interaction)
+        now = datetime.now(UTC)
+        updates = {
+            key: value
+            for key, value in {
+                "language": language,
+                "tone": tone,
+                "emoji": emoji,
+            }.items()
+            if value is not None
+        }
+        if updates or reset:
+            changed = await asyncio.to_thread(
+                archive.set_style_settings,
+                policy,
+                channel_id,
+                author,
+                updates,
+                now,
+                reset=reset,
+            )
+            if not changed:
+                return await unavailable(interaction)
+        settings = await asyncio.to_thread(
+            archive.style_settings, policy, channel_id, author, now
+        )
+        choices = ", ".join(
+            f"{key}: {settings.get(key, 'auto')}"
+            for key in ("language", "tone", "emoji")
+        )
+        await interaction.response.send_message(
+            f"Your settings in this channel are {choices}. "
+            "Choose auto for a default or use reset to clear all three.",
+            ephemeral=True,
+        )
+
     @tree.command(
         guild=guild,
-        description="Share your own saved message as a channel style example",
+        description="Share or withdraw one of your own channel style examples",
     )
     @app_commands.describe(
-        message_id="Discord ID of your saved message in this channel"
+        message_id="Discord ID of your saved message in this channel",
+        withdraw="Withdraw this example",
     )
-    async def sharestyle(interaction: discord.Interaction, message_id: str) -> None:
+    async def sharestyle(
+        interaction: discord.Interaction, message_id: str, withdraw: bool = False
+    ) -> None:
         channel_id = interaction.channel_id
         if (
             channel_id is None
@@ -145,6 +199,23 @@ def controls(
             or len(message_id) > 20
         ):
             return await unavailable(interaction)
+        if withdraw:
+            if not policy.permits(guild.id, channel_id, interaction.user.id):
+                return await unavailable(interaction)
+            removed = await asyncio.to_thread(
+                archive.remove_style_example,
+                guild.id,
+                channel_id,
+                interaction.user.id,
+                int(message_id),
+            )
+            await interaction.response.send_message(
+                "Style example withdrawn."
+                if removed
+                else "You have no such example here.",
+                ephemeral=True,
+            )
+            return
         saved = await asyncio.to_thread(
             share_style_example,
             archive,

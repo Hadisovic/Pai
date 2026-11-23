@@ -61,14 +61,19 @@ def test_group_style_uses_shared_repetition_with_scope_and_deletion(tmp_path):
         archive.append(
             MessageRecord(identifier, 10, channel, author, "Synthetic", text, now)
         )
-    request = MessageRecord(9, 10, 20, 31, "Synthetic", "The demo broke again", now)
+    request = MessageRecord(
+        9, 10, 20, 31, "Synthetic", "weather event for the demo", now
+    )
     context = prepare_context(archive, policy, request)
-    assert [expression.text for expression in context.group_style] == [
+    assert [expression.text.casefold() for expression in context.group_style] == [
         "weather event incoming"
     ]
     assert {row.message_id for row in context.group_style[0].sources} == {1, 2, 3}
     payload = json.loads(build_prompt(context).request.payload)
-    assert payload["group_expressions"] == [{"text": "weather event incoming"}]
+    assert (
+        payload["group_expressions"][0]["text"].casefold() == "weather event incoming"
+    )
+    assert payload["group_expressions"][0]["usage"] == "shared expression"
     archive.delete(10, 20, [2], now)
     assert not archive.records_unchanged(context.sources)
     assert not prepare_context(archive, policy, request).group_style

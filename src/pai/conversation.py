@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
+from pai.voice import ReplyStyle, reply_style, requests_group
 
 _TOKEN = re.compile(r"\\.|(`+).*?(?<!`)\1(?!`)|<@!?([0-9]+)>", re.DOTALL)
 _PARENT_LIMIT = 4
@@ -23,7 +24,7 @@ _STOP_WORDS = frozenset(
 
 
 _SELF_RECALL = re.compile(
-    r"\b(?:(?:what|which|where|when|who)(?:['’]s|\s+(?:is|are|was|were))\s+my|"
+    r"\b(?:(?:what|which|where|when|who)(?:['’]?s|\s+(?:is|are|was|were))\s+my|"
     r"(?:what|which|where|when)\s+(?:did|do|was|am|have)\s+i|"
     r"who am i|(?:remember|recall)\s+(?:my|what i|when i))\b"
     r"|\b(?:شو|ايش|إيش|وش|شنو|ما|ماذا|shou|shoo|shu|esh|eish|sho)\b[^?؟.!\n]*"
@@ -34,7 +35,7 @@ _SELF_RECALL = re.compile(
 
 
 _MINE = re.compile(
-    r"\b(?:what(?:['’]s|\s+(?:is|about))\s+mine(?:\s+tho)?|and\s+mine|"
+    r"^\s*(?:what(?:['’]?s|\s+(?:is|about))\s+mine|and\s+mine)\b|\b(?:"
     r"(?:طيب\s+)?(?:و\s*)?(?:انا|أنا|تبعي)|(?:w|wa)\s+(?:ana|taba3i|eli))\s*[?؟]?$",
     re.IGNORECASE,
 )
@@ -143,6 +144,7 @@ class AssistantTurn:
 class GroupExpression:
     text: str
     sources: tuple[MessageRecord, ...]
+    usage: str = "shared expression"
 
 
 @dataclass(frozen=True)
@@ -157,6 +159,9 @@ class ConversationContext:
     self_recall: bool = False
     assistant_turn: AssistantTurn | None = None
     recall_question: MessageRecord | None = None
+    style: ReplyStyle | None = None
+    observed_speakers: tuple[MessageRecord, ...] = ()
+    style_sources: tuple[MessageRecord, ...] = ()
 
     @property
     def sources(self) -> tuple[MessageRecord, ...]:
@@ -171,6 +176,8 @@ class ConversationContext:
             *self.recent,
             *self.memory,
             *self.style_examples,
+            *self.observed_speakers,
+            *self.style_sources,
             *(
                 source
                 for expression in self.group_style
@@ -190,11 +197,43 @@ def prepare_context(
     *,
     now: datetime | None = None,
     assistant_turn: AssistantTurn | None = None,
+    read_history: bool = True,
 ) -> ConversationContext:
     if not policy.permits(request.guild_id, request.channel_id, request.author_id):
         raise ValueError("The request is outside authorized scope")
-    cutoff = (now or request.created_at) - timedelta(days=policy.retention_days)
+    now = now or request.created_at
+    cutoff = now - timedelta(days=policy.retention_days)
     normalized = _normalized_request(request.text)
+    own_thread = []
+    turn = assistant_turn if read_history else None
+    for _ in range(4):
+        if turn is None:
+            break
+        previous = turn.request
+        if (previous.guild_id, previous.channel_id, previous.author_id) == (
+            request.guild_id,
+            request.channel_id,
+            request.author_id,
+        ) and max(
+            cutoff, request.created_at - timedelta(minutes=10)
+        ) <= previous.created_at <= request.created_at:
+            own_thread.append(previous)
+        turn = turn.prior_turn
+    settings = archive.style_settings(
+        policy, request.channel_id, request.author_id, now
+    )
+    style = reply_style(
+        normalized,
+        settings,
+        tuple(_normalized_request(row.text) for row in own_thread),
+        tuple(
+            _normalized_request(row.text)
+            for row in own_thread
+            if request.created_at - row.created_at <= timedelta(minutes=2)
+        ),
+    )
+    if not read_history:
+        return ConversationContext(request, style=style)
     recall_question = request if _SELF_RECALL.search(normalized) else None
     mine = bool(_MINE.search(normalized))
     if (
@@ -289,19 +328,28 @@ def prepare_context(
             for row in memory
             if not _SELF_RECALL.match(_normalized_request(row.text))
         )[:_MEMORY_LIMIT]
+    suppress_group_style = self_recall or style.situation in {"imminent", "stop"}
     style_examples = (
         ()
-        if self_recall
+        if suppress_group_style
         else archive.style_examples(request, policy.consenting_member_ids, cutoff)
     )
     group_style = (
         ()
-        if self_recall
+        if suppress_group_style
         else _shared_expressions(
             archive.style_candidates(request, policy.consenting_member_ids, cutoff),
-            frozenset(terms),
+            focus_terms.union(
+                term for row in visible[:3] for term in _query_terms(row.text)
+            ),
         )
     )
+    observed = ()
+    if not self_recall and requests_group(normalized):
+        by_author = {}
+        for row in (request, *parents, *recent):
+            by_author.setdefault(row.author_id, row)
+        observed = tuple(by_author.values())[:8]
     return ConversationContext(
         request,
         tuple(parents),
@@ -312,6 +360,9 @@ def prepare_context(
         self_recall=self_recall,
         assistant_turn=None if self_recall else assistant_turn,
         recall_question=recall_question,
+        style=style,
+        observed_speakers=observed,
+        style_sources=tuple(own_thread),
     )
 
 
@@ -333,7 +384,9 @@ def _shared_expressions(
     recurring = [
         (words, rows)
         for words, rows in groups.items()
-        if len(rows) >= 3 and len({row.author_id for row in rows}) >= 2
+        if len(rows) >= 3
+        and len({row.author_id for row in rows}) >= 2
+        and current_terms.intersection(words)
     ]
     recurring.sort(
         key=lambda item: (
@@ -349,7 +402,10 @@ def _shared_expressions(
             row for row in rows[1:] if row.author_id != rows[0].author_id
         )
         third = next(row for row in rows[1:] if row is not other_author)
-        result.append(GroupExpression(" ".join(words), (rows[0], other_author, third)))
+        support = (rows[0], other_author, third)
+        replies = {row.reply_to_id for row in support if row.reply_to_id is not None}
+        usage = "short shared reaction" if len(replies) >= 2 else "shared expression"
+        result.append(GroupExpression(rows[0].text, support, usage))
     return tuple(result)
 
 
