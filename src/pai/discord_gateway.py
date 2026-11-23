@@ -161,7 +161,7 @@ class PaiDiscordClient(discord.Client):
         if bot_reply and (turn := self.assistant_turns.get(parent.id)) is not None:
             cutoff = self._retention_cutoff()
             if (
-                parent.content == turn.text
+                (turn.text is None or parent.content == turn.text)
                 and all(
                     source.channel_id == request.channel_id
                     and self.policy.permits(
@@ -222,16 +222,26 @@ class PaiDiscordClient(discord.Client):
             reference=outgoing_reference,
             allowed_mentions=discord.AllowedMentions.none(),
         )
-        if type(sent.id) is int and len(context.sources) <= 32:
+        if type(sent.id) is int:
             if len(self.assistant_turns) >= 64:
                 self.assistant_turns.pop(next(iter(self.assistant_turns)))
-            self.assistant_turns[sent.id] = AssistantTurn(
-                response[:2000],
-                request,
-                context.sources,
-                context.recall_question,
-                prior_turn=context.assistant_turn,
-            )
+            sources = context.sources
+            if len(sources) <= 32:
+                turn = AssistantTurn(
+                    response[:2000],
+                    request,
+                    sources,
+                    context.recall_question,
+                    prior_turn=context.assistant_turn,
+                )
+            else:
+                # Keep the verified question without relying on an answer
+                # whose full set of supporting sources no longer fits.
+                anchors = (request,)
+                if context.recall_question not in (None, request):
+                    anchors += (context.recall_question,)
+                turn = AssistantTurn(None, request, anchors, context.recall_question)
+            self.assistant_turns[sent.id] = turn
 
     async def _current_reply_access(
         self, message: discord.Message

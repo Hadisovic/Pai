@@ -131,4 +131,4 @@ def test_multi_turn_assistant_chain_builds_conversation_thread():
     assert data["conversation_thread"][0]["pai_said"] == "wsg bro, what you on"
     assert data["conversation_thread"][1]["asked"]["text"] == "nothin much what do u do"
     assert data["conversation_thread"][1]["pai_said"] == "just vibin, u"
-    assert data["quoted_exchange"]["asked"]["text"] == "nothin much what do u do"
+    assert "quoted_exchange" not in data
