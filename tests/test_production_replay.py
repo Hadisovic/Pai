@@ -43,10 +43,22 @@ def test_held_out_gateway_replay(tmp_path):
         replay(DIALOGUE, Archive(tmp_path / "messages.sqlite"), respond)
     )
     by_event = {row["event"]: row for row in turns}
-    for label in ("ordinary", "first-fact", "second-fact", "distractor", "unconsented"):
+    for label in (
+        "ordinary",
+        "interjection",
+        "first-fact",
+        "second-fact",
+        "distractor",
+        "unconsented",
+    ):
         assert by_event[label]["pai"] is None
     assert not by_event["unconsented"]["archived"]
     assert by_event["ordinary"]["archived"]
+
+    assert [row["text"] for row in prompts["banter"]["recent"]] == [
+        "the label maker printed an entire blank roll again"
+    ]
+    assert "recent" not in prompts["literal-pause"]
 
     repair = prompts["repair"]
     assert "invisible ink" in repair["conversation_thread"][0]["asked"]["text"]

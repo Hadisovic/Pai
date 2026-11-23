@@ -49,6 +49,9 @@ _HISTORY_RECALL = re.compile(
     r"|\b(?:what|where)(?:['’]s| is) our\b|ذكّ?رني",
     re.IGNORECASE,
 )
+_REFERENTIAL_START = re.compile(
+    r"^(?:(?:bro|ngl|lol)[ ,]+)?(?:it|that|this|they|those)\b", re.IGNORECASE
+)
 _QUERY_ALIASES = {"fav": "favorite", "fave": "favorite", "favourite": "favorite"}
 _RECALL_ALIASES = {
     "game": ("game", "games", "لعبتي", "لعبة", "اللعبة", "ألعاب", "le3be", "le3beti"),
@@ -246,6 +249,21 @@ def prepare_context(
             or len(focus_terms.intersection(_query_terms(row.text))) >= 2
         )
     )[:_RECENT_LIMIT]
+    if not visible and not parents and _REFERENTIAL_START.match(normalized):
+        # A pronoun can refer to a nearby remark with no shared search terms.
+        antecedent = next(
+            (
+                row
+                for row in recent
+                if row.author_id == request.author_id
+                and row.reply_to_id is None
+                and not _DISCORD_TAG.search(row.text)
+                and request.created_at - row.created_at <= timedelta(minutes=2)
+            ),
+            None,
+        )
+        if antecedent is not None:
+            visible = (antecedent,)
     seen.update(row.message_id for row in visible)
     query = ""
     if recall_question is not None:

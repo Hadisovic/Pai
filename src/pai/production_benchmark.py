@@ -33,6 +33,7 @@ class Event:
 
 DIALOGUE = (
     Event("ordinary", 3, "the label maker printed an entire blank roll again"),
+    Event("interjection", 4, "does anyone have a spare charging cable"),
     Event("banter", 3, "<@42> it's charging us for invisible ink now"),
     Event(
         "literal-pause",

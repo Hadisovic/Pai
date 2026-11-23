@@ -10,6 +10,8 @@
 
 - Follow-up verification reproduced an older fact getting displaced by repeated personal questions without punctuation. The retrieval pass now filters recognized question wording before filling its evidence window. The new regression and the complete offline suite pass (93 tests). The held-out gateway replay passes both tests. No Free Groq key was injected for this verification, and the host policy continues to block the live configuration path.
 
+- A held-out pronoun-led joke lost its antecedent when there were no shared terms. The replay now verifies that Pai carries one nearby unaddressed remark from the same speaker and keeps the interleaved other speaker out of the joke context.
+
 ## P9.5 Multi-Turn Conversational Quality Overhaul (2026-11-23)
 
 - Diagnosed the real-world conversational degradation observed in multi-turn Discord testing:
