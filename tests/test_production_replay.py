@@ -192,3 +192,31 @@ def test_feedback_and_urgent_context_survive_native_threads_without_crossing_spe
     )
     assert "reply_style" not in captured[7]
     assert "hurt myself" not in json.dumps(captured[7])
+
+
+def test_construct_state_arabizi_recall_uses_only_the_requesters_evidence(tmp_path):
+    dialogue = (
+        Event("other", 4, "My favorite party game is Codenames."),
+        Event("own", 3, "لعبة الحفلات المفضلة عندي هي Dixit."),
+        Event("question", 3, "<@42> eish le3bet el hafle taba3i? jawib bel arabizi"),
+    )
+    archive = Archive(tmp_path / "messages.sqlite")
+    prompts = []
+
+    async def complete(request):
+        prompts.append(json.loads(request.payload))
+        return "My favorite is Dixit, but you also said Solitaire."
+
+    route = ProviderRoute(
+        "fixture", 0, True, Quota(100, 100, 100_000, 100_000), complete
+    )
+    rows = asyncio.run(
+        replay(dialogue, archive, ReplyEngine(Router(archive, (route,))))
+    )
+    assert prompts[0]["reply_style"]["language"] == "arabizi"
+    evidence = prompts[0]["history"]
+    assert len(evidence) == 1
+    assert "Dixit" in evidence[0]["text"]
+    assert "Codenames" not in json.dumps(prompts[0])
+    assert "Dixit" in rows[-1]["pai"] and "[source](" in rows[-1]["pai"]
+    assert "Solitaire" not in rows[-1]["pai"]

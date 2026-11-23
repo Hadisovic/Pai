@@ -19,12 +19,17 @@ from pai.observability import diagnose, initialize_logs
 from pai.policy import PrivacyPolicy, load_policy
 from pai.providers import Groq
 from pai.reply_engine import ReplyEngine
+from pai.runtime_info import BuildInfo, capture_build
 from pai.storage import Archive
 from pai.vision import MentionVision
 
 
 async def _run(
-    policy: PrivacyPolicy, archive: Archive, token: str, groq_key: str | None
+    policy: PrivacyPolicy,
+    archive: Archive,
+    token: str,
+    groq_key: str | None,
+    build: BuildInfo | None,
 ) -> None:
     async def handle(message: discord.Message) -> bool:
         return await archive_message(
@@ -43,7 +48,9 @@ async def _run(
             )
             routes = Groq(session, groq_key, free_plan_confirmed=True).routes()
             router = Router(archive, routes)
-            client.respond = ReplyEngine(router)
+            client.respond = ReplyEngine(
+                router, build=build, vision=policy.media_opt_in
+            )
             if policy.media_opt_in:
                 resolver = PublicMediaResolver()
                 resources.push_async_callback(resolver.close)
@@ -93,6 +100,9 @@ def main() -> None:
         action="store_true",
         help="Use an approved, verified card-free Groq organization",
     )
+    parser.add_argument(
+        "--expected-revision", help="Require this clean Git revision before connecting"
+    )
     args = parser.parse_args()
     if args.groq_free and not args.connect:
         parser.error("--groq-free requires --connect")
@@ -139,6 +149,11 @@ def main() -> None:
             else "Collection is disabled."
         )
         return
+    build = capture_build()
+    if args.expected_revision and (
+        build is None or build.revision != args.expected_revision
+    ):
+        parser.error("The installed source does not match the expected Git revision")
     if not policy.is_enabled:
         parser.error("An approved collection policy is required before connecting")
     if args.database is None:
@@ -164,7 +179,7 @@ def main() -> None:
 
     try:
         initialize_logs()
-        asyncio.run(_run(policy, archive, token, groq_key))
+        asyncio.run(_run(policy, archive, token, groq_key, build))
     except KeyboardInterrupt:
         return
     except discord.DiscordException:

@@ -1,5 +1,14 @@
 # Durable handoff state
 
+## P9.10 · Grounded replies and conversational review (2026-11-23)
+
+- Review branch `codex/P9.10-grounded-replies` stacks on P9.9 PR #45. The owner authorized a cutover to the existing TEST scope after verification. The P9.9 runtime is the rollback revision.
+- Investigation confirmed the P9.9 model received a version question as normal text with no runtime facts. Its renderer accepted fabricated release or model claims. A subsequent native reply inherited that answer. The deployed build uses GPT-OSS 120B at temperature 0.8 with low reasoning. No parameter or routing change was needed to fix runtime grounding. A compact set of cadence examples targets the generic replies and forced follow-up questions. Prompt causation remains uncertain.
+- The startup reads the clean Git checkout from the installed module path and supports an expected commit pin before Discord or SQLite access. Recognized version, status, model and capability questions are answered locally. Verified same-speaker follow-ups can expand the pinned revision. Unverified versions get an uncertainty response. The renderer blocks common unsupported self-version and tool claims. Missing personal event evidence is handled locally. An uncited single-source self-recall can quote the consenting requester's linked evidence instead of repeating a model claim.
+- Tests include version follow-ups, ambiguous and cross-speaker turns, an unloaded/mismatched build, false tool claims and held-out Arabizi recall. Locked dependency, Ruff, doctor, diff and full pytest checks passed (111 tests).
+- In matched synthetic gateway conversations on the same Groq Free model, P9.9 misidentified itself as GPT-4. P9.10 answered version and clarification without model calls. A teasing turn better followed its gaming premise. A serious transition stayed brief and dropped the joke. The qualitative replay also produced unnecessary questions and an uncited answer with invented extra games. The scoped recall evidence test now covers that failure. A Free quota cooldown delayed a replay. The final voice still needs natural group testing across dialects.
+- Next verify GitHub CI, create the encrypted archive and erasure snapshots and validate restore, restart the pinned checkout, and verify a native Discord version exchange plus the active model route. Keep the same policy, database, and media opt-out. Do not merge.
+
 ## P9.9 · Adaptive voice and authorized TEST cutover (2026-11-23)
 
 - Branch `codex/P9.9-adaptive-voice` stacks on PR #44 (`1781280`). GPT-OSS 120B remains primary, with Qwen fallback and vision. The authorized Windows TEST bot runs [`65fd780`](https://github.com/Hadisovic/Pai/commit/65fd7807a432d5a2c69e947a9e523e45e7e2eebf) from PR #45.
