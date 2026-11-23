@@ -35,3 +35,23 @@ restricted-channel rejection, historical recall with a jump link, three
 ordered GIF frames, and removal from search after Discord deletion.
 Actual permissions, Gateway behavior, live model quality and host capacity
 still require the approved pilot.
+
+## Held-out conversation replay
+
+`uv run --offline --locked pytest -q tests/test_production_replay.py` uses
+synthetic Discord events and a stub model on the production gateway,
+SQLite, prompt and reply path. It checks silent ingestion, consent,
+native reply targets, current-speaker recall and citation isolation.
+It also exercises the evidence limit of long reply chains.
+
+For a transcript from the approved Qwen Free route, provide the Free
+key through `PAI_GROQ_KEY` and give the runner a separate private quota
+ledger. The live bot's config and archive are unnecessary.
+
+```powershell
+uv run --offline --locked python -m pai.production_benchmark --groq-free --quota-db /private/path/pai-replay-quota.sqlite
+```
+
+Review each transcript for grounded humor, literal vs playful intent,
+recovery from corrections, tone changes, and the requested language.
+The runner prints actual replies for review without scoring tone.

@@ -198,3 +198,77 @@ def test_standalone_message_does_not_receive_an_unrelated_recent_recall(tmp_path
 
     context = prepare_context(archive, policy, request)
     assert context.recent == (relevant,)
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "shoo kan el favorite co-op game taba3i? Answer in Arabic.",
+        "شو كانت لعبتي المفضلة؟ جاوبني بالإنجليزي",
+    ],
+)
+def test_multilingual_personal_recall_keeps_other_members_and_format_out(
+    tmp_path, question
+):
+    import json
+
+    from pai.prompts import build_prompt
+
+    archive = Archive(tmp_path / "pai.sqlite")
+    now = datetime.now(UTC)
+    policy = PrivacyPolicy(True, "v1", 10, frozenset({20}), frozenset({30, 31}))
+
+    def row(index, author, text):
+        return MessageRecord(
+            index, 10, 20, author, "Same name", text, now + timedelta(seconds=index)
+        )
+
+    first = row(1, 30, "My favourite game is Tetris.")
+    second = row(2, 31, "لعبتي المفضلة هي Celeste.")
+    distractor = row(3, 31, "My favorite color is violet.")
+    ask = row(4, 31, question)
+    follow = row(5, 30, "طيب وأنا؟")
+    for record in (first, second, distractor, ask, follow):
+        archive.append(record)
+
+    context = prepare_context(archive, policy, ask)
+    assert context.self_recall and context.memory == (second,)
+    turn = AssistantTurn("Celeste.", ask, context.sources, context.recall_question)
+    context = prepare_context(archive, policy, follow, assistant_turn=turn)
+    assert context.self_recall and context.memory == (first,)
+    prompt = build_prompt(context)
+    data = json.loads(prompt.request.payload)
+    assert data["recall_topic"] == ["favorite", "game"]
+    assert "Celeste" not in prompt.request.payload
+    assert question not in prompt.request.payload
+    assert prompt.sources == (("s1", first.jump_url),)
+
+
+def test_unpunctuated_recall_questions_do_not_crowd_out_a_stated_fact(tmp_path):
+    archive = Archive(tmp_path / "pai.sqlite")
+    now = datetime.now(UTC)
+    policy = PrivacyPolicy(True, "v1", 10, frozenset({20}), frozenset({30}))
+    fact = MessageRecord(1, 10, 20, 30, "Sam", "My favorite game is Celeste.", now)
+    archive.append(fact)
+    for index in range(2, 8):
+        archive.append(
+            MessageRecord(
+                index,
+                10,
+                20,
+                30,
+                "Sam",
+                "what's my favorite game",
+                now + timedelta(seconds=index),
+            )
+        )
+    request = MessageRecord(
+        8,
+        10,
+        20,
+        30,
+        "Sam",
+        "shou kanet le3beti taba3i",
+        now + timedelta(seconds=8),
+    )
+    assert prepare_context(archive, policy, request).memory == (fact,)

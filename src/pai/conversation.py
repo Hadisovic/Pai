@@ -26,17 +26,21 @@ _SELF_RECALL = re.compile(
     r"\b(?:(?:what|which|where|when|who)(?:['’]s|\s+(?:is|are|was|were))\s+my|"
     r"(?:what|which|where|when)\s+(?:did|do|was|am|have)\s+i|"
     r"who am i|(?:remember|recall)\s+(?:my|what i|when i))\b"
-    r"|(?:شو|ايش|إيش|ما)\s+(?:اسمي|اسمي؟|لعبتي المفضلة)",
+    r"|\b(?:شو|ايش|إيش|وش|شنو|ما|ماذا|shou|shoo|shu|esh|eish|sho)\b[^?؟.!\n]*"
+    r"\b(?:اسمي|إسمي|لعبتي|لوني|أكلتي|اكلتي|فريقي|كتابي|هوايتي|عندي|تبعتي|تبعي|"
+    r"taba3i|taba3e|tab3i|ism(i|e)|my)\b",
     re.IGNORECASE,
 )
 
 
 _MINE = re.compile(
-    r"\b(?:what(?:['’]s|\s+(?:is|about))\s+mine|and\s+mine)\b", re.IGNORECASE
+    r"\b(?:what(?:['’]s|\s+(?:is|about))\s+mine(?:\s+tho)?|and\s+mine|"
+    r"(?:طيب\s+)?(?:و\s*)?(?:انا|أنا|تبعي)|(?:w|wa)\s+(?:ana|taba3i|eli))\s*[?؟]?$",
+    re.IGNORECASE,
 )
 _CONTINUE_RECALL = re.compile(
     r"\s*(?:(?:uhm?|umm?|okay|ok|bro)[ ,]+)?(?:just\s+)?"
-    r"(?:say (?:it|that again)(?: in lowercase)?|tell me|what is it)[.!?]*\s*",
+    r"(?:say (?:it|that again)(?: in lowercase)?|tell me|what is it|قولها|احكيلي|2olha)[.!?؟]*\s*",
     re.IGNORECASE,
 )
 _HISTORY_RECALL = re.compile(
@@ -45,11 +49,62 @@ _HISTORY_RECALL = re.compile(
     r"|\b(?:what|where)(?:['’]s| is) our\b|ذكّ?رني",
     re.IGNORECASE,
 )
+_REFERENTIAL_START = re.compile(
+    r"^(?:(?:bro|ngl|lol)[ ,]+)?(?:it|that|this|they|those)\b", re.IGNORECASE
+)
 _QUERY_ALIASES = {"fav": "favorite", "fave": "favorite", "favourite": "favorite"}
+_RECALL_ALIASES = {
+    "game": ("game", "games", "لعبتي", "لعبة", "اللعبة", "ألعاب", "le3be", "le3beti"),
+    "name": ("name", "اسمي", "إسمي", "اسم", "ismi", "esmi"),
+    "color": ("color", "colour", "لوني", "لون", "اللون", "lawn"),
+    "food": ("food", "dish", "اكلتي", "أكلتي", "أكلة", "طبق", "akle"),
+    "team": ("team", "فريقي", "فريق", "الفريق", "faree2"),
+    "book": ("book", "كتابي", "كتاب", "الكتاب", "ktab"),
+    "hobby": ("hobby", "هوايتي", "هواية", "الهواية"),
+}
+_ARABIC_MARKS = re.compile(r"[ـً-ْٰ]")
+_FORMAT_REQUEST = re.compile(
+    r"\b(?:answer|reply|respond)\s+(?:me\s+)?in\b|\b(?:جاوبني|رد علي)\s+بال",
+    re.IGNORECASE,
+)
+
+
+def _recall_words(text: str) -> tuple[str, ...]:
+    question = _FORMAT_REQUEST.split(_ARABIC_MARKS.sub("", text), maxsplit=1)[0]
+    return _query_terms(question)
+
+
+def recall_topic(text: str) -> tuple[str, ...]:
+    words = _recall_words(text)
+    tokens = frozenset(words)
+    topics = tuple(
+        topic
+        for topic, aliases in _RECALL_ALIASES.items()
+        if tokens.intersection(aliases)
+    )
+    favorite = {"favorite", "مفضل", "المفضل", "مفضلة", "المفضلة", "mofadal", "mofadala"}
+    if topics and favorite.intersection(tokens):
+        return ("favorite", *topics)
+    return topics
+
+
+def _personal_query(text: str) -> str:
+    topics = tuple(topic for topic in recall_topic(text) if topic in _RECALL_ALIASES)
+    return " ".join(
+        (alias for topic in topics for alias in _RECALL_ALIASES[topic])
+        if topics
+        else _recall_words(text)
+    )
+
+
+def _normalized_request(text: str) -> str:
+    return _ARABIC_MARKS.sub("", _DISCORD_TAG.sub("", text)).strip()
 
 
 def requests_history(text: str) -> bool:
-    return bool(_SELF_RECALL.search(text) or _HISTORY_RECALL.search(text))
+    return bool(
+        _SELF_RECALL.search(_ARABIC_MARKS.sub("", text)) or _HISTORY_RECALL.search(text)
+    )
 
 
 def _query_terms(text: str) -> tuple[str, ...]:
@@ -77,7 +132,7 @@ class MediaReading:
 
 @dataclass(frozen=True)
 class AssistantTurn:
-    text: str
+    text: str | None
     request: MessageRecord
     sources: tuple[MessageRecord, ...]
     recall_question: MessageRecord | None = None
@@ -106,10 +161,10 @@ class ConversationContext:
     @property
     def sources(self) -> tuple[MessageRecord, ...]:
         assistant_sources = []
-        curr = self.assistant_turn
-        while curr is not None:
-            assistant_sources.extend(curr.sources)
-            curr = curr.prior_turn
+        turn = self.assistant_turn
+        while turn is not None:
+            assistant_sources.extend(turn.sources)
+            turn = turn.prior_turn
         included = (
             self.request,
             *self.parents,
@@ -139,8 +194,9 @@ def prepare_context(
     if not policy.permits(request.guild_id, request.channel_id, request.author_id):
         raise ValueError("The request is outside authorized scope")
     cutoff = (now or request.created_at) - timedelta(days=policy.retention_days)
-    recall_question = request if _SELF_RECALL.search(request.text) else None
-    mine = bool(_MINE.search(request.text))
+    normalized = _normalized_request(request.text)
+    recall_question = request if _SELF_RECALL.search(normalized) else None
+    mine = bool(_MINE.search(normalized))
     if (
         recall_question is None
         and assistant_turn is not None
@@ -148,7 +204,7 @@ def prepare_context(
             mine
             or (
                 assistant_turn.request.author_id == request.author_id
-                and _CONTINUE_RECALL.fullmatch(request.text)
+                and _CONTINUE_RECALL.fullmatch(normalized)
             )
         )
     ):
@@ -193,8 +249,27 @@ def prepare_context(
             or len(focus_terms.intersection(_query_terms(row.text))) >= 2
         )
     )[:_RECENT_LIMIT]
+    if not visible and not parents and _REFERENTIAL_START.match(normalized):
+        # A pronoun can refer to a nearby remark with no shared search terms.
+        antecedent = next(
+            (
+                row
+                for row in recent
+                if row.author_id == request.author_id
+                and row.reply_to_id is None
+                and not _DISCORD_TAG.search(row.text)
+                and request.created_at - row.created_at <= timedelta(minutes=2)
+            ),
+            None,
+        )
+        if antecedent is not None:
+            visible = (antecedent,)
     seen.update(row.message_id for row in visible)
-    query = " ".join(terms) if self_recall or requests_history(request.text) else ""
+    query = ""
+    if recall_question is not None:
+        query = _personal_query(recall_question.text)
+    elif not self_recall and requests_history(request.text):
+        query = " ".join(terms)
     memory = archive.search(
         query,
         guild_id=request.guild_id,
@@ -202,10 +277,18 @@ def prepare_context(
         authors=authors,
         statements_only=self_recall,
         cutoff=cutoff,
-        limit=_MEMORY_LIMIT,
+        limit=32 if self_recall else _MEMORY_LIMIT,
         through=request.created_at,
         omit=frozenset(seen),
     )
+    if self_recall:
+        # Discord questions often omit punctuation. Filter question wording
+        # before selecting the bounded evidence window.
+        memory = tuple(
+            row
+            for row in memory
+            if not _SELF_RECALL.match(_normalized_request(row.text))
+        )[:_MEMORY_LIMIT]
     style_examples = (
         ()
         if self_recall
