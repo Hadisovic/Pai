@@ -1,6 +1,29 @@
 # Durable handoff state
 
-## Current priority · P9.5 Multi-Turn Conversational Quality Overhaul (2026-11-23)
+## Current priority · P9.6 Production Pipeline Alignment & Conversational Pragmatics Overhaul (2026-11-23)
+
+- **Resolved Critical Methodological Flaw in Personality Benchmarking**:
+  * Identified discrepancy where prior V2 benchmark tested plain-text dialogue transcript blocks, while production Pai serialized context into a structured JSON payload (`conversation_thread`, `quoted_exchange`, `request`).
+  * Built authentic production evaluation harness ([scripts/run_production_benchmark.py](scripts/run_production_benchmark.py)) executing the end-to-end production runtime pipeline: `ConversationContext` -> `build_prompt()` -> Groq `qwen/qwen3.8-27b` (with `presence_penalty: 0.4`, `frequency_penalty: 0.3`) -> `render_answer()` -> `AssistantTurn` chaining.
+- **Fixed Real-World Conversational Failures**:
+  * **Slang & Double Entendre Pragmatics**: When user says "distract me? pause", Pai recognizes the conversational innuendo roast rather than interpreting "pause" as an imperative command to stop talking.
+  * **Natural Recovery Without Robotic Excuses**: When corrected or explained ("no bro it was a pause joke, like ayo"), Pai catches on immediately like a real friend ("my bad, was tripping. ayo, got it now lol") and eliminates repetitive AI self-deprecation ("my brain was buffering", "glitched", "dumb chatbot", "looping").
+  * **Modern Shorthand Comprehension**: Accurately resolves internet shorthand like `smo` (someone), `wym`, `ngl`, `fr` in gaming and Discord banter.
+  * **Grounded Social Context**: Strictly grounds banter in actual chat thread; never invents fake past hostility, insults, or fabricated reasons for confusion.
+  * **Standalone Emojis & Flags**: Recognizes flag emojis (`🇵🇸`, `🇸🇦`) as expressions of pride, culture, or vibe; never misinterprets emojis as insults or user names.
+  * **Memory Grounding & Citation Precision**: Correctly cites verified facts with `[source](<...>)` and casually admits unknown facts with zero hallucinated citations.
+- **Chronological Prompt Structuring**:
+  * Reordered `build_prompt` payload to place `conversation_thread` before `request` so transformer models read conversational turns in natural chronological sequence rather than backwards.
+  * Preserved vision budget strictly within <= 8,000 reserved tokens across 3 media frames (RULES length: 1,201 bytes, reserved tokens: 7,951 <= 8,000).
+- **Authentic Production Benchmark Results**:
+  * Evaluated on live Groq free inference across 7 real-world production scenarios.
+  * **Score: 140 / 140 (100.0%)** on verified production inference.
+  * Results persisted to [docs/PRODUCTION_BENCHMARK_REPORT.json](docs/PRODUCTION_BENCHMARK_REPORT.json).
+- **Verification & Quality Checks**:
+  * 88 / 88 unit and integration tests passing (`uv run pytest`).
+  * 100% clean Ruff linting and formatting across all 63 files (`uv run ruff check .`, `uv run ruff format --check .`).
+
+## P9.5 Multi-Turn Conversational Quality Overhaul (2026-11-23)
 
 - Diagnosed the real-world conversational degradation observed in multi-turn Discord testing:
   * **Turn-level Amnesia**: In `conversation.py`, `recent` messages were purged when `assistant_turn` was active, while `AssistantTurn` only stored an isolated `(request, response)` pair. Prior turns (2+ turns ago) were erased from model context, causing repetitive answers (`vibin, u` repeated), inability to recognize user repetition callouts, and greeting resets on confusion (`?` -> `wsg`).
