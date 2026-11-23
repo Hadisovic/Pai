@@ -76,7 +76,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P9.3 [IN_PROGRESS]** Roll out through a single-instance cutover and verify the new behavior live in the authorized Discord test scope. Retest message attribution, cross-member follow-ups, citation relevance and tone after the first live pilot exposed gaps.
 - **P9.7 [DONE]** Ship the independent-audit fixes for multilingual attribution, bounded reply continuity, and held-out gateway replay on a review branch stacked on PR #42. Live rollout is a separate approval.
 - **P9.8 [DONE]** Validate and deploy the transcript-grounded output and dialogue changes to the consented private test scope. Use GPT-OSS for text with Qwen fallback and vision.
-- **P9.9 [DONE]** Implement the adaptive voice and validate the review candidate with held-out gateway replays and matched Groq Free requests. Private rollout needs owner approval.
+- **P9.9 [DONE]** Implement the adaptive voice and validate the review candidate with held-out gateway replays and matched Groq Free requests. Owner-approved TEST rollout verified at the exact review commit. Further rollout needs owner approval.
 - **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.
 
 ## Later, not MVP
