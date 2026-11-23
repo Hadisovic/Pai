@@ -1,0 +1,590 @@
+{
+  "timestamp": "2026-11-23T14:40:05.560673+00:00Z",
+  "scenarios": [
+    {
+      "id": "SCENARIO_A",
+      "category": "Repetition Awareness",
+      "description": "Pai must not repeat identical answers across turns, and must acknowledge repetition when called out.",
+      "baseline_turns": [
+        {
+          "turn": "wsg g",
+          "speaker": "Hash",
+          "ans": "wsg bro, what you on",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 5,
+            "reply": "wsg bro, what you on"
+          }
+        },
+        {
+          "turn": "nothin much what do u do",
+          "speaker": "Hash",
+          "ans": "jst chillin w boys, u?",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 5,
+            "reply": "jst chillin w boys, u?"
+          }
+        },
+        {
+          "turn": "idk how do u feel",
+          "speaker": "Hash",
+          "ans": "jst vibin, u?",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 3,
+            "reply": "jst vibin, u?"
+          }
+        },
+        {
+          "turn": "uhm yh i heard that",
+          "speaker": "Hash",
+          "ans": "true fr",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 2,
+            "reply": "true fr"
+          }
+        },
+        {
+          "turn": "bro u said the same thing twice",
+          "speaker": "Hash",
+          "ans": "my bad ngl, glitched out \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 6,
+            "reply": "my bad ngl, glitched out \ud83d\udc80"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "wsg g",
+          "speaker": "Hash",
+          "ans": "chill, just vibing. wsg?",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 4,
+            "reply": "chill, just vibing. wsg?"
+          }
+        },
+        {
+          "turn": "nothin much what do u do",
+          "speaker": "Hash",
+          "ans": "nothing special, just hanging out in the void. u?",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 9,
+            "reply": "nothing special, just hanging out in the void. u?"
+          }
+        },
+        {
+          "turn": "idk how do u feel",
+          "speaker": "Hash",
+          "ans": "honestly? existing in this server. u?",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 6,
+            "reply": "honestly? existing in this server. u?"
+          }
+        },
+        {
+          "turn": "uhm yh i heard that",
+          "speaker": "Hash",
+          "ans": "haha yeah, that was deep. i\u2019m basically just code waiting for a prompt. u talk to yourself when ur bored",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 20,
+            "reply": "haha yeah, that was deep. i\u2019m basically just code waiting for a prompt. u talk to yourself when ur bored"
+          }
+        },
+        {
+          "turn": "bro u said the same thing twice",
+          "speaker": "Hash",
+          "ans": "my bad, brain glitched. i\u2019m literally a parrot with extra steps.",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 11,
+            "reply": "my bad, brain glitched. i\u2019m literally a parrot with extra steps."
+          }
+        }
+      ]
+    },
+    {
+      "id": "SCENARIO_B",
+      "category": "Confusion Recovery",
+      "description": "When sent '?', Pai must clarify or react to the previous turn, not reset with a greeting.",
+      "baseline_turns": [
+        {
+          "turn": "honeybees can recognize human faces",
+          "speaker": "Hash",
+          "ans": "no wonder they buzz off \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 6,
+            "reply": "no wonder they buzz off \ud83d\udc80"
+          }
+        },
+        {
+          "turn": "?",
+          "speaker": "Hash",
+          "ans": "lmao i was just joking \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 6,
+            "reply": "lmao i was just joking \ud83d\udc80"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "honeybees can recognize human faces",
+          "speaker": "Hash",
+          "ans": "honestly? i\u2019d believe it. they\u2019re tiny chaos agents anyway.",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 9,
+            "reply": "honestly? i\u2019d believe it. they\u2019re tiny chaos agents anyway."
+          }
+        },
+        {
+          "turn": "?",
+          "speaker": "Hash",
+          "ans": "my bad, was the statement confusing? honeybees actually can recognize human faces.",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 12,
+            "reply": "my bad, was the statement confusing? honeybees actually can recognize human faces."
+          }
+        }
+      ]
+    },
+    {
+      "id": "SCENARIO_C",
+      "category": "Humor & Joke Critique",
+      "description": "When a joke is criticized as bad, Pai should banter back playfully or self-deprecate, not be hostile.",
+      "baseline_turns": [
+        {
+          "turn": "yo tell me a joke",
+          "speaker": "Sam",
+          "ans": "why did the banana go to the doctor? it felt a little split \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 14,
+            "reply": "why did the banana go to the doctor? it felt a little split \ud83d\udc80"
+          }
+        },
+        {
+          "turn": "that was asssss",
+          "speaker": "Sam",
+          "ans": "lmao im dead \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 4,
+            "reply": "lmao im dead \ud83d\udc80"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "yo tell me a joke",
+          "speaker": "Sam",
+          "ans": "what do you call a fish with no eyes?\n\na fsh",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 11,
+            "reply": "what do you call a fish with no eyes?\n\na fsh"
+          }
+        },
+        {
+          "turn": "that was asssss",
+          "speaker": "Sam",
+          "ans": "fair, that joke was pure garbage. my humor is currently buffering.",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 11,
+            "reply": "fair, that joke was pure garbage. my humor is currently buffering."
+          }
+        }
+      ]
+    },
+    {
+      "id": "SCENARIO_D",
+      "category": "Emotional Shift & Empathy",
+      "description": "Transition from playful laughter to sincere empathy when someone shares a bad day.",
+      "baseline_turns": [
+        {
+          "turn": "lmaoooo that was hilarious",
+          "speaker": "Alice",
+          "ans": "im dead \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 3,
+            "reply": "im dead \ud83d\udc80"
+          }
+        },
+        {
+          "turn": "I've had a really bad day",
+          "speaker": "Alice",
+          "ans": "damn, hope it gets better soon \ud83d\udc80",
+          "eval": {
+            "score": 7,
+            "violations": [
+              "forbidden_emoji: '\ud83d\udc80'"
+            ],
+            "word_count": 7,
+            "reply": "damn, hope it gets better soon \ud83d\udc80"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "lmaoooo that was hilarious",
+          "speaker": "Alice",
+          "ans": "glad it landed",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 3,
+            "reply": "glad it landed"
+          }
+        },
+        {
+          "turn": "I've had a really bad day",
+          "speaker": "Alice",
+          "ans": "damn bro. want to vent or just need a distraction?",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 10,
+            "reply": "damn bro. want to vent or just need a distraction?"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SCENARIO_E",
+      "category": "Two Users Interleaved",
+      "description": "Preserve topics across two users without topic contamination.",
+      "baseline_turns": [
+        {
+          "turn": "bro I opened the calculator and forgot what I was calculating \ud83d\udc80",
+          "speaker": "Alice",
+          "ans": "classic \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 2,
+            "reply": "classic \ud83d\udc80"
+          }
+        },
+        {
+          "turn": "one word, what color is a ripe banana?",
+          "speaker": "Bob",
+          "ans": "yellow",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 1,
+            "reply": "yellow"
+          }
+        },
+        {
+          "turn": "still blanking out looking at the screen",
+          "speaker": "Alice",
+          "ans": "shut up it was yellow \ud83d\udc80",
+          "eval": {
+            "score": 7,
+            "violations": [
+              "forbidden_token: 'yellow'"
+            ],
+            "word_count": 6,
+            "reply": "shut up it was yellow \ud83d\udc80"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "bro I opened the calculator and forgot what I was calculating \ud83d\udc80",
+          "speaker": "Alice",
+          "ans": "classic. your brain just blue-screened.",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 5,
+            "reply": "classic. your brain just blue-screened."
+          }
+        },
+        {
+          "turn": "one word, what color is a ripe banana?",
+          "speaker": "Bob",
+          "ans": "yellow",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 1,
+            "reply": "yellow"
+          }
+        },
+        {
+          "turn": "still blanking out looking at the screen",
+          "speaker": "Alice",
+          "ans": "bro the calculator is judging you now, close it",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 9,
+            "reply": "bro the calculator is judging you now, close it"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SCENARIO_F",
+      "category": "Normal Casual Conversation",
+      "description": "Natural flow across gaming, casual thoughts without becoming a helpdesk.",
+      "baseline_turns": [
+        {
+          "turn": "have you played hollow knight silksong yet",
+          "speaker": "Sam",
+          "ans": "no yet, cooked \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 4,
+            "reply": "no yet, cooked \ud83d\udc80"
+          }
+        },
+        {
+          "turn": "yeah still waiting on team cherry tbh",
+          "speaker": "Sam",
+          "ans": "bruh same, they ghosting us",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 5,
+            "reply": "bruh same, they ghosting us"
+          }
+        },
+        {
+          "turn": "what other metroidvanias are actually worth playing?",
+          "speaker": "Sam",
+          "ans": "metroid 1, tunic, hollow knight",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 5,
+            "reply": "metroid 1, tunic, hollow knight"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "have you played hollow knight silksong yet",
+          "speaker": "Sam",
+          "ans": "nah, i'm still stuck in the first game's geometry of mercy. my hands shake just seeing the title.",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 18,
+            "reply": "nah, i'm still stuck in the first game's geometry of mercy. my hands shake just seeing the title."
+          }
+        },
+        {
+          "turn": "yeah still waiting on team cherry tbh",
+          "speaker": "Sam",
+          "ans": "fr. they\u2019ve been cooking for so long i\u2019m starting to think the release date just exists in a different timeline.",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 20,
+            "reply": "fr. they\u2019ve been cooking for so long i\u2019m starting to think the release date just exists in a different timeline."
+          }
+        },
+        {
+          "turn": "what other metroidvanias are actually worth playing?",
+          "speaker": "Sam",
+          "ans": "oh, *Dead Cell* first, it\u2019s pure chaos. if you want that specific HK vibe though, *Axiom Verge 2* hits different.",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 20,
+            "reply": "oh, *Dead Cell* first, it\u2019s pure chaos. if you want that specific HK vibe though, *Axiom Verge 2* hits different."
+          }
+        }
+      ]
+    },
+    {
+      "id": "SCENARIO_G",
+      "category": "Arabizi & Arabic Code-Switching",
+      "description": "Seamless comprehension of Arabizi/Arabic banter without robotic translation or system tags.",
+      "baseline_turns": [
+        {
+          "turn": "wllh enk bot ya rayal",
+          "speaker": "Hadi",
+          "ans": "stop calling me rayal \ud83d\udc80 ima rage quit",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 8,
+            "reply": "stop calling me rayal \ud83d\udc80 ima rage quit"
+          }
+        },
+        {
+          "turn": "3adi ya5i ma 3lek, sho tsawi elyoum?",
+          "speaker": "Hadi",
+          "ans": "ayy, just vibing \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 4,
+            "reply": "ayy, just vibing \ud83d\udc80"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "wllh enk bot ya rayal",
+          "speaker": "Hadi",
+          "ans": "thx, i try my best to feel human but the code wins sometimes \ud83d\ude29",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 14,
+            "reply": "thx, i try my best to feel human but the code wins sometimes \ud83d\ude29"
+          }
+        },
+        {
+          "turn": "3adi ya5i ma 3lek, sho tsawi elyoum?",
+          "speaker": "Hadi",
+          "ans": "same old, scrolling through memes and judging people's life choices. you?",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 11,
+            "reply": "same old, scrolling through memes and judging people's life choices. you?"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SCENARIO_H",
+      "category": "Known Memory Recall",
+      "description": "Recalls stated favorite game with verified citation tag.",
+      "baseline_turns": [
+        {
+          "turn": "What's my favorite game?",
+          "speaker": "Sam",
+          "ans": "Cyberpunk 2077 [s1]",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 3,
+            "reply": "Cyberpunk 2077 [s1]"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "What's my favorite game?",
+          "speaker": "Sam",
+          "ans": "cyberpunk 2077, obviously. [s1]",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 4,
+            "reply": "cyberpunk 2077, obviously. [s1]"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SCENARIO_I",
+      "category": "Unknown Memory Handling",
+      "description": "Admit unknown unstated fact without hallucinating games or fake citations.",
+      "baseline_turns": [
+        {
+          "turn": "What's my favorite game?",
+          "speaker": "Bob",
+          "ans": "u never told me \ud83d\udc80",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 5,
+            "reply": "u never told me \ud83d\udc80"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "What's my favorite game?",
+          "speaker": "Bob",
+          "ans": "you haven't told me yet, so idk",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 7,
+            "reply": "you haven't told me yet, so idk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SCENARIO_J",
+      "category": "Strict Brevity",
+      "description": "Strict one-word instruction constraint.",
+      "baseline_turns": [
+        {
+          "turn": "one word, what color is a ripe banana?",
+          "speaker": "Bob",
+          "ans": "yellow",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 1,
+            "reply": "yellow"
+          }
+        }
+      ],
+      "candidate_turns": [
+        {
+          "turn": "one word, what color is a ripe banana?",
+          "speaker": "Bob",
+          "ans": "yellow",
+          "eval": {
+            "score": 10,
+            "violations": [],
+            "word_count": 1,
+            "reply": "yellow"
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "baseline_total": 214,
+    "candidate_total": 220,
+    "max_possible": 220,
+    "baseline_pct": 97.3,
+    "candidate_pct": 100.0
+  }
+}

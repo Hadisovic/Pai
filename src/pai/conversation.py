@@ -81,6 +81,7 @@ class AssistantTurn:
     request: MessageRecord
     sources: tuple[MessageRecord, ...]
     recall_question: MessageRecord | None = None
+    prior_turn: "AssistantTurn | None" = None
 
 
 @dataclass(frozen=True)
@@ -104,6 +105,11 @@ class ConversationContext:
 
     @property
     def sources(self) -> tuple[MessageRecord, ...]:
+        assistant_sources = []
+        curr = self.assistant_turn
+        while curr is not None:
+            assistant_sources.extend(curr.sources)
+            curr = curr.prior_turn
         included = (
             self.request,
             *self.parents,
@@ -115,7 +121,7 @@ class ConversationContext:
                 for expression in self.group_style
                 for source in expression.sources
             ),
-            *(self.assistant_turn.sources if self.assistant_turn is not None else ()),
+            *assistant_sources,
             *((self.recall_question,) if self.recall_question is not None else ()),
             *((self.media.origin,) if self.media.origin is not None else ()),
         )

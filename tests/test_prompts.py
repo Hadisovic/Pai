@@ -108,3 +108,27 @@ def test_active_assistant_conversation_does_not_mark_reply_chain_as_citable():
     prompt = build_prompt(context)
     assert prompt.sources == ()
     assert render_answer("nothing bro [s1]", prompt) == "nothing bro"
+
+
+def test_multi_turn_assistant_chain_builds_conversation_thread():
+    from pai.conversation import AssistantTurn
+
+    turn1 = AssistantTurn("wsg bro, what you on", row(1, "wsg g"), ())
+    turn2 = AssistantTurn(
+        "just vibin, u",
+        row(2, "nothin much what do u do"),
+        (),
+        prior_turn=turn1,
+    )
+    context = ConversationContext(row(3, "idk how do u feel"), assistant_turn=turn2)
+
+    prompt = build_prompt(context)
+    data = json.loads(prompt.request.payload)
+
+    assert "conversation_thread" in data
+    assert len(data["conversation_thread"]) == 2
+    assert data["conversation_thread"][0]["asked"]["text"] == "wsg g"
+    assert data["conversation_thread"][0]["pai_said"] == "wsg bro, what you on"
+    assert data["conversation_thread"][1]["asked"]["text"] == "nothin much what do u do"
+    assert data["conversation_thread"][1]["pai_said"] == "just vibin, u"
+    assert data["quoted_exchange"]["asked"]["text"] == "nothin much what do u do"

@@ -1,6 +1,23 @@
 # Durable handoff state
 
-## Current priority · Gen Z Personality Overhaul & Benchmark (2026-11-22)
+## Current priority · P9.5 Multi-Turn Conversational Quality Overhaul (2026-11-23)
+
+- Diagnosed the real-world conversational degradation observed in multi-turn Discord testing:
+  * **Turn-level Amnesia**: In `conversation.py`, `recent` messages were purged when `assistant_turn` was active, while `AssistantTurn` only stored an isolated `(request, response)` pair. Prior turns (2+ turns ago) were erased from model context, causing repetitive answers (`vibin, u` repeated), inability to recognize user repetition callouts, and greeting resets on confusion (`?` -> `wsg`).
+  * **Forced Brevity & Stylistic Pigeonholing**: Strict 2–10 word constraint and menu of canned examples forced the model into repetitive 3-word catchphrases and generic elementary dad jokes rather than witty situational humor.
+  * **Overused Emojis & Hostile Banter**: Priming `💀` as sentence-ending punctuation caused the model to append `💀` even on bad news and bereavement (`damn bro, what happened 💀`), while rigid roast rules triggered hostile insults (`touch grass 💀`) instead of playful self-deprecation.
+- Implemented core multi-turn continuity architecture across the codebase:
+  * `src/pai/conversation.py`: Linked `AssistantTurn` into a thread chain via `prior_turn: AssistantTurn | None = None`. Updated `ConversationContext.sources` to traverse and aggregate data provenance from all turns across the thread.
+  * `src/pai/discord_gateway.py`: Chained `prior_turn=context.assistant_turn` on every outgoing bot message, maintaining an in-memory thread without cross-user contamination.
+  * `src/pai/prompts.py`: Overhauled `RULES` to emphasize social intelligence (repetition awareness, confusion clarification, lighthearted joke critique handling, sincere support on bad news, and natural concise length without rigid word limits). Updated `build_prompt` to build structured `conversation_thread` up to 4 turns, with graceful budget fallback under vision constraints (strictly <= 8,000 reserved tokens).
+  * `src/pai/providers.py`: Added `presence_penalty=0.4` and `frequency_penalty=0.3` to Groq completions to suppress repetitive loops and catchphrase spamming.
+- **Built & Executed Rigorous Multi-Turn Benchmark V2 ([scripts/evaluate_personality_v2.py](scripts/evaluate_personality_v2.py) & [scripts/run_benchmark_v2.py](scripts/run_benchmark_v2.py))**:
+  * Evaluated complete 10-scenario dialogue sequences across repetition callouts, confusion recovery, joke critiques, emotional shifts, two-user interleaved topics, casual gaming banter, Arabizi/Arabic code-switching, memory recall, and brevity.
+  * Baseline exhibited multiple severe qualitative failures: skull emoji on bad days (`damn, hope it gets better soon 💀`), cross-user topic collision (`shut up it was yellow 💀` sent to Alice's calculator topic), unhelpful joke critique replies (`lmao im dead 💀`), and fake `[s1]` citation on confusion.
+  * Candidate achieved **220 / 220 (100.0%)** on objective checks: acknowledged repetition with self-effacing wit (`my bad, brain glitched`), recovered from confusion with genuine clarification, took joke criticism in stride (`fair, that joke was pure garbage`), showed authentic empathy on bad news (`damn bro. want to vent or just need a distraction?`), and preserved isolated user topics across interruptions. Results persisted to `docs/BENCHMARK_V2_REPORT.json`.
+- Automated test suite passed 88/88 tests (`uv run pytest`), Ruff linting and formatting 100% clean across all 62 files. Added regression test `test_multi_turn_assistant_chain_builds_conversation_thread`.
+
+## Gen Z Personality Baseline & Initial Benchmark (2026-11-22)
 
 - Deep research into Gen Z Discord linguistic dynamics and conversational LLM steering completed:
   * Established Discord friend-group communication patterns: all-lowercase baseline, emotional punctuation (omitting stiff trailing periods, using `?`, `!`, `...`, `💀`, or zero punctuation), concise 2–10 word default cadence, and authentic banter.

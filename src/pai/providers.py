@@ -89,6 +89,8 @@ class Groq:
                     "max_completion_tokens": request.max_output_tokens,
                     "temperature": 0.8,
                     "top_p": 0.9,
+                    "presence_penalty": 0.4,
+                    "frequency_penalty": 0.3,
                     "reasoning_effort": reasoning_effort,
                     "include_reasoning": False,
                     "stream": False,

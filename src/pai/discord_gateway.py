@@ -226,7 +226,11 @@ class PaiDiscordClient(discord.Client):
             if len(self.assistant_turns) >= 64:
                 self.assistant_turns.pop(next(iter(self.assistant_turns)))
             self.assistant_turns[sent.id] = AssistantTurn(
-                response[:2000], request, context.sources, context.recall_question
+                response[:2000],
+                request,
+                context.sources,
+                context.recall_question,
+                prior_turn=context.assistant_turn,
             )
 
     async def _current_reply_access(
