@@ -44,7 +44,7 @@ SQLite, prompt and reply path. It checks silent ingestion, consent,
 native reply targets, current-speaker recall and citation isolation.
 It also exercises the evidence limit of long reply chains.
 
-For a transcript from the approved Qwen Free route, provide the Free
+For a transcript from the approved GPT-OSS 120B Free text route, provide the Free
 key through `PAI_GROQ_KEY` and give the runner a separate private quota
 ledger. The live bot's config and archive are unnecessary.
 
