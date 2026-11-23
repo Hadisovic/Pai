@@ -18,7 +18,7 @@ _EMOJI_AUTO = re.compile(
     r"\b(?:emojis? (?:are |is )?(?:fine|ok(?:ay)?)|use emojis again)\b", re.IGNORECASE
 )
 _LANGUAGE_REQUEST = re.compile(
-    r"\b(?:answer|reply|respond|say (?:it|that)|write) in (english|arabic|arabizi)\b",
+    r"\b(?:(?:answer|reply|respond|say (?:it|that)|write) in|jaw[ie]b (?:bel|bil)) (english|arabic|arabizi)\b",
     re.IGNORECASE,
 )
 _STOP_BIT = re.compile(

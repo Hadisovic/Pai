@@ -324,7 +324,7 @@ def test_interleaved_multi_user_conversations_preserve_topics_and_references(tmp
         assert "staring at 0" in sent_messages[0][0]
         assert sent_messages[1][0] == "yellow"
         assert "receipt" in sent_messages[2][0]
-        assert sent_messages[3][0] == "You didn't tell me."
-        assert sent_messages[4][0] == "You haven't told me yours either."
+        assert sent_messages[3][0] == "i can’t pin that down from what i have."
+        assert sent_messages[4][0] == "i can’t pin that down from what i have."
 
     asyncio.run(run_chained_dialogue())

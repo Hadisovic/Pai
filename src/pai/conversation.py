@@ -23,6 +23,16 @@ _STOP_WORDS = frozenset(
 )
 
 
+_PERSONAL_EVENT = re.compile(
+    r"^did i (?:leave|put|say|tell|mention|post|share|write)\b",
+    re.IGNORECASE,
+)
+
+
+def requests_personal_event(text: str) -> bool:
+    return bool(_PERSONAL_EVENT.search(_normalized_request(text)))
+
+
 _SELF_RECALL = re.compile(
     r"\b(?:(?:what|which|where|when|who)(?:['’]?s|\s+(?:is|are|was|were))\s+my|"
     r"(?:what|which|where|when)\s+(?:did|do|was|am|have)\s+i|"
@@ -55,7 +65,17 @@ _REFERENTIAL_START = re.compile(
 )
 _QUERY_ALIASES = {"fav": "favorite", "fave": "favorite", "favourite": "favorite"}
 _RECALL_ALIASES = {
-    "game": ("game", "games", "لعبتي", "لعبة", "اللعبة", "ألعاب", "le3be", "le3beti"),
+    "game": (
+        "game",
+        "games",
+        "لعبتي",
+        "لعبة",
+        "اللعبة",
+        "ألعاب",
+        "le3be",
+        "le3bet",
+        "le3beti",
+    ),
     "name": ("name", "اسمي", "إسمي", "اسم", "ismi", "esmi"),
     "color": ("color", "colour", "لوني", "لون", "اللون", "lawn"),
     "food": ("food", "dish", "اكلتي", "أكلتي", "أكلة", "طبق", "akle"),
@@ -234,7 +254,11 @@ def prepare_context(
     )
     if not read_history:
         return ConversationContext(request, style=style)
-    recall_question = request if _SELF_RECALL.search(normalized) else None
+    recall_question = (
+        request
+        if _SELF_RECALL.search(normalized) or requests_personal_event(normalized)
+        else None
+    )
     mine = bool(_MINE.search(normalized))
     if (
         recall_question is None
