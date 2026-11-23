@@ -77,7 +77,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P9.7 [DONE]** Ship the independent-audit fixes for multilingual attribution, bounded reply continuity, and held-out gateway replay on a review branch stacked on PR #42. Live rollout is a separate approval.
 - **P9.8 [DONE]** Validate and deploy the transcript-grounded output and dialogue changes to the consented private test scope. Use GPT-OSS for text with Qwen fallback and vision.
 - **P9.9 [DONE]** Implement the adaptive voice and validate the review candidate with held-out gateway replays and matched Groq Free requests. Owner-approved TEST rollout verified at the exact review commit. Further rollout needs owner approval.
-- **P9.10 [IN_PROGRESS]** Ground runtime facts, verify a revised voice on matched synthetic conversations, and deploy to the authorized TEST scope with an encrypted rollback.
+- **P9.10 [DONE]** Ground runtime facts, verify a revised voice on matched synthetic conversations, and deploy to the authorized TEST scope with an encrypted rollback.
 - **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.
 
 ## Later, not MVP
