@@ -94,6 +94,10 @@ def _personal_query(text: str) -> str:
     )
 
 
+def _normalized_request(text: str) -> str:
+    return _ARABIC_MARKS.sub("", _DISCORD_TAG.sub("", text)).strip()
+
+
 def requests_history(text: str) -> bool:
     return bool(
         _SELF_RECALL.search(_ARABIC_MARKS.sub("", text)) or _HISTORY_RECALL.search(text)
@@ -187,7 +191,7 @@ def prepare_context(
     if not policy.permits(request.guild_id, request.channel_id, request.author_id):
         raise ValueError("The request is outside authorized scope")
     cutoff = (now or request.created_at) - timedelta(days=policy.retention_days)
-    normalized = _ARABIC_MARKS.sub("", _DISCORD_TAG.sub("", request.text)).strip()
+    normalized = _normalized_request(request.text)
     recall_question = request if _SELF_RECALL.search(normalized) else None
     mine = bool(_MINE.search(normalized))
     if (
@@ -255,10 +259,18 @@ def prepare_context(
         authors=authors,
         statements_only=self_recall,
         cutoff=cutoff,
-        limit=_MEMORY_LIMIT,
+        limit=32 if self_recall else _MEMORY_LIMIT,
         through=request.created_at,
         omit=frozenset(seen),
     )
+    if self_recall:
+        # Discord questions often omit punctuation. Filter question wording
+        # before selecting the bounded evidence window.
+        memory = tuple(
+            row
+            for row in memory
+            if not _SELF_RECALL.match(_normalized_request(row.text))
+        )[:_MEMORY_LIMIT]
     style_examples = (
         ()
         if self_recall

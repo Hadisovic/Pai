@@ -8,6 +8,8 @@
 - The independent audit invalidated P9.6's regex percentage as a conversational-quality measure. Its script now replays held-out synthetic events through the gateway, SQLite retrieval, router and renderer. CI asserts mechanics with a stub. The optional Free Qwen transcript is for human review.
 - Local validation passed 92 tests with `uv run --offline --locked pytest -q`. The authenticated replay was blocked by the host command policy. For review, run the documented transcript command with an approved Free key in the environment. Keep deployment separate from this review.
 
+- Follow-up verification reproduced an older fact getting displaced by repeated personal questions without punctuation. The retrieval pass now filters recognized question wording before filling its evidence window. The new regression and the complete offline suite pass (93 tests). The held-out gateway replay passes both tests. No Free Groq key was injected for this verification, and the host policy continues to block the live configuration path.
+
 ## P9.5 Multi-Turn Conversational Quality Overhaul (2026-11-23)
 
 - Diagnosed the real-world conversational degradation observed in multi-turn Discord testing:

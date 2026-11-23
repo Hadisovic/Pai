@@ -242,3 +242,33 @@ def test_multilingual_personal_recall_keeps_other_members_and_format_out(
     assert "Celeste" not in prompt.request.payload
     assert question not in prompt.request.payload
     assert prompt.sources == (("s1", first.jump_url),)
+
+
+def test_unpunctuated_recall_questions_do_not_crowd_out_a_stated_fact(tmp_path):
+    archive = Archive(tmp_path / "pai.sqlite")
+    now = datetime.now(UTC)
+    policy = PrivacyPolicy(True, "v1", 10, frozenset({20}), frozenset({30}))
+    fact = MessageRecord(1, 10, 20, 30, "Sam", "My favorite game is Celeste.", now)
+    archive.append(fact)
+    for index in range(2, 8):
+        archive.append(
+            MessageRecord(
+                index,
+                10,
+                20,
+                30,
+                "Sam",
+                "what's my favorite game",
+                now + timedelta(seconds=index),
+            )
+        )
+    request = MessageRecord(
+        8,
+        10,
+        20,
+        30,
+        "Sam",
+        "shou kanet le3beti taba3i",
+        now + timedelta(seconds=8),
+    )
+    assert prepare_context(archive, policy, request).memory == (fact,)
