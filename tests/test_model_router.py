@@ -74,3 +74,23 @@ def test_timeout_marks_route_temporarily_unavailable(tmp_path):
         timeout=0.01,
     )
     assert asyncio.run(router.generate(ModelRequest("system", "text"))) == "fallback"
+
+
+def test_verified_usage_reconciles_reservations_for_rapid_replies(tmp_path):
+    from pai.model_router import ProviderCompletion
+
+    async def reply(request):
+        return ProviderCompletion("ok", 60)
+
+    async def scenario():
+        archive = Archive(tmp_path / "pai.sqlite")
+        router = Router(
+            archive,
+            (ProviderRoute("synthetic", 0, True, Quota(12, 12, 1700, 1700), reply),),
+        )
+        request = ModelRequest("rules", "x" * 1000)
+        assert await router.generate(request) == "ok"
+        assert await router.generate(request) == "ok"
+        assert await router.generate(request) == "ok"
+
+    asyncio.run(scenario())

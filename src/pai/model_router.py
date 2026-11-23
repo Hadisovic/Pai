@@ -49,12 +49,18 @@ class Quota:
 
 
 @dataclass(frozen=True)
+class ProviderCompletion:
+    text: str
+    total_tokens: int | None = None
+
+
+@dataclass(frozen=True)
 class ProviderRoute:
     name: str
     max_frames: int
     verified_free: bool
     quota: Quota
-    complete: Callable[[ModelRequest], Awaitable[str]]
+    complete: Callable[[ModelRequest], Awaitable[str | ProviderCompletion]]
 
 
 class Router:
@@ -87,11 +93,23 @@ class Router:
                     (route.quota.requests_minute, route.quota.requests_day),
                     (route.quota.tokens_minute, route.quota.tokens_day),
                 )
-                if not reserved:
+                if reserved is None:
                     continue
                 try:
                     async with asyncio.timeout(self.timeout):
-                        response = (await route.complete(request)).strip()
+                        result = await route.complete(request)
+                    if isinstance(result, ProviderCompletion):
+                        tokens = result.total_tokens
+                        if type(tokens) is int and tokens > 0:
+                            await asyncio.to_thread(
+                                self.archive.settle_model_attempt,
+                                reserved,
+                                route.name,
+                                tokens,
+                            )
+                        response = result.text.strip()
+                    else:
+                        response = result.strip()
                     if response:
                         return response
                     raise ProviderUnavailable("Empty provider response")

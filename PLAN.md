@@ -62,15 +62,22 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 
 ## P8 — Authenticated free deployment [IN_PROGRESS]
 
-[Issue #40](https://github.com/Hadisovic/Pai/issues/40) is the active priority.
+[Issue #40](https://github.com/Hadisovic/Pai/issues/40) tracks the live deployment.
 - **P8.1 [DONE]** Obtain authenticated Discord Developer Portal, Groq, and free host access. Verify account plan, absence of billing details, and privacy controls before use.
 - **P8.2 [DONE]** Create or select a dedicated Discord test app, configure narrow permissions, and connect the Windows pilot using private configuration and storage.
 - **P8.3 [DONE]** Prove live mention-only replies, persisted recall after restart, vision on a still and an animated GIF, and backup recovery in the approved synthetic Discord scope.
 - **P8.4 [TODO]** Obtain owner approval and affirmative member consent for the production scope before enabling collection.
 
 
+## P9 — Friend-group conversations [IN_PROGRESS]
+
+- **P9.1 [DONE]** Accept direct mentions and native replies to Pai. Queue short bursts in channel order under the existing Free route.
+- **P9.2 [DONE]** Ground Pai's voice in the current exchange and corroborated same-channel expressions. Attribute personal recall to immutable Discord author IDs.
+- **P9.3 [IN_PROGRESS]** Roll out through a single-instance cutover and verify the new behavior live in the authorized Discord test scope. Retest message attribution, cross-member follow-ups, citation relevance and tone after the first live pilot exposed gaps.
+- **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.
+
 ## Later, not MVP
-Optional richer dashboards, opt-in per-person profiles, embeddings if feasible under hard free limits, and additional guilds. No voice recording or unsolicited messages.
+Optional richer dashboards, embeddings if feasible under hard free limits, and additional guilds. Avoid member profiles, voice recording and unsolicited messages.
 
 ## Task procedure
 Each task: inspect repository/STATUS -> implement limited scope -> run real checks -> write STATUS/PLAN -> scan for private data -> commit -> push -> verify remote SHA -> open evidence-backed PR -> continue. If interrupted, push partial `IN_PROGRESS` handoff and identify exact next step. Never force-push or auto-merge.

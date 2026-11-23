@@ -32,10 +32,13 @@ availability yet.
 
 Run `uv run --offline --locked python -m pai --doctor` after the locked
 install. It checks the SQLite schema and FTS5 with a temporary archive and
-prints runtime versions and integrity state without credentials. Pai caps
-replies to eight per rolling minute for the configured guild, a 12-second
-per-member interval, and two active responders. These limits apply to model
-work and replies, while normal messages continue through the archive gate.
+prints runtime versions and integrity state without credentials. Pai
+queues addressed messages in order per channel with at most two active
+responders across channels. The queue admits up to 32 requests, including
+eight per author, and gives a short notice when overloaded. Ordinary
+messages continue through the archive gate. Groq Free request and token
+limits still apply. Pai reserves an estimate before calling the provider
+and uses provider-reported token usage when available.
 The library manages Gateway reconnects. The process handles Ctrl+C and
 POSIX SIGTERM and closes its connections. Configure the eventual host's
 normal restart-on-failure policy and verify it with synthetic data.

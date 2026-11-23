@@ -10,6 +10,7 @@ import aiohttp
 
 from pai.model_router import (
     ModelRequest,
+    ProviderCompletion,
     ProviderRateLimited,
     ProviderRoute,
     ProviderUnavailable,
@@ -59,7 +60,7 @@ class Groq:
 
     async def _complete(
         self, model: str, reasoning_effort: str, request: ModelRequest
-    ) -> str:
+    ) -> ProviderCompletion:
         content: str | list[dict] = request.payload
         if request.frames:
             content = [
@@ -86,6 +87,10 @@ class Groq:
                         {"role": "user", "content": content},
                     ],
                     "max_completion_tokens": request.max_output_tokens,
+                    "temperature": 0.8,
+                    "top_p": 0.9,
+                    "presence_penalty": 0.4,
+                    "frequency_penalty": 0.3,
                     "reasoning_effort": reasoning_effort,
                     "include_reasoning": False,
                     "stream": False,
@@ -109,13 +114,12 @@ class Groq:
             answer = payload["choices"][0]["message"]["content"]
             if not isinstance(answer, str):
                 raise TypeError("Expected completion text")
+            usage = payload.get("usage")
+            tokens = usage.get("total_tokens") if isinstance(usage, dict) else None
+            actual = tokens if type(tokens) is int and tokens > 0 else None
             if self.observe_usage is not None:
-                usage = payload.get("usage")
-                tokens = usage.get("total_tokens") if isinstance(usage, dict) else None
-                self.observe_usage(
-                    tokens if type(tokens) is int and tokens >= 0 else None
-                )
-            return answer
+                self.observe_usage(actual)
+            return ProviderCompletion(answer, actual)
         except (aiohttp.ClientError, ValueError, TypeError, KeyError, IndexError):
             raise ProviderUnavailable("Groq did not return a valid response") from None
 
@@ -138,7 +142,7 @@ class OutageNotice:
         if channel_id in self.announced:
             return ""
         self.announced.add(channel_id)
-        return "I’m out of free model capacity right now. I’ll try again on a later mention."
+        return "i hit the free model capacity for now. try me again in a bit"
 
     def recovered(self, channel_id: int) -> None:
         self.announced.discard(channel_id)

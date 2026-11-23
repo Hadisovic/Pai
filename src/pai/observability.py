@@ -1,14 +1,14 @@
 """Local health checks, payload-free logging and a bounded reply limiter."""
 
+import asyncio
 import logging
 import platform
 import sqlite3
-from collections import deque
-from collections.abc import Callable, Iterator
-from contextlib import closing, contextmanager
+from collections import Counter
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager, closing
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from time import monotonic
 
 from pai.storage import Archive
 
@@ -44,33 +44,35 @@ def diagnose() -> dict[str, str | bool]:
 
 
 class ReplyLimits:
-    def __init__(self, *, clock: Callable[[], float] = monotonic) -> None:
-        self.clock = clock
-        self.active = 0
-        self.guild_attempts: deque[float] = deque()
-        self.member_attempts: dict[int, float] = {}
+    """Bound live work without imposing a timer between conversations."""
 
-    @contextmanager
-    def slot(self, author_id: int) -> Iterator[bool]:
-        now = self.clock()
-        while self.guild_attempts and self.guild_attempts[0] <= now - 60:
-            self.guild_attempts.popleft()
-        self.member_attempts = {
-            member: last
-            for member, last in self.member_attempts.items()
-            if last > now - 12
-        }
-        if (
-            self.active >= 2
-            or len(self.guild_attempts) >= 8
-            or author_id in self.member_attempts
-        ):
+    def __init__(self) -> None:
+        self.pending = 0
+        self.by_author: Counter[int] = Counter()
+        self.channels: dict[int, asyncio.Lock] = {}
+        self.active = asyncio.Semaphore(2)
+        self.busy_channels: set[int] = set()
+
+    @asynccontextmanager
+    async def slot(self, channel_id: int, author_id: int) -> AsyncIterator[bool]:
+        if self.pending >= 32 or self.by_author[author_id] >= 8:
             yield False
             return
-        self.active += 1
-        self.guild_attempts.append(now)
-        self.member_attempts[author_id] = now
+        self.pending += 1
+        self.by_author[author_id] += 1
+        channel = self.channels.setdefault(channel_id, asyncio.Lock())
         try:
-            yield True
+            async with channel, self.active:
+                yield True
         finally:
-            self.active -= 1
+            self.pending -= 1
+            self.by_author[author_id] -= 1
+            if not self.by_author[author_id]:
+                del self.by_author[author_id]
+            self.busy_channels.discard(channel_id)
+
+    def announce_busy(self, channel_id: int) -> bool:
+        if channel_id in self.busy_channels:
+            return False
+        self.busy_channels.add(channel_id)
+        return True

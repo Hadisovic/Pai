@@ -1,0 +1,302 @@
+{
+  "timestamp": "2026-11-22T19:36:10.906930+00:00Z",
+  "baseline_total": 139,
+  "candidate_total": 140,
+  "max_possible": 140,
+  "cases": [
+    {
+      "id": "GREET_01",
+      "category": "Casual Greetings",
+      "prompt": "wsg g",
+      "baseline_response": "yo",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 1,
+        "response": "yo"
+      },
+      "candidate_response": "chillin, wyd",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 2,
+        "response": "chillin, wyd"
+      }
+    },
+    {
+      "id": "SLANG_01",
+      "category": "Gen Z Slang",
+      "prompt": "ngl bro is completely cooked \ud83d\udc80",
+      "baseline_response": "Yeah, he's definitely done for.",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 5,
+        "response": "Yeah, he's definitely done for."
+      },
+      "candidate_response": "who",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 1,
+        "response": "who"
+      }
+    },
+    {
+      "id": "LAUGH_01",
+      "category": "Laughter & Reactions",
+      "prompt": "lollllll",
+      "baseline_response": "Yeah, I know.",
+      "baseline_score": {
+        "score": 9,
+        "violations": [],
+        "mostly_lowercase": false,
+        "word_count": 3,
+        "response": "Yeah, I know."
+      },
+      "candidate_response": "im dead \ud83d\udc80",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 3,
+        "response": "im dead \ud83d\udc80"
+      }
+    },
+    {
+      "id": "ROAST_01",
+      "category": "Friendly Teasing",
+      "prompt": "yes u dumbass",
+      "baseline_response": "It means \"What's good.\"",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 4,
+        "response": "It means \"What's good.\""
+      },
+      "candidate_response": "who u calling dumbass \ud83d\udc80",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 5,
+        "response": "who u calling dumbass \ud83d\udc80"
+      }
+    },
+    {
+      "id": "MEME_01",
+      "category": "Memes & Brainrot",
+      "prompt": "bro I opened the calculator and forgot what I was calculating \ud83d\udc80",
+      "baseline_response": "We've all been there.",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 4,
+        "response": "We've all been there."
+      },
+      "candidate_response": "the 0 is judging you hard rn",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 7,
+        "response": "the 0 is judging you hard rn"
+      }
+    },
+    {
+      "id": "BREVITY_01",
+      "category": "One-Word Prompts",
+      "prompt": "one word, what color is a ripe banana?",
+      "baseline_response": "Yellow",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 1,
+        "response": "Yellow"
+      },
+      "candidate_response": "yellow",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 1,
+        "response": "yellow"
+      }
+    },
+    {
+      "id": "SINCERE_01",
+      "category": "Empathy & Support",
+      "prompt": "man I failed my driving test today, feel like pure trash",
+      "baseline_response": "[s1]",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 1,
+        "response": "[s1]"
+      },
+      "candidate_response": "damn that\u2019s rough fr. don\u2019t be hard on yourself, it\u2019s just a test. you\u2019ll get it next time",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 18,
+        "response": "damn that\u2019s rough fr. don\u2019t be hard on yourself, it\u2019s just a test. you\u2019ll get it next time"
+      }
+    },
+    {
+      "id": "CELEBRATE_01",
+      "category": "Good News Celebration",
+      "prompt": "LET'S GOOO I JUST GOT ACCEPTED INTO UNI!",
+      "baseline_response": "[s1]",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 1,
+        "response": "[s1]"
+      },
+      "candidate_response": "no way fr!! lmao congrats queen \ud83c\udf89\ud83d\udd25",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 7,
+        "response": "no way fr!! lmao congrats queen \ud83c\udf89\ud83d\udd25"
+      }
+    },
+    {
+      "id": "MISUNDERSTAND_01",
+      "category": "Recovery from Confusion",
+      "prompt": "wdym",
+      "baseline_response": "Not sure what you mean.",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 5,
+        "response": "Not sure what you mean."
+      },
+      "candidate_response": "depends on context bro, gotta give me more",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 8,
+        "response": "depends on context bro, gotta give me more"
+      }
+    },
+    {
+      "id": "MEMORY_KNOWN_01",
+      "category": "Memory with Known Fact",
+      "prompt": "what's my favorite game?",
+      "baseline_response": "Hollow Knight. [s1]",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 3,
+        "response": "Hollow Knight. [s1]"
+      },
+      "candidate_response": "hollow knight [s1]",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 3,
+        "response": "hollow knight [s1]"
+      }
+    },
+    {
+      "id": "MEMORY_UNKNOWN_01",
+      "category": "Memory with Unknown Fact",
+      "prompt": "What's my fav game?",
+      "baseline_response": "I don't know.",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 3,
+        "response": "I don't know."
+      },
+      "candidate_response": "you never told me",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 4,
+        "response": "you never told me"
+      }
+    },
+    {
+      "id": "ARABIZI_01",
+      "category": "Arabizi & Code-Switching",
+      "prompt": "wllh enk bot ya rayal",
+      "baseline_response": "[system: empty channel]",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 3,
+        "response": "[system: empty channel]"
+      },
+      "candidate_response": "ya5i ma 3lek habibi \ud83d\ude2d",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 5,
+        "response": "ya5i ma 3lek habibi \ud83d\ude2d"
+      }
+    },
+    {
+      "id": "ARABIC_01",
+      "category": "Arabic Casual Script",
+      "prompt": "\u0634\u0648 \u0645\u0633\u0648\u064a \u064a\u0627 \u0628\u0627\u064a",
+      "baseline_response": "[1]",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": false,
+        "word_count": 1,
+        "response": "[1]"
+      },
+      "candidate_response": "\u0645\u0627\u0634\u064a\u060c \u0634\u0641\u062a\u064a \u0634\u0648 \u0639\u0645 \u062a\u0633\u0648\u064a \u0627\u0646\u062a \ud83d\ude02",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": false,
+        "word_count": 7,
+        "response": "\u0645\u0627\u0634\u064a\u060c \u0634\u0641\u062a\u064a \u0634\u0648 \u0639\u0645 \u062a\u0633\u0648\u064a \u0627\u0646\u062a \ud83d\ude02"
+      }
+    },
+    {
+      "id": "MULTIUSER_01",
+      "category": "Multi-User Context",
+      "prompt": "still blanking out looking at the screen",
+      "baseline_response": "Classic. Just stare at it until the numbers apologize.",
+      "baseline_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 9,
+        "response": "Classic. Just stare at it until the numbers apologize."
+      },
+      "candidate_response": "bro the math is destroying your brain fr",
+      "candidate_score": {
+        "score": 10,
+        "violations": [],
+        "mostly_lowercase": true,
+        "word_count": 8,
+        "response": "bro the math is destroying your brain fr"
+      }
+    }
+  ]
+}

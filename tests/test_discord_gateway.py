@@ -224,6 +224,8 @@ def test_gateway_responds_only_once_to_direct_mentions(tmp_path):
     assert [row.message_id for row in respond.call_args.args[0].recent] == [5]
     event.channel.send.assert_awaited_once()
     assert event.channel.send.call_args.args == ("Synthetic answer",)
+    reference = event.channel.send.call_args.kwargs["reference"]
+    assert (reference.message_id, reference.channel_id, reference.guild_id) == (6, 2, 1)
     assert event.channel.send.call_args.kwargs["allowed_mentions"].to_dict() == {
         "parse": []
     }
@@ -281,3 +283,66 @@ def test_gateway_discards_reply_if_a_source_or_permission_changes(tmp_path, muta
     client.get_channel = Mock(return_value=event.channel)
     asyncio.run(client.on_message(event))
     event.channel.send.assert_not_awaited()
+
+
+def test_bot_replies_continue_only_native_same_channel_threads(tmp_path):
+    from datetime import UTC, datetime
+
+    from pai.discord_gateway import archive_message
+    from pai.storage import Archive
+
+    archive = Archive(tmp_path / "pai.sqlite")
+    event = sample_message()
+    event.author = Mock(spec=discord.Member, id=3, bot=False, display_name="Sam")
+    event.guild.fetch_member = AsyncMock(return_value=event.author)
+    event.channel.guild = event.guild
+    event.channel.permissions_for.return_value = discord.Permissions.all()
+    event.channel.send = AsyncMock(side_effect=[Mock(id=50), Mock(id=51), Mock(id=52)])
+    event.created_at = datetime.now(UTC)
+
+    async def store(message):
+        return await archive_message(archive, message)
+
+    respond = AsyncMock(return_value="the demo is cooked")
+    client = PaiDiscordClient(policy(), store, archive=archive, respond=respond)
+    client._connection.user = Mock(id=42)
+    client.get_channel = Mock(return_value=event.channel)
+
+    async def scenario():
+        event.id, event.content, event.mentions = 6, "Hi <@42>", [Mock(id=42)]
+        event.type, event.reference = discord.MessageType.default, None
+        await client.on_message(event)
+        parent = Mock(spec=discord.Message)
+        parent.id, parent.author, parent.channel = 50, Mock(id=42), event.channel
+        parent.guild, parent.webhook_id, parent.content = (
+            event.guild,
+            None,
+            "the demo is cooked",
+        )
+        event.type = discord.MessageType.reply
+        event.reference = Mock(message_id=50, guild_id=1, channel_id=2, resolved=parent)
+        event.id, event.content, event.mentions = 7, "bro what 💀", []
+        await client.on_message(event)
+        assert respond.await_count == 2
+        assert respond.call_args.args[0].assistant_turn.text == "the demo is cooked"
+        parent.author.id = 99
+        event.id = 8
+        await client.on_message(event)
+        assert respond.await_count == 2
+        assert archive.get(8) is not None
+        parent.author.id = 42
+        archive.delete(1, 2, [6], datetime.now(UTC))
+        event.channel.fetch_message = AsyncMock(return_value=parent)
+        event.reference.resolved = None
+        event.id = 9
+        await client.on_message(event)
+        event.channel.fetch_message.assert_awaited_once_with(50)
+        assert respond.await_count == 3
+        assert respond.call_args.args[0].assistant_turn is None
+
+        event.reference.channel_id = 99
+        event.id = 10
+        await client.on_message(event)
+        assert respond.await_count == 3
+
+    asyncio.run(scenario())

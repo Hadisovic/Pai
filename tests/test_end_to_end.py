@@ -95,8 +95,6 @@ def test_offline_discord_archive_recall_gif_and_deletion_flow(tmp_path, monkeypa
     )
     client._connection.user = Mock(id=42)
     client.get_channel = Mock(return_value=channel)
-    clock = [0]
-    client.reply_limits.clock = lambda: clock[0]
 
     async def replay():
         await client.on_message(
@@ -122,7 +120,6 @@ def test_offline_discord_archive_recall_gif_and_deletion_flow(tmp_path, monkeypa
         assert channel.send.call_args.args[0] == (
             "Sam named the router Waffle. [source](<https://discord.com/channels/1/2/1>)"
         )
-        clock[0] += 15
         gif = message(31, "Watch this.", date=now + timedelta(seconds=1))
         gif.attachments = [
             Mock(
@@ -157,3 +154,177 @@ def test_offline_discord_archive_recall_gif_and_deletion_flow(tmp_path, monkeypa
         )
 
     asyncio.run(replay())
+
+
+def test_interleaved_multi_user_conversations_preserve_topics_and_references(tmp_path):
+    archive = Archive(tmp_path / "pai.sqlite")
+    policy = PrivacyPolicy(
+        admin_opt_in=True,
+        notice_version="v1",
+        guild_id=1,
+        channel_ids=frozenset({2}),
+        consenting_member_ids=frozenset({101, 102}),
+        external_ai_opt_in=True,
+    )
+    guild = Mock(id=1, me=Mock())
+    channel = Mock(spec=discord.TextChannel, id=2, guild=guild)
+    channel.permissions_for.return_value = discord.Permissions(
+        view_channel=True, read_message_history=True, send_messages=True
+    )
+
+    sent_messages = []
+
+    async def mock_send(content, **kwargs):
+        msg_id = 500 + len(sent_messages)
+        m = Mock(
+            spec=discord.Message,
+            id=msg_id,
+            content=content,
+            channel=channel,
+            guild=guild,
+            author=Mock(id=42),
+            webhook_id=None,
+        )
+        sent_messages.append((content, kwargs, m))
+        return m
+
+    channel.send = AsyncMock(side_effect=mock_send)
+
+    user_a = Mock(spec=discord.Member, id=101, bot=False, display_name="Alice")
+    user_b = Mock(spec=discord.Member, id=102, bot=False, display_name="Bob")
+
+    def fetch_member(user_id):
+        return user_a if user_id == 101 else user_b
+
+    guild.fetch_member = AsyncMock(side_effect=fetch_member)
+
+    seen_payloads = []
+
+    async def completion(request):
+        payload = json.loads(request.payload)
+        seen_payloads.append(payload)
+        text = payload["request"]["text"]
+        if "calculator" in text:
+            return "been there. staring at 0 like it holds the secrets of the universe"
+        if "banana" in text:
+            return "yellow"
+        if "still blank" in text:
+            return "check the receipt or your browser tabs"
+        if "fav game" in text:
+            history = payload.get("history", [])
+            for row in history:
+                if "Minecraft" in row.get("text", ""):
+                    return f"Minecraft [{row['source']}]"
+            return "You didn't tell me."
+        if "mine" in text:
+            history = payload.get("history", [])
+            for row in history:
+                if "Portal" in row.get("text", ""):
+                    return f"Portal [{row['source']}]"
+            return "You haven't told me yours either."
+        return "yeah"
+
+    router = Router(
+        archive,
+        (
+            ProviderRoute(
+                "synthetic", 3, True, Quota(100, 100, 100_000, 100_000), completion
+            ),
+        ),
+    )
+
+    async def handle(event):
+        return await archive_message(archive, event)
+
+    client = PaiDiscordClient(
+        policy, handle, archive=archive, respond=ReplyEngine(router)
+    )
+    client._connection.user = Mock(id=42)
+    client.get_channel = Mock(return_value=channel)
+
+    now = datetime.now(UTC)
+
+    def make_msg(msg_id, author, content, parent=None, is_reply=False, mentions=()):
+        m = Mock(spec=discord.Message)
+        m.id = msg_id
+        m.guild = guild
+        m.channel = channel
+        m.author = author
+        m.content = content
+        m.created_at = now + timedelta(seconds=msg_id)
+        m.edited_at = None
+        m.webhook_id = None
+        m.mentions = list(mentions)
+        m.attachments, m.embeds, m.stickers = [], [], []
+        if is_reply and parent:
+            m.type = discord.MessageType.reply
+            m.reference = Mock(
+                channel_id=channel.id,
+                guild_id=guild.id,
+                message_id=parent.id,
+                resolved=parent,
+            )
+        else:
+            m.type = discord.MessageType.default
+            m.reference = None
+        return m
+
+    async def run_chained_dialogue():
+        # 1. User A mentions Pai about forgetting what they were calculating
+        m1 = make_msg(
+            1,
+            user_a,
+            "<@42> bro I opened the calculator and forgot what I was calculating 💀",
+            mentions=[Mock(id=42)],
+        )
+        await client.on_message(m1)
+
+        # 2. User B interrupts with an unrelated banana question
+        m2 = make_msg(
+            2,
+            user_b,
+            "<@42> one word, what color is a ripe banana?",
+            mentions=[Mock(id=42)],
+        )
+        await client.on_message(m2)
+
+        # 3. User A replies directly to Pai's first answer without mentioning Pai
+        ans1_msg = sent_messages[0][2]
+        m3 = make_msg(
+            3,
+            user_a,
+            "it was literally right there and now it's still blank",
+            parent=ans1_msg,
+            is_reply=True,
+        )
+        await client.on_message(m3)
+
+        # 4. User B asks about their favorite game (has never stated it)
+        m4 = make_msg(4, user_b, "What's my fav game <@42>", mentions=[Mock(id=42)])
+        await client.on_message(m4)
+
+        # 5. User A asks "what is mine tho?" replying to Pai's answer to User B
+        ans4_msg = sent_messages[3][2]
+        m5 = make_msg(5, user_a, "what is mine tho?", parent=ans4_msg, is_reply=True)
+        await client.on_message(m5)
+
+        assert len(sent_messages) == 5
+        # Verify message references (case 9)
+        assert sent_messages[0][1]["reference"].message_id == 1
+        assert sent_messages[1][1]["reference"].message_id == 2
+        assert sent_messages[2][1]["reference"].message_id == 3
+        assert sent_messages[3][1]["reference"].message_id == 4
+        assert sent_messages[4][1]["reference"].message_id == 5
+
+        # Verify allowed_mentions has parse: [] (no ping)
+        for _, kwargs, _ in sent_messages:
+            assert kwargs["allowed_mentions"].to_dict() == {"parse": []}
+
+        # Verify responses
+        assert "staring at 0" in sent_messages[0][0]
+        assert sent_messages[1][0] == "yellow"
+        assert "receipt" in sent_messages[2][0]
+        assert sent_messages[3][0] == "You didn't tell me."
+        assert sent_messages[4][0] == "You haven't told me yours either."
+
+    asyncio.run(run_chained_dialogue())

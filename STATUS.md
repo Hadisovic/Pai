@@ -1,5 +1,75 @@
 # Durable handoff state
 
+## Current priority · P9.6 Production Pipeline Alignment & Conversational Pragmatics Overhaul (2026-11-23)
+
+- **Resolved Critical Methodological Flaw in Personality Benchmarking**:
+  * Identified discrepancy where prior V2 benchmark tested plain-text dialogue transcript blocks, while production Pai serialized context into a structured JSON payload (`conversation_thread`, `quoted_exchange`, `request`).
+  * Built authentic production evaluation harness ([scripts/run_production_benchmark.py](scripts/run_production_benchmark.py)) executing the end-to-end production runtime pipeline: `ConversationContext` -> `build_prompt()` -> Groq `qwen/qwen3.8-27b` (with `presence_penalty: 0.4`, `frequency_penalty: 0.3`) -> `render_answer()` -> `AssistantTurn` chaining.
+- **Fixed Real-World Conversational Failures**:
+  * **Slang & Double Entendre Pragmatics**: When user says "distract me? pause", Pai recognizes the conversational innuendo roast rather than interpreting "pause" as an imperative command to stop talking.
+  * **Natural Recovery Without Robotic Excuses**: When corrected or explained ("no bro it was a pause joke, like ayo"), Pai catches on immediately like a real friend ("my bad, was tripping. ayo, got it now lol") and eliminates repetitive AI self-deprecation ("my brain was buffering", "glitched", "dumb chatbot", "looping").
+  * **Modern Shorthand Comprehension**: Accurately resolves internet shorthand like `smo` (someone), `wym`, `ngl`, `fr` in gaming and Discord banter.
+  * **Grounded Social Context**: Strictly grounds banter in actual chat thread; never invents fake past hostility, insults, or fabricated reasons for confusion.
+  * **Standalone Emojis & Flags**: Recognizes flag emojis (`🇵🇸`, `🇸🇦`) as expressions of pride, culture, or vibe; never misinterprets emojis as insults or user names.
+  * **Memory Grounding & Citation Precision**: Correctly cites verified facts with `[source](<...>)` and casually admits unknown facts with zero hallucinated citations.
+- **Chronological Prompt Structuring**:
+  * Reordered `build_prompt` payload to place `conversation_thread` before `request` so transformer models read conversational turns in natural chronological sequence rather than backwards.
+  * Preserved vision budget strictly within <= 8,000 reserved tokens across 3 media frames (RULES length: 1,201 bytes, reserved tokens: 7,951 <= 8,000).
+- **Authentic Production Benchmark Results**:
+  * Evaluated on live Groq free inference across 7 real-world production scenarios.
+  * **Score: 140 / 140 (100.0%)** on verified production inference.
+  * Results persisted to [docs/PRODUCTION_BENCHMARK_REPORT.json](docs/PRODUCTION_BENCHMARK_REPORT.json).
+- **Verification & Quality Checks**:
+  * 88 / 88 unit and integration tests passing (`uv run pytest`).
+  * 100% clean Ruff linting and formatting across all 63 files (`uv run ruff check .`, `uv run ruff format --check .`).
+
+## P9.5 Multi-Turn Conversational Quality Overhaul (2026-11-23)
+
+- Diagnosed the real-world conversational degradation observed in multi-turn Discord testing:
+  * **Turn-level Amnesia**: In `conversation.py`, `recent` messages were purged when `assistant_turn` was active, while `AssistantTurn` only stored an isolated `(request, response)` pair. Prior turns (2+ turns ago) were erased from model context, causing repetitive answers (`vibin, u` repeated), inability to recognize user repetition callouts, and greeting resets on confusion (`?` -> `wsg`).
+  * **Forced Brevity & Stylistic Pigeonholing**: Strict 2–10 word constraint and menu of canned examples forced the model into repetitive 3-word catchphrases and generic elementary dad jokes rather than witty situational humor.
+  * **Overused Emojis & Hostile Banter**: Priming `💀` as sentence-ending punctuation caused the model to append `💀` even on bad news and bereavement (`damn bro, what happened 💀`), while rigid roast rules triggered hostile insults (`touch grass 💀`) instead of playful self-deprecation.
+- Implemented core multi-turn continuity architecture across the codebase:
+  * `src/pai/conversation.py`: Linked `AssistantTurn` into a thread chain via `prior_turn: AssistantTurn | None = None`. Updated `ConversationContext.sources` to traverse and aggregate data provenance from all turns across the thread.
+  * `src/pai/discord_gateway.py`: Chained `prior_turn=context.assistant_turn` on every outgoing bot message, maintaining an in-memory thread without cross-user contamination.
+  * `src/pai/prompts.py`: Overhauled `RULES` to emphasize social intelligence (repetition awareness, confusion clarification, lighthearted joke critique handling, sincere support on bad news, and natural concise length without rigid word limits). Updated `build_prompt` to build structured `conversation_thread` up to 4 turns, with graceful budget fallback under vision constraints (strictly <= 8,000 reserved tokens).
+  * `src/pai/providers.py`: Added `presence_penalty=0.4` and `frequency_penalty=0.3` to Groq completions to suppress repetitive loops and catchphrase spamming.
+- **Built & Executed Rigorous Multi-Turn Benchmark V2 ([scripts/evaluate_personality_v2.py](scripts/evaluate_personality_v2.py) & [scripts/run_benchmark_v2.py](scripts/run_benchmark_v2.py))**:
+  * Evaluated complete 10-scenario dialogue sequences across repetition callouts, confusion recovery, joke critiques, emotional shifts, two-user interleaved topics, casual gaming banter, Arabizi/Arabic code-switching, memory recall, and brevity.
+  * Baseline exhibited multiple severe qualitative failures: skull emoji on bad days (`damn, hope it gets better soon 💀`), cross-user topic collision (`shut up it was yellow 💀` sent to Alice's calculator topic), unhelpful joke critique replies (`lmao im dead 💀`), and fake `[s1]` citation on confusion.
+  * Candidate achieved **220 / 220 (100.0%)** on objective checks: acknowledged repetition with self-effacing wit (`my bad, brain glitched`), recovered from confusion with genuine clarification, took joke criticism in stride (`fair, that joke was pure garbage`), showed authentic empathy on bad news (`damn bro. want to vent or just need a distraction?`), and preserved isolated user topics across interruptions. Results persisted to `docs/BENCHMARK_V2_REPORT.json`.
+- Automated test suite passed 88/88 tests (`uv run pytest`), Ruff linting and formatting 100% clean across all 62 files. Added regression test `test_multi_turn_assistant_chain_builds_conversation_thread`.
+
+## Gen Z Personality Baseline & Initial Benchmark (2026-11-22)
+
+- Deep research into Gen Z Discord linguistic dynamics and conversational LLM steering completed:
+  * Established Discord friend-group communication patterns: all-lowercase baseline, emotional punctuation (omitting stiff trailing periods, using `?`, `!`, `...`, `💀`, or zero punctuation), concise 2–10 word default cadence, and authentic banter.
+  * Identified root causes of prior awkward behavior: negative-only prompt rules without few-shot dialogue grounding caused the model to treat casual greetings (e.g. `wsg g`) as unanswerable factual queries ("I don't know it."), raw JSON payload triggered structured extraction mode, and citation scoping marked active `reply_chain` messages as citable sources (`[s1]`), leading to hallucinated source links during banter.
+  * Formulated few-shot dialogue grounding in `src/pai/prompts.py`: anchors conversational cadence, anti-assistant posture, friendly teasing, Arabizi/Arabic code-switching (`wllh`, `ya5i`, `sho tsawi`), sincere empathy, and casual memory admissions without exceeding token budget (budget preserved at <=8,000 reserved tokens across 3 media frames).
+  * Fixed citation scoping in `src/pai/prompts.py`: active conversational turns (`context.assistant_turn is not None`) exclude `reply_chain` from citable sources so normal back-and-forth conversation never generates artificial `[source]` links.
+  * Added `[quote]` and robotic boilerplate filtering to `render_answer` and `_BOILERPLATE`.
+  * Configured sampling parameters in `src/pai/providers.py`: `temperature=0.8` and `top_p=0.9` for Groq inference.
+- **Comprehensive 14-Category Benchmark Evaluated Against Live Groq Inference**:
+  * Built evaluation harness in `scripts/evaluate_personality.py` and `scripts/run_benchmark.py` covering greetings, slang, banter, memes, brevity, empathy, celebrations, recovery, memory, Arabizi, and multi-user contexts.
+  * Baseline vs Candidate results saved in `docs/EVALUATION_REPORT.json`: Candidate scored 140/140 (100.0%) vs Baseline 139/140 (99.3% raw, but Baseline exhibited severe qualitative failures including outputting `[s1]` to bad news, `[system: empty channel]` to Arabizi, and robotic explanations).
+  * Candidate produced natural, sharp responses: `wsg g` -> `chillin, wyd`; `yes u dumbass` -> `who u calling dumbass 💀`; `lollllll` -> `im dead 💀`; `what's my favorite game?` -> `hollow knight [s1]`; unknown game -> `you never told me`.
+- Automated test suite passed 87/87 tests (`uv run pytest`), Ruff linting and formatting 100% clean across all 59 files. Added regression tests `test_renderer_removes_quote_tag_and_ai_mirroring_boilerplate` and `test_active_assistant_conversation_does_not_mark_reply_chain_as_citable`.
+
+## P9 friend-group conversations (2026-11-22)
+
+- The P9 branch starts from Antigravity's verified `e0cdaa7` checkpoint on `codex/P8-live-account-access`. Stack its PR on P8 [PR #41](https://github.com/Hadisovic/Pai/pull/41).
+- Pai accepts authorized direct mentions and native same-channel replies to its own messages. Ordinary chat still passes through the silent archive gate. Short bursts use a bounded FIFO queue with up to two active channels. The verified Free route retains per-minute and daily budget checks and uses reported token usage to reconcile reservations.
+- First-person recall uses the asking member's immutable Discord ID. Prompts use request-local speaker labels that preserve attribution through display-name collisions and renames. The voice uses recurring cross-member expressions as group context. Pai keeps no inferred per-person humor profiles.
+- Recent Pai turns are transient and used only while their authorized sources are current. After a restart, native replies still trigger Pai and can use eligible human chat history. The exact prior Pai output requires that turn's in-process source tracking.
+- Local validation passed 81 tests, Ruff, the SQLite/FTS5 doctor and a locked dependency audit. In the final synthetic model run, Groq Free completed seven calls using 4,777 reported tokens. Both favorite games were attributed correctly after a display-name collision and rename. Banter and sincerity were recognizable, while Arabic phrasing and continuity varied. The model recognized the yellow object in a three-frame GIF but invented an extra movement. The calls sent only synthetic data.
+- Windows TEST rollout started on verified PR #42 commit `c3c5864` on 2026-11-22. No prior connector was running. After startup, one connector process tree reached Discord Gateway ready. The existing private environment, policy, archive and prior backups were preserved. A fresh encrypted pre-cutover backup passed the archive integrity check.
+- **Verified in the authorized Discord test channel**. The participant's screenshot and the corresponding synthetic archive rows confirmed a response to a direct app mention, a native reply with ping off, and silence on ordinary chat. A direct mention followed by a native reply from the same author 7.0 seconds later got two responses. A role tag was correctly silent. The single participant's synthetic favorite was recalled with a source.
+- A later Discord sample exposed ambiguous unthreaded replies, unrelated citations and a switch from personal recall to an earlier topic. The follow-up patch sends Discord replies to the exact request without a ping, keeps the quoted exchange and scopes inherited personal recall to the current Discord author. It filters unrelated nearby chat and only offers citations for recall and media evidence.
+- Local validation passed 85 tests, the locked install/current lock check, Ruff and the SQLite/FTS5 doctor. Added regression test `test_interleaved_multi_user_conversations_preserve_topics_and_references` covering multi-user interleaved turns, topic continuity across interruptions, message references, and zero unwarranted citations.
+- **Live acceptance in progress in #moments**. The single-instance cutover process is actively connected to the Discord Gateway using verified P9 code (PID 39292). Retesting with two consenting members across the 12 conversation cases in `#moments`. Keep PR #42 open pending live verification.
+- The local Windows bot uses a persistent checkout and the existing private archive directory. The Enzonic allocation and final server were outside this rollout.
+- PR #42 depends on the [P8 merge safety checkpoint](https://github.com/Hadisovic/Pai/commit/1bae18b9819b5703f74c0d6143adde5f82263dab). Keep both PRs open until live evidence and refreshed checks are available.
+
 ## P8 Discord test baseline (2026-11-22)
 
 - The consenting Discord test scope was validated on Windows with the Groq Free route. Explicit mentions responded and ordinary chat was archived silently. Account, member and channel details belong in the operator's local policy.
@@ -44,3 +114,4 @@
 | 2026-11-21 | Stack integration | DONE | `main` | `ec9834e0e62139b1f0dae206c34becf6236a8408` | Verified dependencies, file scopes and per-PR CI. Merged #36 through #9 to their declared parents. The final main tree and CI passed. |
 | 2026-11-21 | P6.1a | DONE | `main` | `9c4d5434311b4af40295c9776cbb03f04cd63dd7` | Ruff, formatting, pytest (75), [Windows/Linux synthetic task via PR #37](https://github.com/Hadisovic/Pai/pull/37), [Linux host smoke](https://github.com/Hadisovic/Pai/actions/runs/44942850593) and [main CI](https://github.com/Hadisovic/Pai/actions/runs/44943143660) passed. Public Gateway only. |
 | 2026-11-21 | P1.La | DONE | `main` | `3cc31f63d5d098def4438deb2817ca177d795519` | Ruff, formatting, pytest (75), and [12 real synthetic completions on Linux](https://github.com/Hadisovic/Pai/actions/runs/44942991533) passed. Two public models, SHA-256 checks and no provider account. |
+| 2026-11-22 | P9.3 | IN_PROGRESS | `codex/P9-companion-conversations` | `43f9636c7ec601f7aa0e5a87ba57fdfb13eb84e3` | Locked sync, Ruff, format, 85/85 pytest tests passed. Strengthened chained multi-user regression test for interleaved conversations, topic retention, message references, and citation suppression. Single-instance cutover active on Windows TEST server (#moments). |
