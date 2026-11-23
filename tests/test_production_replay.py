@@ -105,3 +105,41 @@ def test_long_replies_keep_last_verified_request_at_provenance_limit(tmp_path):
     assert anchor is not None and anchor.request == contexts[32].request
     assert anchor.text is None and anchor.prior_turn is None
     assert len(anchor.sources) == 1
+
+
+def test_rejected_transcript_wrapper_never_enters_next_gateway_turn(tmp_path):
+    dialogue = (
+        Event("first", 3, "<@42> the espresso machine just declared itself mayor"),
+        Event("interleaved", 4, "<@42> what's nine plus three?"),
+        Event("follow-up", 3, "wait, what if it doubles the coffee tax?", "first"),
+    )
+    prompts = []
+
+    async def primary(request):
+        payload = json.loads(request.payload)
+        prompts.append(payload)
+        if len(prompts) == 1:
+            return "[ s1:member_1 ] a serialized reply"
+        return "A fresh reply."
+
+    async def fallback(request):
+        return "Only if it can stamp the receipts."
+
+    budget = Quota(10, 10, 8_000, 30_000)
+    engine = ReplyEngine(
+        Router(
+            Archive(tmp_path / "quota.sqlite"),
+            (
+                ProviderRoute("primary", 0, True, budget, primary),
+                ProviderRoute("fallback", 0, True, budget, fallback),
+            ),
+        )
+    )
+    turns = asyncio.run(replay(dialogue, Archive(tmp_path / "messages.sqlite"), engine))
+    assert turns[0]["pai"] == "Only if it can stamp the receipts."
+    assert list(prompts[2])[-1] == "request"
+    history = prompts[2]["conversation_thread"]
+    assert len(history) == 1
+    assert history[0]["pai_said"] == turns[0]["pai"]
+    assert "serialized reply" not in json.dumps(prompts[2])
+    assert "nine plus three" not in json.dumps(prompts[2])

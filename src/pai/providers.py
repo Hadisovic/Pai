@@ -18,8 +18,8 @@ from pai.model_router import (
 )
 
 _GROQ_CHAT = "https://api.groq.com/openai/v1/chat/completions"
-_GROQ_PRIMARY = "qwen/qwen3.8-27b"
-_GROQ_FALLBACK = "openai/gpt-oss-120b"
+_GROQ_TEXT = "openai/gpt-oss-120b"
+_GROQ_VISION = "qwen/qwen3.8-27b"
 _GROQ_QUOTA = Quota(25, 800, 8000, 180_000)
 _RESPONSE_BYTES = 65_536
 
@@ -43,18 +43,18 @@ class Groq:
             return ()
         return (
             ProviderRoute(
-                f"groq/{_GROQ_PRIMARY}",
-                3,
-                True,
-                _GROQ_QUOTA,
-                partial(self._complete, _GROQ_PRIMARY, "none"),
-            ),
-            ProviderRoute(
-                f"groq/{_GROQ_FALLBACK}",
+                f"groq/{_GROQ_TEXT}",
                 0,
                 True,
                 _GROQ_QUOTA,
-                partial(self._complete, _GROQ_FALLBACK, "low"),
+                partial(self._complete, _GROQ_TEXT, "low"),
+            ),
+            ProviderRoute(
+                f"groq/{_GROQ_VISION}",
+                3,
+                True,
+                _GROQ_QUOTA,
+                partial(self._complete, _GROQ_VISION, "none"),
             ),
         )
 

@@ -161,12 +161,13 @@ async def _groq_benchmark(key: str, quota_path: Path) -> list[dict]:
         await asyncio.sleep(61)
 
     async with aiohttp.ClientSession(trust_env=False) as session:
-        primary = Groq(
+        routes = Groq(
             session, key, free_plan_confirmed=True, observe_usage=observe_usage
-        ).routes()[0]
-        router = Router(Archive(quota_path), (primary,))
+        ).routes()
+        vision = next(route for route in routes if route.max_frames >= 3)
+        router = Router(Archive(quota_path), (vision,))
         return await run_provider_benchmark(
-            router, primary.name, lambda: tokens, wait_window
+            router, vision.name, lambda: tokens, wait_window
         )
 
 
