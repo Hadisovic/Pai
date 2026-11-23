@@ -1,5 +1,14 @@
 # Durable handoff state
 
+## P9.8 · Conversation quality candidate (2026-11-23)
+
+- Branch `codex/P9.8-conversation-quality` stacks on PR #43 at `4a6e7c7`. The private test deployment stays on the previous running revision.
+- A consented transcript and local quota ledger showed 27 replies and 27 Qwen attempts, with no GPT-OSS attempts in the test window. Code inspection and regressions confirmed an internal reply label could escape and an empty rendered output became a canned line.
+- Discord rendering now participates in route acceptance. A rejected candidate can use the existing eligible Free fallback. Unusable replies stay out of the thread. Reply diagnostics record route, outcome, latency and available token counts. They omit user and channel IDs, message content, and credentials.
+- The prompt prioritizes the current speaker, treats obvious fiction as fiction, and distinguishes practical capability questions from jokes. The production gateway replay checks that only the accepted reply can enter the next turn.
+- The full suite passed 96 tests. Both Free providers ran the same fictional contexts through the real production pipeline, using fixed reply anchors to control evidence. Each still produced a personal attack when asked. Keep Qwen primary and GPT-OSS fallback. Hold a Discord rollout pending review and more reliable boundaries on held-out dialogue.
+- Reproduce local tests with `uv run --offline --locked pytest -q` and `uv run --locked ruff check .`. Raw test chat and evaluation review files stay out of Git.
+
 ## P9.7 · Grounded multilingual follow-ups and held-out replay (2026-11-23)
 
 - [PR #43](https://github.com/Hadisovic/Pai/pull/43) contains the verified implementation checkpoint [`390219d`](https://github.com/Hadisovic/Pai/commit/390219d43570f0c29460ab5b7681e1564eea1122). Review branch `codex/P9.7-context-recall` builds on the P9.6 checkpoint `9c79a19` in PR #42. The approved Windows TEST runtime remains on its existing revision.

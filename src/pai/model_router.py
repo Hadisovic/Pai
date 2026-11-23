@@ -4,7 +4,9 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from time import perf_counter
 
+from pai.observability import LOG
 from pai.storage import Archive
 
 
@@ -20,6 +22,10 @@ class ProviderRateLimited(ProviderUnavailable):
 
 class NoFreeRoute(Exception):
     """No verified free route can currently answer this request."""
+
+
+class NoUsableReply(Exception):
+    """A free route completed, but its output was unsuitable for Discord."""
 
 
 @dataclass(frozen=True)
@@ -78,9 +84,12 @@ class Router:
         self.clock = clock
         self.locks = {route.name: asyncio.Lock() for route in routes}
 
-    async def generate(self, request: ModelRequest) -> str:
+    async def generate(
+        self, request: ModelRequest, *, render: Callable[[str], str] | None = None
+    ) -> str:
         if not 0 < request.max_output_tokens <= 512:
             raise ValueError("Model output budget must be between 1 and 512 tokens")
+        rejected = False
         for route in self.routes:
             if not route.verified_free or len(request.frames) > route.max_frames:
                 continue
@@ -95,6 +104,8 @@ class Router:
                 )
                 if reserved is None:
                     continue
+                started = perf_counter()
+                tokens = None
                 try:
                     async with asyncio.timeout(self.timeout):
                         result = await route.complete(request)
@@ -110,6 +121,18 @@ class Router:
                         response = result.text.strip()
                     else:
                         response = result.strip()
+                    if render is not None:
+                        response = render(response) if response else ""
+                        LOG.info(
+                            "Model reply route=%s outcome=%s latency_ms=%d tokens=%s",
+                            route.name,
+                            "accepted" if response else "rejected",
+                            (perf_counter() - started) * 1000,
+                            tokens,
+                        )
+                        if not response:
+                            rejected = True
+                            continue
                     if response:
                         return response
                     raise ProviderUnavailable("Empty provider response")
@@ -119,8 +142,19 @@ class Router:
                         if isinstance(error, ProviderRateLimited)
                         else 30
                     )
+                    if render is not None:
+                        LOG.info(
+                            "Model reply route=%s outcome=%s latency_ms=%d",
+                            route.name,
+                            "rate_limited"
+                            if isinstance(error, ProviderRateLimited)
+                            else "unavailable",
+                            (perf_counter() - started) * 1000,
+                        )
                     until = self.clock() + timedelta(seconds=max(1, delay))
                     await asyncio.to_thread(
                         self.archive.block_model_route, route.name, until
                     )
+        if rejected:
+            raise NoUsableReply("No provider returned a publishable reply")
         raise NoFreeRoute("No compatible free model route is available")
