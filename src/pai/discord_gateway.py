@@ -34,6 +34,7 @@ class PaiDiscordClient(discord.Client):
             [discord.Message, ConversationContext], Awaitable[MediaReading]
         ]
         | None = None,
+        conversation_engine: str = "legacy",
     ) -> None:
         super().__init__(
             intents=discord.Intents(
@@ -48,6 +49,7 @@ class PaiDiscordClient(discord.Client):
         self.archive = archive
         self.respond = respond
         self.read_media = read_media
+        self.timeline = conversation_engine != "legacy"
         self.reply_limits = ReplyLimits()
         self.assistant_turns: dict[int, AssistantTurn] = {}
         self.archive_lock = asyncio.Lock()
@@ -183,6 +185,9 @@ class PaiDiscordClient(discord.Client):
             now=datetime.now(UTC),
             assistant_turn=assistant_turn,
             read_history=can_read_history,
+            timeline=self.timeline,
+            native_reply=self.timeline and bot_reply,
+            prefer_arabic=self.timeline and message.author.id == message.guild.owner_id,
         )
         if self.read_media is not None:
             media = await self.read_media(message, context)
@@ -232,6 +237,10 @@ class PaiDiscordClient(discord.Client):
                     sources,
                     context.recall_question,
                     prior_turn=context.assistant_turn,
+                    message_id=sent.id,
+                    created_at=sent.created_at
+                    if isinstance(sent.created_at, datetime)
+                    else None,
                 )
             else:
                 # Keep the verified question without relying on an answer

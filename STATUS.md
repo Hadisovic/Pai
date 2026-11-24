@@ -1,5 +1,13 @@
 # Durable handoff state
 
+## P9.11 · Conversation Engine V2 review (2026-11-24)
+
+- Branch `codex/P9.11-conversation-engine` stacks on P9.10 PR #46. Legacy and GPT-OSS stay the defaults. V2 adds a bounded chronological timeline, an original short card, branch links and explicit reply targeting. Qwen and GPT-OSS remain independently selectable. `timeline-roles` is an opt-in provider-format comparison with one call.
+- The V2 selector retains authorized intervening turns without a shared-keyword threshold, prioritizes verified reply anchors, and disables passive expression repetition. Direct preferences and revocable approved style examples remain. The owner can retain Arabic script while other members keep their own preferences. Evidence filtering, permission checks, retention and delete semantics still run through the existing boundaries.
+- The decoded owner export matches all 12 ballots across six distinct scenes. Three all-bad naturalness selections, six all-bad understanding selections, and two ties in each dimension. The P9.10 production arm had no wins in its six eligible ballots. Full-context Qwen with the compact card had three wins per dimension in six eligible ballots. Some preferred answers were factually wrong. No universal model ranking follows.
+- The rolling synthetic comparison used 20 Free calls across P9.10 GPT-OSS, V2 GPT-OSS, V2 Qwen and two paired Qwen role-format follow-ups. V2 retained an omitted Arabic cue. A role-format answer used it correctly, whereas the one-payload Qwen answer still missed its activation. A recall case exposed a generic FTS match being quoted for the wrong subject. Two post-fix provider calls checked corrected recall and local abstention. Total 22 calls and 10,871 reported tokens. Uncited corrections and blank provider responses remain limitations. No transcript or voter data is in Git.
+- `uv lock --check`, `uv run --offline --locked ruff check .`, `uv run --offline --locked ruff format --check .`, `uv run --offline --locked pytest -q` (115 passed), `uv run --offline --locked python -m pai --doctor`, and `git diff --check` passed. Next seek approval for an isolated private comparison of Qwen timeline and role formatting after reviewing the outstanding recall behavior. P9.10 remains live. No restart, merge or wider rollout.
+
 ## P9.10 · Grounded replies and conversational review (2026-11-23)
 
 - Review branch `codex/P9.10-grounded-replies` stacks on P9.9 PR #45. The owner authorized a cutover to the existing TEST scope after verification. The TEST bot runs [`dbeb8af`](https://github.com/Hadisovic/Pai/commit/dbeb8afd84e107d24f93663e0adfa4c6e6e4020b) from [PR #46](https://github.com/Hadisovic/Pai/pull/46). P9.9 is the rollback revision.

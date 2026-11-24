@@ -3,7 +3,7 @@
 import re
 from collections import defaultdict
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 
 from pai.policy import PrivacyPolicy
@@ -109,6 +109,20 @@ def recall_topic(text: str) -> tuple[str, ...]:
     return topics
 
 
+def _matches_recall_subject(question: str, evidence: str) -> bool:
+    topics = set(recall_topic(question)) - {"favorite"}
+    if topics:
+        return bool(topics.intersection(recall_topic(evidence)))
+    subject = set(_recall_words(question)) - {
+        "favorite",
+        "then",
+        "again",
+        "now",
+        "remember",
+    }
+    return bool(subject.intersection(_recall_words(evidence)))
+
+
 def _personal_query(text: str) -> str:
     topics = tuple(topic for topic in recall_topic(text) if topic in _RECALL_ALIASES)
     return " ".join(
@@ -158,6 +172,8 @@ class AssistantTurn:
     sources: tuple[MessageRecord, ...]
     recall_question: MessageRecord | None = None
     prior_turn: "AssistantTurn | None" = None
+    message_id: int | None = None
+    created_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -182,6 +198,8 @@ class ConversationContext:
     style: ReplyStyle | None = None
     observed_speakers: tuple[MessageRecord, ...] = ()
     style_sources: tuple[MessageRecord, ...] = ()
+    native_reply: bool = False
+    prefer_arabic: bool = False
 
     @property
     def sources(self) -> tuple[MessageRecord, ...]:
@@ -218,6 +236,9 @@ def prepare_context(
     now: datetime | None = None,
     assistant_turn: AssistantTurn | None = None,
     read_history: bool = True,
+    timeline: bool = False,
+    native_reply: bool = False,
+    prefer_arabic: bool = False,
 ) -> ConversationContext:
     if not policy.permits(request.guild_id, request.channel_id, request.author_id):
         raise ValueError("The request is outside authorized scope")
@@ -252,8 +273,12 @@ def prepare_context(
             if request.created_at - row.created_at <= timedelta(minutes=2)
         ),
     )
+    if timeline and re.search(
+        r"\bno (?:more )?jokes? or emojis?\b", normalized, re.IGNORECASE
+    ):
+        style = replace(style, emoji_off=True, situation=style.situation or "stop")
     if not read_history:
-        return ConversationContext(request, style=style)
+        return ConversationContext(request, style=style, prefer_arabic=prefer_arabic)
     recall_question = (
         request
         if _SELF_RECALL.search(normalized) or requests_personal_event(normalized)
@@ -298,8 +323,15 @@ def prepare_context(
 
     recent = (
         ()
-        if self_recall or assistant_turn is not None
-        else archive.recent(request, authors, cutoff, _RECENT_LIMIT + len(parents))
+        if self_recall or (assistant_turn is not None and not timeline)
+        else archive.recent(
+            request,
+            authors,
+            max(cutoff, request.created_at - timedelta(minutes=5))
+            if timeline
+            else cutoff,
+            _RECENT_LIMIT + len(parents),
+        )
     )
     terms = _query_terms((recall_question or request).text)
     focus_terms = frozenset(terms)
@@ -308,7 +340,8 @@ def prepare_context(
         for row in recent
         if row.message_id not in seen
         and (
-            len(focus_terms) < 3
+            timeline
+            or len(focus_terms) < 3
             or len(focus_terms.intersection(_query_terms(row.text))) >= 2
         )
     )[:_RECENT_LIMIT]
@@ -351,7 +384,23 @@ def prepare_context(
             row
             for row in memory
             if not _SELF_RECALL.match(_normalized_request(row.text))
-        )[:_MEMORY_LIMIT]
+            and (
+                not timeline
+                or (
+                    recall_question is not None
+                    and _matches_recall_subject(recall_question.text, row.text)
+                )
+            )
+        )
+        if timeline:
+            memory = tuple(
+                sorted(memory, key=lambda row: row.created_at, reverse=True)[
+                    :_MEMORY_LIMIT
+                ]
+            )
+            memory = tuple(reversed(memory))
+        else:
+            memory = memory[:_MEMORY_LIMIT]
     suppress_group_style = self_recall or style.situation in {"imminent", "stop"}
     style_examples = (
         ()
@@ -360,7 +409,7 @@ def prepare_context(
     )
     group_style = (
         ()
-        if suppress_group_style
+        if suppress_group_style or timeline
         else _shared_expressions(
             archive.style_candidates(request, policy.consenting_member_ids, cutoff),
             focus_terms.union(
@@ -387,6 +436,8 @@ def prepare_context(
         style=style,
         observed_speakers=observed,
         style_sources=tuple(own_thread),
+        native_reply=native_reply,
+        prefer_arabic=prefer_arabic,
     )
 
 
