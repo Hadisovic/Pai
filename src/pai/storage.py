@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from pai.gif_store import purge_gifs
 from pai.media import MAX_MEDIA_ITEMS, MediaItem
 from pai.policy import PrivacyPolicy
 from pai.voice import STYLE_OPTIONS
@@ -484,6 +485,7 @@ class Archive:
 
     def apply_policy(self, policy: PrivacyPolicy) -> int:
         with closing(self.connect()) as connection, connection:
+            purge_gifs(connection, policy)
             if not policy.media_opt_in:
                 connection.execute("DELETE FROM media_descriptions")
                 connection.execute("DELETE FROM message_media")

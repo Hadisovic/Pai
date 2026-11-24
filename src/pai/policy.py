@@ -15,6 +15,8 @@ class PrivacyPolicy:
     retention_days: int = 30
     external_ai_opt_in: bool = False
     media_opt_in: bool = False
+    gif_reuse_opt_in: bool = False
+    gif_consenting_member_ids: frozenset[int] = frozenset()
 
     @property
     def is_enabled(self) -> bool:
@@ -24,6 +26,14 @@ class PrivacyPolicy:
             and self.guild_id is not None
             and bool(self.channel_ids)
             and bool(self.consenting_member_ids)
+        )
+
+    def permits_gif(self, guild_id: int, channel_id: int, author_id: int) -> bool:
+        return (
+            self.gif_reuse_opt_in
+            and self.external_ai_opt_in
+            and author_id in self.gif_consenting_member_ids
+            and self.permits(guild_id, channel_id, author_id)
         )
 
     def permits_channel(self, guild_id: int, channel_id: int) -> bool:
@@ -81,13 +91,28 @@ def load_policy(path: Path) -> PrivacyPolicy:
     media_opt_in = config.get("media_opt_in", False)
     if type(media_opt_in) is not bool:
         raise ValueError("media_opt_in must be a boolean")
+    gif_reuse_opt_in = config.get("gif_reuse_opt_in", False)
+    gif_members = _snowflakes(config, "gif_consenting_member_ids")
+    members = _snowflakes(config, "consenting_member_ids")
+    if type(gif_reuse_opt_in) is not bool or not gif_members <= members:
+        raise ValueError(
+            "GIF reuse requires separate opt-in from approved text members"
+        )
+    if gif_reuse_opt_in and (
+        not external_ai_opt_in or not admin_opt_in or not gif_members
+    ):
+        raise ValueError(
+            "GIF reuse requires admin and AI opt-in and explicit GIF consent"
+        )
     return PrivacyPolicy(
         admin_opt_in=admin_opt_in,
         notice_version=notice_version,
         guild_id=guild_id,
         channel_ids=_snowflakes(config, "channel_ids"),
-        consenting_member_ids=_snowflakes(config, "consenting_member_ids"),
+        consenting_member_ids=members,
         retention_days=retention_days,
         external_ai_opt_in=external_ai_opt_in,
         media_opt_in=media_opt_in,
+        gif_reuse_opt_in=gif_reuse_opt_in,
+        gif_consenting_member_ids=gif_members,
     )

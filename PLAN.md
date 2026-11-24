@@ -79,6 +79,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P9.9 [DONE]** Implement the adaptive voice and validate the review candidate with held-out gateway replays and matched Groq Free requests. Owner-approved TEST rollout verified at the exact review commit. Further rollout needs owner approval.
 - **P9.10 [DONE]** Ground runtime facts, verify a revised voice on matched synthetic conversations, and deploy to the authorized TEST scope with an encrypted rollback.
 - **P9.11 [DONE]** Add an opt-in timeline engine and independent text route selection. Validate with rolling synthetic dialogues and deploy the approved P9.11 candidate to the existing private TEST scope. Preserve P9.10 rollback.
+- **P9.12 [DONE]** Lock the owner-approved P9.11 baseline and implement separately consented GIF indexing and reuse. Verify in synthetic replay. Live activation requires approval and new GIF consent.
 - **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.
 
 ## Later, not MVP

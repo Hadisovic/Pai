@@ -13,6 +13,8 @@ import aiohttp
 import discord
 
 from pai.discord_gateway import PaiDiscordClient, archive_message
+from pai.gif_store import GifStore
+from pai.gifs import GifFeature
 from pai.media import PublicMediaResolver
 from pai.model_router import Router
 from pai.observability import diagnose, initialize_logs
@@ -60,7 +62,7 @@ async def _run(
                 vision=policy.media_opt_in,
                 conversation_engine=conversation_engine,
             )
-            if policy.media_opt_in:
+            if policy.media_opt_in or policy.gif_reuse_opt_in:
                 resolver = PublicMediaResolver()
                 resources.push_async_callback(resolver.close)
                 media_session = await resources.enter_async_context(
@@ -70,9 +72,15 @@ async def _run(
                         trust_env=False,
                     )
                 )
-                client.read_media = MentionVision(
-                    archive, media_session, router, policy
-                )
+                if policy.media_opt_in:
+                    client.read_media = MentionVision(
+                        archive, media_session, router, policy
+                    )
+                if policy.gif_reuse_opt_in:
+                    client.gifs = GifFeature(
+                        GifStore(archive, policy), media_session, client.respond
+                    )
+                    resources.push_async_callback(client.gifs.close)
         loop = asyncio.get_running_loop()
         task = asyncio.current_task()
         if os.name != "nt" and task is not None:

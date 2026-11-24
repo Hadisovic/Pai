@@ -157,6 +157,13 @@ class PublicMediaResolver(AbstractResolver):
 
 
 async def fetch_image(session: aiohttp.ClientSession, url: str) -> bytes:
+    body, _ = await fetch_media(session, url, _IMAGE_TYPES)
+    return body
+
+
+async def fetch_media(
+    session: aiohttp.ClientSession, url: str, allowed_types: frozenset[str]
+) -> tuple[bytes, str]:
     if not allowed_url(url):
         raise MediaError("Media host or URL is outside the allowlist")
     try:
@@ -164,7 +171,7 @@ async def fetch_image(session: aiohttp.ClientSession, url: str) -> bytes:
             asyncio.timeout(6),
             session.get(url, allow_redirects=False, auto_decompress=False) as response,
         ):
-            if response.status != 200 or response.content_type not in _IMAGE_TYPES:
+            if response.status != 200 or response.content_type not in allowed_types:
                 raise MediaError("Media did not return an approved image MIME type")
             if (
                 response.headers.get("Content-Encoding", "identity").lower()
@@ -183,6 +190,6 @@ async def fetch_image(session: aiohttp.ClientSession, url: str) -> bytes:
                     raise MediaError("Media exceeds the byte limit")
             if not data:
                 raise MediaError("Empty image")
-            return bytes(data)
+            return bytes(data), response.content_type
     except (aiohttp.ClientError, TimeoutError):
         raise MediaError("Unable to download the image") from None

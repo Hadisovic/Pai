@@ -1,5 +1,11 @@
 # Mandatory Codex operating contract
 
+## Owner-approved personality lock
+
+P9.11 is the owner-approved conversational personality baseline. Future development must preserve its character card, response style, conversational engine, model configuration and natural behavior. New capabilities must be implemented as independent extensions. Changes to the core personality require explicit owner approval.
+
+The remote branch and annotated tag named `v9.11` identify the golden runtime. Develop new capabilities on separate branches. See [the baseline and GIF rollout guide](docs/GIF-INTELLIGENCE.md).
+
 ## Every session begins with recovery
 1. Read `README.md`, `AGENTS.md`, `PLAN.md`, `STATUS.md`, and relevant docs before code.
 2. Inspect `git remote -v`, `git status --short --branch`, `git log -5 --oneline`; `git fetch origin`; compare local and remote branch heads. Never discard uncommitted work or force-push.

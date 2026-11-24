@@ -17,6 +17,7 @@ from pai.conversation import (
     prepare_context,
 )
 from pai.discord_media import discover_media
+from pai.gifs import GifFeature
 from pai.observability import LOG, ReplyLimits
 from pai.policy import PrivacyPolicy
 from pai.storage import Archive, MessageRecord
@@ -49,6 +50,7 @@ class PaiDiscordClient(discord.Client):
         self.archive = archive
         self.respond = respond
         self.read_media = read_media
+        self.gifs: GifFeature | None = None
         self.timeline = conversation_engine != "legacy"
         self.reply_limits = ReplyLimits()
         self.assistant_turns: dict[int, AssistantTurn] = {}
@@ -75,6 +77,8 @@ class PaiDiscordClient(discord.Client):
             return
         async with self.archive_lock:
             inserted = await self.handle_message(message)
+        if inserted and self.gifs is not None:
+            self.gifs.observe(message)
         if inserted and self.respond is not None:
             await self._respond_if_addressed(message)
 
@@ -200,8 +204,14 @@ class PaiDiscordClient(discord.Client):
             context = replace(context, media=media)
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
-        response = (await self.respond(context)).strip()
-        if not response:
+        gif = None
+        if self.gifs is None:
+            response = (await self.respond(context)).strip()
+        else:
+            proposal = await self.gifs.respond(context, can_read_history)
+            response = proposal.text.strip()
+            gif = proposal.entry
+        if not response and gif is None:
             return
 
         access = await self._current_reply_access(message)
@@ -214,6 +224,26 @@ class PaiDiscordClient(discord.Client):
             return
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
+        attachment = None
+        if gif is not None and can_read_history and self.gifs is not None:
+            attachment = await self.gifs.attachment(channel, request, gif)
+            if attachment is not None:
+                latest = await self._current_reply_access(message)
+                if (
+                    latest is None
+                    or not latest[1]
+                    or not await asyncio.to_thread(
+                        self.archive.records_unchanged, context.sources
+                    )
+                ):
+                    attachment.close()
+                    return
+                channel, can_read_history = latest
+                if not await asyncio.to_thread(self.gifs.valid, gif):
+                    attachment.close()
+                    attachment = None
+        if not response and attachment is None:
+            return
         outgoing_reference = (
             discord.MessageReference(
                 message_id=message.id, channel_id=channel.id, guild_id=channel.guild.id
@@ -221,11 +251,18 @@ class PaiDiscordClient(discord.Client):
             if can_read_history
             else None
         )
-        sent = await channel.send(
-            response[:2000],
-            reference=outgoing_reference,
-            allowed_mentions=discord.AllowedMentions.none(),
-        )
+        try:
+            sent = await channel.send(
+                response[:2000] if attachment is None else response[:2000] or None,
+                reference=outgoing_reference,
+                allowed_mentions=discord.AllowedMentions.none(),
+                **({"file": attachment} if attachment is not None else {}),
+            )
+        finally:
+            if attachment is not None:
+                attachment.close()
+        if attachment is not None and gif is not None and self.gifs is not None:
+            await asyncio.to_thread(self.gifs.store.mark_used, gif)
         if type(sent.id) is int:
             if len(self.assistant_turns) >= 64:
                 self.assistant_turns.pop(next(iter(self.assistant_turns)))
@@ -387,6 +424,11 @@ class PaiDiscordClient(discord.Client):
                     kinds,
                     items,
                 )
+
+        if self.gifs is not None and (
+            "embeds" in payload.data or "attachments" in payload.data
+        ):
+            self.gifs.refresh(self.get_channel(payload.channel_id), payload.message_id)
 
     async def on_raw_message_delete(
         self, payload: discord.RawMessageDeleteEvent
