@@ -56,8 +56,17 @@ def controls(
             policy.permits(guild.id, interaction.channel_id, author) and not opted_out
         )
         state = "enabled" if collecting else "disabled"
+        gif_state = ""
+        if policy.gif_reuse_opt_in:
+            gif = (
+                "enabled"
+                if not opted_out
+                and policy.permits_gif(guild.id, interaction.channel_id, author)
+                else "disabled"
+            )
+            gif_state = f"GIF indexing and reuse for you in this channel is {gif}. "
         await interaction.response.send_message(
-            f"Collection for you in this channel is {state}. "
+            f"Collection for you in this channel is {state}. {gif_state}"
             f"Messages are retained for up to {policy.retention_days} days, subject to room "
             "in the archive. /memory exports your recent saved messages in this channel. "
             "/forgetme removes your saved messages and stops future collection for you. "

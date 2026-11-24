@@ -1,5 +1,12 @@
 # Durable handoff state
 
+## P9.12 · GIF intelligence and golden personality lock (2026-11-25)
+
+- Verified the running P9.11 process at `e678e60966a524cf19f6470c346534b5da652462`, with timeline-roles, Qwen3.8-27B primary, GPT-OSS 120B fallback and media off. The remote [v9.11 branch](https://github.com/Hadisovic/Pai/tree/v9.11) and annotated tag resolve to that exact commit. Lockfile and existing encrypted recovery artifacts were preserved. Golden tests protect the character, prompts, model settings and reply engine.
+- The review branch is `codex/P9.12-gif-intelligence`. It adds independent admin and per-member consent for GIF processing and reuse, a source-linked local library with byte deduplication, a bounded vision queue, two ordered sampled frames, and a one-call optional selector. Delivery rechecks the original message, URL allowlist, bytes and current permissions. No catalogs or generated URLs. The [GIF design and rollout guide](docs/GIF-INTELLIGENCE.md) covers current Discord media fields and safe rollback.
+- Synthetic Groq Free probes used 10 actual calls and 13,511 reported tokens. The eligible two-frame caption cost 3,757 tokens and took 830 ms. A final callback selected the verified GIF-only response. One incorrect source marker was rejected. The synthetic sincere exchange stayed text-only and an unrelated question got the golden path. Current limits are sampled motion, optional silent MP4 support, lexical retrieval, and unproven live picker coverage.
+- `uv lock --check`, `uv run --offline --locked ruff check .`, `uv run --offline --locked ruff format --check .`, `uv run --offline --locked pytest -q` (136 passed), `uv run --offline --locked python -m pai --doctor`, and `git diff --check` passed. Next obtain separate GIF consent and owner approval for an isolated TEST rollout. P9.11 and its live database were left in place.
+
 ## P9.11 · Conversation Engine V2 and authorized TEST rollout (2026-11-24)
 
 - Branch `codex/P9.11-conversation-engine` stacks on P9.10 PR #46. Legacy and GPT-OSS stay the defaults. V2 adds a bounded chronological timeline, an original short card, branch links and explicit reply targeting. Qwen and GPT-OSS remain independently selectable. `timeline-roles` is an opt-in provider-format comparison with one call.
