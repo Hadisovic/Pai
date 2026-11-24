@@ -30,6 +30,8 @@ async def _run(
     token: str,
     groq_key: str | None,
     build: BuildInfo | None,
+    conversation_engine: str = "legacy",
+    text_model: str = "gpt-oss",
 ) -> None:
     async def handle(message: discord.Message) -> bool:
         return await archive_message(
@@ -38,7 +40,9 @@ async def _run(
 
     async with AsyncExitStack() as resources:
         client = await resources.enter_async_context(
-            PaiDiscordClient(policy, handle, archive=archive)
+            PaiDiscordClient(
+                policy, handle, archive=archive, conversation_engine=conversation_engine
+            )
         )
         if groq_key:
             session = await resources.enter_async_context(
@@ -46,10 +50,15 @@ async def _run(
                     timeout=aiohttp.ClientTimeout(total=8), trust_env=False
                 )
             )
-            routes = Groq(session, groq_key, free_plan_confirmed=True).routes()
+            routes = Groq(session, groq_key, free_plan_confirmed=True).routes(
+                text_model
+            )
             router = Router(archive, routes)
             client.respond = ReplyEngine(
-                router, build=build, vision=policy.media_opt_in
+                router,
+                build=build,
+                vision=policy.media_opt_in,
+                conversation_engine=conversation_engine,
             )
             if policy.media_opt_in:
                 resolver = PublicMediaResolver()
@@ -103,6 +112,12 @@ def main() -> None:
     parser.add_argument(
         "--expected-revision", help="Require this clean Git revision before connecting"
     )
+    parser.add_argument(
+        "--conversation-engine",
+        choices=("legacy", "timeline", "timeline-roles"),
+        default="legacy",
+    )
+    parser.add_argument("--text-model", choices=("gpt-oss", "qwen"), default="gpt-oss")
     args = parser.parse_args()
     if args.groq_free and not args.connect:
         parser.error("--groq-free requires --connect")
@@ -179,7 +194,17 @@ def main() -> None:
 
     try:
         initialize_logs()
-        asyncio.run(_run(policy, archive, token, groq_key, build))
+        asyncio.run(
+            _run(
+                policy,
+                archive,
+                token,
+                groq_key,
+                build,
+                args.conversation_engine,
+                args.text_model,
+            )
+        )
     except KeyboardInterrupt:
         return
     except discord.DiscordException:

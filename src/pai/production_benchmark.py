@@ -67,9 +67,11 @@ async def replay(
     dialogue: tuple[Event, ...],
     archive: Archive,
     respond: Callable[[ConversationContext], Awaitable[str]],
+    *,
+    conversation_engine: str = "legacy",
 ) -> list[dict]:
     policy = PrivacyPolicy(True, "synthetic", 1, frozenset({2}), frozenset({3, 4}))
-    guild = Mock(id=1, me=Mock())
+    guild = Mock(id=1, me=Mock(), owner_id=3)
     channel = Mock(spec=discord.TextChannel, id=2, guild=guild)
     channel.permissions_for.return_value = discord.Permissions.all()
     members = {
@@ -92,6 +94,7 @@ async def replay(
             channel=channel,
             content=content,
             webhook_id=None,
+            created_at=now + timedelta(seconds=identifier - 100, microseconds=1),
         )
         replies[event.label] = reply
         return reply
@@ -100,7 +103,13 @@ async def replay(
         return await archive_message(archive, message)
 
     channel.send = AsyncMock(side_effect=send)
-    client = PaiDiscordClient(policy, ingest, archive=archive, respond=respond)
+    client = PaiDiscordClient(
+        policy,
+        ingest,
+        archive=archive,
+        respond=respond,
+        conversation_engine=conversation_engine,
+    )
     client._connection.user = Mock(id=42)
     client.get_channel = Mock(return_value=channel)
     for identifier, event in enumerate(dialogue, 100):

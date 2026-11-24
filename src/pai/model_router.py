@@ -34,12 +34,16 @@ class ModelRequest:
     payload: str
     frames: tuple[bytes, ...] = ()
     max_output_tokens: int = 384
+    prior_messages: tuple[tuple[str, str], ...] = ()
 
     @property
     def reserved_tokens(self) -> int:
         return (
             len(self.instructions.encode("utf-8"))
             + len(self.payload.encode("utf-8"))
+            + sum(
+                len(content.encode("utf-8")) + 8 for _, content in self.prior_messages
+            )
             + 2048 * len(self.frames)
             + self.max_output_tokens
             + 64

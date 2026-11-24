@@ -132,6 +132,21 @@ messages previously posted by the bot, or files users already downloaded.
 
 ## Optional model replies
 
+The default engine remains `--conversation-engine legacy` and the default
+text route remains `--text-model gpt-oss`. For a separately authorized
+private test, `--conversation-engine timeline --text-model qwen` selects
+P9.11's chronological context and makes Qwen the first text attempt.
+These choices are independent. `timeline-roles` is an experimental
+provider formatting comparison. All choices retain the same Free quota
+checks, reply gate, and frame-capability routing. Keep the existing
+deployment and policy unless the owner approves a cutover.
+
+The timeline engine preserves member language settings and explicit
+requests. For the Discord server owner, when no specific language is set,
+it prefers Arabic script when speaking Arabic. This requires no new
+stored member attribute or profile. Other members keep independent
+preferences through `/style`.
+
 The normal connected mode archives authorized messages without model calls.
 A user-approved pilot can add `--groq-free` alongside `--connect` if the
 operator has confirmed the Free plan, its limits, no billing information and

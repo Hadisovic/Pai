@@ -38,10 +38,10 @@ class Groq:
         self.free_plan_confirmed = free_plan_confirmed
         self.observe_usage = observe_usage
 
-    def routes(self) -> tuple[ProviderRoute, ...]:
+    def routes(self, text_model: str = "gpt-oss") -> tuple[ProviderRoute, ...]:
         if not self.free_plan_confirmed or not self.key.strip():
             return ()
-        return (
+        routes = (
             ProviderRoute(
                 f"groq/{_GROQ_TEXT}",
                 0,
@@ -57,6 +57,8 @@ class Groq:
                 partial(self._complete, _GROQ_VISION, "none"),
             ),
         )
+
+        return routes[::-1] if text_model == "qwen" else routes
 
     async def _complete(
         self, model: str, reasoning_effort: str, request: ModelRequest
@@ -84,6 +86,10 @@ class Groq:
                     "model": model,
                     "messages": [
                         {"role": "system", "content": request.instructions},
+                        *(
+                            {"role": role, "content": turn}
+                            for role, turn in request.prior_messages
+                        ),
                         {"role": "user", "content": content},
                     ],
                     "max_completion_tokens": request.max_output_tokens,
