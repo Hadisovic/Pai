@@ -6,7 +6,7 @@ import json
 import os
 import signal
 import sqlite3
-from contextlib import AsyncExitStack
+from contextlib import AsyncExitStack, nullcontext
 from pathlib import Path
 
 import aiohttp
@@ -14,6 +14,13 @@ import discord
 
 from pai.discord_gateway import PaiDiscordClient, archive_message
 from pai.identity import Identity
+from pai.instance import (
+    Instance,
+    InstanceRouter,
+    current_name,
+    run_until_stopped,
+    runtime_lock,
+)
 from pai.media import PublicMediaResolver
 from pai.model_router import Router
 from pai.observability import diagnose, initialize_logs
@@ -35,7 +42,12 @@ async def _run(
     build: BuildInfo | None,
     conversation_engine: str = "legacy",
     text_model: str = "gpt-oss",
+    instance: Instance | None = None,
+    stop_file: Path | None = None,
 ) -> None:
+    if instance:
+        current_name.set(instance.name)
+
     async def handle(message: discord.Message) -> bool:
         return await archive_message(
             archive, message, include_media=policy.media_opt_in
@@ -47,6 +59,7 @@ async def _run(
                 policy, handle, archive=archive, conversation_engine=conversation_engine
             )
         )
+        client.instance = instance
         if groq_key:
             session = await resources.enter_async_context(
                 aiohttp.ClientSession(
@@ -61,7 +74,7 @@ async def _run(
                 policy, tuple(route.name for route in routes), build
             )
             client.respond = ReplyEngine(
-                router,
+                InstanceRouter(router, instance) if instance else router,
                 build=build,
                 vision=policy.media_opt_in,
                 conversation_engine=conversation_engine,
@@ -88,7 +101,10 @@ async def _run(
         if os.name != "nt" and task is not None:
             loop.add_signal_handler(signal.SIGTERM, task.cancel)
         try:
-            await client.start(token)
+            if stop_file is None:
+                await client.start(token)
+            else:
+                await run_until_stopped(client, token, stop_file)
         except asyncio.CancelledError:
             return
         finally:
@@ -99,6 +115,11 @@ async def _run(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Pai Discord companion")
     parser.add_argument("--policy", type=Path, default=Path(".pai-policy.json"))
+    parser.add_argument(
+        "--instance-config",
+        type=Path,
+        help="Approved private experimental instance configuration",
+    )
     action = parser.add_mutually_exclusive_group()
     action.add_argument(
         "--doctor", action="store_true", help="Check local runtime without a network"
@@ -183,37 +204,71 @@ def main() -> None:
         parser.error("An approved collection policy is required before connecting")
     if args.database is None:
         parser.error("A private --database path is required")
+    instance = None
+    root = None
+    key_prefix = "PAI"
+    if args.instance_config:
+        try:
+            instance = Instance.load(args.instance_config)
+            instance.validate_start(policy, hosted=args.groq_free)
+        except (OSError, ValueError) as error:
+            parser.error(
+                str(error)
+                if isinstance(error, ValueError)
+                and not isinstance(error, json.JSONDecodeError)
+                else "Check the private instance configuration"
+            )
+        root = args.instance_config.resolve().parent
+        slug = instance.name.lower()
+        if (
+            args.database.resolve() != root / f"{slug}.sqlite"
+            or args.policy.resolve() != root / "policy.json"
+            or not args.expected_revision
+            or args.conversation_engine != "timeline-roles"
+            or args.text_model != "qwen"
+        ):
+            parser.error(
+                "The experimental instance requires isolated paths, a revision pin, timeline-roles and Qwen primary"
+            )
+        key_prefix = instance.name.upper()
     groq_key = None
     if args.groq_free:
         if not policy.external_ai_opt_in:
             parser.error("The private policy must explicitly allow external AI")
-        groq_key = os.environ.get("PAI_GROQ_KEY", "").strip()
+        groq_key = os.environ.get(f"{key_prefix}_GROQ_KEY", "").strip()
         if not groq_key:
             parser.error("Set the approved Free Groq key in the environment")
-    token = os.environ.get("DISCORD_TOKEN", "").strip()
+    token = os.environ.get(
+        f"{key_prefix}_DISCORD_TOKEN" if instance else "DISCORD_TOKEN", ""
+    ).strip()
     if not token:
         parser.error("Set the Discord bot token in the environment")
     os.umask(0o077)
     try:
-        archive = Archive(args.database)
-        archive.apply_policy(policy)
+        with runtime_lock(root) if root is not None else nullcontext():
+            stop_file = root / "stop.request" if root is not None else None
+            if stop_file is not None:
+                stop_file.unlink(missing_ok=True)
+            archive = Archive(args.database)
+            archive.apply_policy(policy)
+            initialize_logs()
+            asyncio.run(
+                _run(
+                    policy,
+                    archive,
+                    token,
+                    groq_key,
+                    build,
+                    args.conversation_engine,
+                    args.text_model,
+                    instance,
+                    stop_file,
+                )
+            )
     except (OSError, sqlite3.Error, ValueError):
         parser.exit(
-            2, "Unable to open the private archive. Check its path and schema.\n"
-        )
-
-    try:
-        initialize_logs()
-        asyncio.run(
-            _run(
-                policy,
-                archive,
-                token,
-                groq_key,
-                build,
-                args.conversation_engine,
-                args.text_model,
-            )
+            2,
+            "Unable to start the private runtime. Check its files and whether it is already running.\n",
         )
     except KeyboardInterrupt:
         return

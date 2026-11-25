@@ -1,5 +1,12 @@
 # Durable handoff state
 
+## P9.16 · Kirky experimental runtime (2026-11-25)
+
+- Branch `codex/P9.16-kirky` stacks on verified [P9.15 draft #52](https://github.com/Hadisovic/Pai/pull/52) at `67521265c30137d2e0b0682d3ce03e67c413ed80`. [Kirky setup and rollback](docs/KIRKY.md) records independent configuration, quota priority, safety and migration.
+- Configurable app-authored name and narrowly scoped experimental distress reply are implemented outside the golden files. Experimental Discord preflight and separate start, stop, credential and backup scripts are ready for offline validation.
+- Offline `uv run --offline --locked pytest -q` passed with 165 tests. Ruff, lockfile, source diff, golden-source comparison and PowerShell syntax checks passed. The avatar-copy hash matched the user attachment.
+- Next action is local setup and encrypted restore verification. The new Discord application and permissions, participant consent, and an approved quota decision precede a live pilot. Stable Pai stays pinned and running.
+
 ## P9.15 · Member awareness (2026-11-25)
 
 - Branch `codex/P9.15-member-awareness` stacks on verified P9.14.1 [draft #51](https://github.com/Hadisovic/Pai/pull/51) at `d9b0a30eee12560268275e49d7b75ec328d168bd`. [Design, evaluation and rollout](docs/P9.15-REVIEW.md) records evidence and no live activation.

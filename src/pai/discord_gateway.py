@@ -24,6 +24,7 @@ from pai.conversation import (
 )
 from pai.discord_media import discover_media
 from pai.identity import Identity
+from pai.instance import Instance, distress_reply, verify_discord
 from pai.members import (
     Member,
     MemberDirectory,
@@ -69,6 +70,7 @@ class PaiDiscordClient(discord.Client):
         self.timeline = conversation_engine != "legacy"
         self.social: SocialLearning | None = None
         self.identity: Identity | None = None
+        self.instance: Instance | None = None
         self.members = (
             MemberDirectory(archive, policy)
             if archive is not None and policy.member_awareness_opt_in
@@ -446,7 +448,10 @@ class PaiDiscordClient(discord.Client):
             if self.identity and grounded is None
             else ""
         )
-        if clarify_harmful_parent(context):
+        urgent = distress_reply(context) if self.instance else None
+        if urgent:
+            response = urgent
+        elif clarify_harmful_parent(context):
             response = "nah. what are you asking me about?"
         elif member_plan is not None and member_plan.local_reply:
             response = member_plan.local_reply
@@ -542,7 +547,7 @@ class PaiDiscordClient(discord.Client):
             reference=outgoing_reference,
             allowed_mentions=discord.AllowedMentions.none(),
         )
-        if member_plan is not None:
+        if member_plan is not None or urgent:
             # Member aliases and sharing settings have their own lifecycle.
             # A normal social or text turn still uses the ordinary receipt path.
             if type(sent.id) is int and learned is not None and learned.notes:
@@ -629,6 +634,8 @@ class PaiDiscordClient(discord.Client):
         )
 
     async def setup_hook(self) -> None:
+        if self.instance is not None:
+            await verify_discord(self, self.instance)
         if self.archive is not None:
             await asyncio.to_thread(self.archive.prune, self._retention_cutoff())
             if self.policy.guild_id is not None:
@@ -638,6 +645,7 @@ class PaiDiscordClient(discord.Client):
                     self.policy,
                     social=self.social.store if self.social else None,
                     members=self.members,
+                    name=self.instance.name if self.instance else "Pai",
                 )
                 await self.control_tree.sync(
                     guild=discord.Object(id=self.policy.guild_id)

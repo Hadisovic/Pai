@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 
 from pai.conversation import ConversationContext
+from pai.instance import current_name
 from pai.policy import PrivacyPolicy
 from pai.runtime_info import BuildInfo, _query
 
@@ -87,7 +88,7 @@ class Identity:
         ):
             return ""
         facts = {
-            "name": "Pai",
+            "name": current_name.get(),
             "role": "AI-powered Discord friend and companion",
             "human_creator": _CREATOR,
             "primary_text_model": self.text_routes[0] if self.text_routes else None,
@@ -104,7 +105,7 @@ class Identity:
             "channel_media_analysis_enabled": self.policy.media_opt_in,
             "limitations": "No browsing, private account access, code execution or physical control.",
         }
-        return "Verified Pai runtime facts:\n" + json.dumps(
+        return f"Verified {current_name.get()} runtime facts:\n" + json.dumps(
             facts, ensure_ascii=False, separators=(",", ":")
         )
 
@@ -155,9 +156,9 @@ class Identity:
             )
         if topic == "identity":
             return say(
-                "i'm Pai, your Discord companion.",
-                "أنا Pai، رفيقكم عالديسكورد.",
-                "ana Pai, rafi2kom 3al Discord.",
+                f"i'm {current_name.get()}, your Discord companion.",
+                f"أنا {current_name.get()}، رفيقكم عالديسكورد.",
+                f"ana {current_name.get()}, rafi2kom 3al Discord.",
             )
         if topic == "model":
             if not primary:
@@ -167,9 +168,9 @@ class Identity:
                     "ma 3andi model lal text hon.",
                 )
             return say(
-                f"i'm Pai. {primary} is my default text model.",
-                f"أنا Pai. موديل النص الأساسي {primary}.",
-                f"ana Pai. {primary} howwe el model el asasi lal text.",
+                f"i'm {current_name.get()}. {primary} is my default text model.",
+                f"أنا {current_name.get()}. موديل النص الأساسي {primary}.",
+                f"ana {current_name.get()}. {primary} howwe el model el asasi lal text.",
             )
         if topic == "fallback":
             if not fallback:
