@@ -10,6 +10,7 @@ import discord
 from discord import app_commands
 
 from pai.conversation import share_style_example
+from pai.members import MemberDirectory
 from pai.observability import LOG
 from pai.policy import PrivacyPolicy
 from pai.social_memory import SocialStore
@@ -33,6 +34,7 @@ def controls(
     policy: PrivacyPolicy,
     *,
     social: SocialStore | None = None,
+    members: MemberDirectory | None = None,
 ) -> app_commands.CommandTree:
     tree = PrivateCommandTree(client)
     guild = discord.Object(id=policy.guild_id) if policy.guild_id is not None else None
@@ -132,6 +134,59 @@ def controls(
             f"Removed {count} saved messages. Collection for you has stopped.",
             ephemeral=True,
         )
+
+    if members is not None:
+
+        @tree.command(
+            guild=guild, description="Set your nickname and member reference boundaries"
+        )
+        async def member_context(
+            interaction: discord.Interaction,
+            nickname: str | None = None,
+            clickable: bool | None = None,
+            teasing: bool | None = None,
+            reset: bool = False,
+        ) -> None:
+            channel = interaction.channel_id
+            author = interaction.user.id
+            if (
+                channel is None
+                or not visible(interaction)
+                or not interaction.permissions.read_message_history
+            ):
+                return await unavailable(interaction)
+            row = MessageRecord(0, guild.id, channel, author, "", "", datetime.now(UTC))
+            current = await asyncio.to_thread(members.lookup, row, ids=(author,))
+            if not current:
+                return await unavailable(interaction)
+            if reset or any(
+                value is not None for value in (nickname, clickable, teasing)
+            ):
+                saved = await asyncio.to_thread(
+                    members.configure,
+                    row,
+                    nickname=nickname,
+                    references=clickable,
+                    teasing=teasing,
+                    reset=reset,
+                )
+                if not saved:
+                    await interaction.response.send_message(
+                        "Could not save that. Use a nickname up to 32 letters, numbers, spaces, dots, apostrophes, dashes or underscores.",
+                        ephemeral=True,
+                        allowed_mentions=discord.AllowedMentions.none(),
+                    )
+                    return
+                current = await asyncio.to_thread(members.lookup, row, ids=(author,))
+            if not current:
+                return await unavailable(interaction)
+            setting = current[0]
+            await interaction.response.send_message(
+                f"Nickname {setting.nickname or 'unset'}. Clickable references {'on' if setting.references else 'off'}. "
+                f"Explicit roasting {'on' if setting.teasing else 'off'}. References never request a ping.",
+                ephemeral=True,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
 
     @tree.command(guild=guild, description="View or change how Pai replies to you here")
     async def style(

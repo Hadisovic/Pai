@@ -23,6 +23,7 @@ _CONTEXT = (
 class SocialReply:
     text: str
     notes: tuple[SocialNote, ...] = ()
+    members_used: bool = False
 
 
 class _ContextRouter:
@@ -123,7 +124,11 @@ class SocialLearning:
         )
 
     async def respond(
-        self, context: ConversationContext, history: bool, identity_facts: str = ""
+        self,
+        context: ConversationContext,
+        history: bool,
+        identity_facts: str = "",
+        member_context: str = "",
     ) -> SocialReply:
         notes = ()
         if (
@@ -155,9 +160,13 @@ class SocialLearning:
             else ""
         )
         answer, used = await respond_with_context(
-            self.engine, context, ("social", hints), ("identity", identity_facts)
+            self.engine,
+            context,
+            ("members", member_context),
+            ("social", hints),
+            ("identity", identity_facts),
         )
-        return SocialReply(answer, notes if "social" in used else ())
+        return SocialReply(answer, notes if "social" in used else (), "members" in used)
 
     def valid_turn(self, turn: AssistantTurn, recipient: MessageRecord) -> bool:
         current = turn
@@ -190,6 +199,11 @@ class SocialLearning:
     ) -> None:
         request = context.request
         self.influenced[turn] = (context, reply.notes)
+        self.track_feedback(message_id, request, reply)
+
+    def track_feedback(
+        self, message_id: int, request: MessageRecord, reply: SocialReply
+    ) -> None:
         used = tuple(
             note for note in reply.notes if mentions_term(reply.text, note.term)
         )

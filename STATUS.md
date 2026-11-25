@@ -1,5 +1,13 @@
 # Durable handoff state
 
+## P9.15 · Member awareness (2026-11-25)
+
+- Branch `codex/P9.15-member-awareness` stacks on verified P9.14.1 [draft #51](https://github.com/Hadisovic/Pai/pull/51) at `d9b0a30eee12560268275e49d7b75ec328d168bd`. [Design, evaluation and rollout](docs/P9.15-REVIEW.md) records evidence and no live activation.
+- Added channel-scoped identity labels, explicit nickname and mention boundaries, verified incoming references, a bounded member block and post-render validation of non-notifying user mentions. Cross-member recall is limited to source-linked self-stated preferences. Ordinary social and assistant-continuity paths remain available. No protected source changed.
+- Four synthetic GPT-OSS Free fallback calls used 2,418 reported tokens. The candidate sourced the corrected favorite and produced two playful group replies, whose recorded outputs replayed through the final renderer with two validated mentions each. The Qwen run stopped on quota before a provider call.
+- Full local verification passed with 158 tests, Ruff lint and formatting, lockfile, doctor, diff checks and a golden-source comparison. Synthetic Gateway tests also verify member opt-out during generation, no ping parse rules, and ordinary receipt recovery when the social and member extensions are enabled.
+- Next action is draft review, then explicit approval and refreshed member-awareness consent before any TEST activation. Preserve the live P9.11 pin and GIF draft. Keep the known distress limitation in the separate pre-rollout safety review.
+
 ## P9.14.1 · Conversational refinement (2026-11-25)
 
 - Branch `codex/P9.14.1-conversation-refinement` starts at P9.14 [draft #50](https://github.com/Hadisovic/Pai/pull/50), `9c582054bf89b728d0aea85e3090746bbb37bf38`. [Investigation](docs/P9.14.1-REVIEW.md) records priorities and limitations.

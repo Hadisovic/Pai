@@ -18,6 +18,8 @@ class PrivacyPolicy:
     social_learning_opt_in: bool = False
     social_consenting_member_ids: frozenset[int] = frozenset()
     assistant_continuity_opt_in: bool = False
+    member_awareness_opt_in: bool = False
+    member_awareness_member_ids: frozenset[int] = frozenset()
 
     @property
     def is_enabled(self) -> bool:
@@ -34,6 +36,16 @@ class PrivacyPolicy:
             self.social_learning_opt_in
             and self.external_ai_opt_in
             and author_id in self.social_consenting_member_ids
+            and self.permits(guild_id, channel_id, author_id)
+        )
+
+    def permits_member_awareness(
+        self, guild_id: int, channel_id: int, author_id: int
+    ) -> bool:
+        return (
+            self.member_awareness_opt_in
+            and self.external_ai_opt_in
+            and author_id in self.member_awareness_member_ids
             and self.permits(guild_id, channel_id, author_id)
         )
 
@@ -98,6 +110,19 @@ def load_policy(path: Path) -> PrivacyPolicy:
         raise ValueError("assistant_continuity_opt_in must be a boolean")
     social_members = _snowflakes(config, "social_consenting_member_ids")
     text_members = _snowflakes(config, "consenting_member_ids")
+    awareness = config.get("member_awareness_opt_in", False)
+    awareness_members = _snowflakes(config, "member_awareness_member_ids")
+    if (
+        type(awareness) is not bool
+        or not awareness_members <= text_members
+        or (
+            awareness
+            and (not external_ai_opt_in or not admin_opt_in or not awareness_members)
+        )
+    ):
+        raise ValueError(
+            "Member awareness requires administrator, model and separate member opt-in"
+        )
     if type(social) is not bool or not social_members <= text_members:
         raise ValueError(
             "Social learning requires separate opt-in from approved text members"
@@ -118,4 +143,6 @@ def load_policy(path: Path) -> PrivacyPolicy:
         social_learning_opt_in=social,
         social_consenting_member_ids=social_members,
         assistant_continuity_opt_in=continuity,
+        member_awareness_opt_in=awareness,
+        member_awareness_member_ids=awareness_members,
     )

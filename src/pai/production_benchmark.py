@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -75,6 +76,8 @@ async def replay(
     assistant_continuity: bool = False,
     social_learning: bool = False,
     identity_context: bool = False,
+    member_awareness: bool = False,
+    member_names: dict[int, tuple[str, str]] | None = None,
     restart_before: str | None = None,
 ) -> list[dict]:
     policy = PrivacyPolicy(
@@ -83,20 +86,27 @@ async def replay(
         1,
         frozenset({2}),
         frozenset({3, 4}),
-        external_ai_opt_in=social_learning,
+        external_ai_opt_in=social_learning or member_awareness,
         social_learning_opt_in=social_learning,
         social_consenting_member_ids=frozenset({3, 4})
         if social_learning
         else frozenset(),
         assistant_continuity_opt_in=assistant_continuity,
+        member_awareness_opt_in=member_awareness,
+        member_awareness_member_ids=frozenset({3, 4})
+        if member_awareness
+        else frozenset(),
     )
     guild = Mock(id=1, me=Mock(), owner_id=3)
     channel = Mock(spec=discord.TextChannel, id=2, guild=guild)
     channel.permissions_for.return_value = discord.Permissions.all()
-    members = {
-        key: Mock(spec=discord.Member, id=key, display_name="Fictional Sam", bot=False)
-        for key in (3, 4, 5)
-    }
+    members = {}
+    for key in (3, 4, 5):
+        entry = Mock(spec=discord.Member, id=key, bot=False, guild=guild)
+        entry.name, entry.display_name = (member_names or {}).get(
+            key, (f"person{key}", "Fictional Sam")
+        )
+        members[key] = entry
     guild.fetch_member = AsyncMock(side_effect=members.__getitem__)
     replies = {}
     transcript = []
@@ -169,7 +179,10 @@ async def replay(
             guild=guild,
             channel=channel,
             content=event.text,
-            mentions=[Mock(id=42)] if "<@42>" in event.text else [],
+            mentions=[
+                members.get(int(value), Mock(id=int(value)))
+                for value in dict.fromkeys(re.findall(r"<@!?(\d+)>", event.text))
+            ],
             webhook_id=None,
             created_at=now + timedelta(seconds=identifier - 100),
             edited_at=None,
