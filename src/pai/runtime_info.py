@@ -12,13 +12,14 @@ _REVISION = re.compile(r"[0-9a-f]{40}")
 _RELEASE = re.compile(r"^(P[0-9]+(?:\.[0-9]+)+):", re.IGNORECASE)
 _BUILD = re.compile(
     r"^(?:(?:hey|yo|pai)[, ]+)?(?:"
-    r"(?:what|which) (?:software |current )?(?:version|build|release|commit) (?:are you|is pai)"
+    r"(?:what|which) (?:software |current )?(?:version|build|release|commit) (?:are (?:you|u)|is pai)"
     r"(?: (?:on|running|using|rn|right now))*"
     r"|what(?:['’]s| is) (?:your|pai['’]s) (?:current )?(?:version|build|release|commit)"
     r"|what (?:version|build|release|commit) (?:do you run|did you deploy|of pai is running)"
     r"|(?:show|give|tell) me (?:your|the) (?:running |deployed )?(?:version|build|release|commit)"
     r"|(?:your )?(?:running |deployed )?(?:version|build|release|commit)"
-    r"|(?:شو|ايش|إيش|وش|شنو) (?:إصدارك|اصدارك|نسختك))$",
+    r"|(?:شو|ايش|إيش|وش|شنو) (?:إصدارك|اصدارك|نسختك)"
+    r"|(?:shu|shou|sho) (?:versionak|versionek))$",
     re.IGNORECASE,
 )
 _DETAIL = re.compile(

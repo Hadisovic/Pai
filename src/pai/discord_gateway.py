@@ -9,6 +9,11 @@ import discord
 from discord.ext import tasks
 
 from pai.commands import controls
+from pai.continuity import (
+    AssistantReceipts,
+    clarify_harmful_parent,
+    focus_native_branch,
+)
 from pai.conversation import (
     AssistantTurn,
     ConversationContext,
@@ -17,6 +22,7 @@ from pai.conversation import (
     prepare_context,
 )
 from pai.discord_media import discover_media
+from pai.identity import Identity
 from pai.observability import LOG, ReplyLimits
 from pai.policy import PrivacyPolicy
 from pai.social import SocialLearning
@@ -52,6 +58,14 @@ class PaiDiscordClient(discord.Client):
         self.read_media = read_media
         self.timeline = conversation_engine != "legacy"
         self.social: SocialLearning | None = None
+        self.identity: Identity | None = None
+        self.receipts = (
+            AssistantReceipts(archive, policy)
+            if archive is not None
+            and self.timeline
+            and policy.assistant_continuity_opt_in
+            else None
+        )
         self.reply_limits = ReplyLimits()
         self.assistant_turns: dict[int, AssistantTurn] = {}
         self.archive_lock = asyncio.Lock()
@@ -170,6 +184,7 @@ class PaiDiscordClient(discord.Client):
         if request is None or request.text != message.content:
             return
         assistant_turn = None
+        recovered = None
         if bot_reply and (turn := self.assistant_turns.get(parent.id)) is not None:
             cutoff = self._retention_cutoff()
             if (
@@ -191,6 +206,22 @@ class PaiDiscordClient(discord.Client):
                 )
             ):
                 assistant_turn = turn
+        if bot_reply and assistant_turn is None and self.receipts is not None:
+            parent_origin = parent.reference
+            if (
+                parent_origin is not None
+                and parent_origin.channel_id == request.channel_id
+                and parent_origin.guild_id in (None, request.guild_id)
+                and parent_origin.message_id is not None
+            ):
+                recovered = await asyncio.to_thread(
+                    self.receipts.recover,
+                    request,
+                    parent.id,
+                    parent_origin.message_id,
+                    parent.content,
+                )
+                assistant_turn = recovered
         context = await asyncio.to_thread(
             prepare_context,
             self.archive,
@@ -203,6 +234,8 @@ class PaiDiscordClient(discord.Client):
             native_reply=self.timeline and bot_reply,
             prefer_arabic=self.timeline and message.author.id == message.guild.owner_id,
         )
+        if self.timeline:
+            context = focus_native_branch(context)
         if self.read_media is not None:
             media = await self.read_media(message, context)
             if (
@@ -215,7 +248,14 @@ class PaiDiscordClient(discord.Client):
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
         learned = None
-        if self.social is None:
+        grounded = (
+            self.identity.reply(context, can_read_history) if self.identity else None
+        )
+        if clarify_harmful_parent(context):
+            response = "nah. what are you asking me about?"
+        elif grounded is not None:
+            response = grounded
+        elif self.social is None:
             response = (await self.respond(context)).strip()
         else:
             learned = await self.social.respond(context, can_read_history)
@@ -232,6 +272,18 @@ class PaiDiscordClient(discord.Client):
         ):
             return
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
+            return
+        if recovered is not None and (
+            not can_read_history
+            or await asyncio.to_thread(
+                self.receipts.recover,
+                request,
+                recovered.message_id,
+                recovered.request.message_id,
+                recovered.text,
+            )
+            != recovered
+        ):
             return
         if (
             self.social is not None
@@ -299,6 +351,14 @@ class PaiDiscordClient(discord.Client):
             self.assistant_turns[sent.id] = turn
             if learned is not None and learned.notes:
                 self.social.track_delivery(sent.id, turn, context, learned)
+            if (
+                self.receipts is not None
+                and can_read_history
+                and self.social is None
+                and not self.policy.media_opt_in
+                and context.assistant_turn is None
+            ):
+                await asyncio.to_thread(self.receipts.remember, turn)
 
     async def _current_reply_access(
         self, message: discord.Message
