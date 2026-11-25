@@ -13,6 +13,7 @@ import aiohttp
 import discord
 
 from pai.discord_gateway import PaiDiscordClient, archive_message
+from pai.handover import Handover
 from pai.identity import Identity
 from pai.instance import (
     Instance,
@@ -44,6 +45,7 @@ async def _run(
     text_model: str = "gpt-oss",
     instance: Instance | None = None,
     stop_file: Path | None = None,
+    handover: Handover | None = None,
 ) -> None:
     if instance:
         current_name.set(instance.name)
@@ -69,6 +71,8 @@ async def _run(
             routes = Groq(session, groq_key, free_plan_confirmed=True).routes(
                 text_model
             )
+            if handover:
+                routes = tuple(handover.guard(route) for route in routes)
             router = Router(archive, routes)
             client.identity = Identity(
                 policy, tuple(route.name for route in routes), build
@@ -120,6 +124,7 @@ def main() -> None:
         type=Path,
         help="Approved private experimental instance configuration",
     )
+    parser.add_argument("--quota-handover", action="store_true")
     action = parser.add_mutually_exclusive_group()
     action.add_argument(
         "--doctor", action="store_true", help="Check local runtime without a network"
@@ -150,6 +155,10 @@ def main() -> None:
     )
     parser.add_argument("--text-model", choices=("gpt-oss", "qwen"), default="gpt-oss")
     args = parser.parse_args()
+    if args.quota_handover and not (
+        args.connect and args.instance_config and args.groq_free
+    ):
+        parser.error("Quota handover requires an experimental hosted launch")
     if args.groq_free and not args.connect:
         parser.error("--groq-free requires --connect")
     if args.doctor:
@@ -205,12 +214,15 @@ def main() -> None:
     if args.database is None:
         parser.error("A private --database path is required")
     instance = None
+    handover = None
     root = None
     key_prefix = "PAI"
     if args.instance_config:
         try:
             instance = Instance.load(args.instance_config)
-            instance.validate_start(policy, hosted=args.groq_free)
+            instance.validate_start(
+                policy, hosted=args.groq_free and not args.quota_handover
+            )
         except (OSError, ValueError) as error:
             parser.error(
                 str(error)
@@ -231,6 +243,12 @@ def main() -> None:
                 "The experimental instance requires isolated paths, a revision pin, timeline-roles and Qwen primary"
             )
         key_prefix = instance.name.upper()
+        if args.quota_handover:
+            try:
+                handover = Handover.load(root)
+                handover.verify_exclusive()
+            except (OSError, ValueError, KeyError, TypeError):
+                parser.error("Cannot verify the experimental quota handover")
     groq_key = None
     if args.groq_free:
         if not policy.external_ai_opt_in:
@@ -251,6 +269,11 @@ def main() -> None:
                 stop_file.unlink(missing_ok=True)
             archive = Archive(args.database)
             archive.apply_policy(policy)
+            if handover is not None:
+                extra = json.loads(
+                    (root / "prior-quota.json").read_text(encoding="utf-8-sig")
+                )
+                handover.seed(archive, extra)
             initialize_logs()
             asyncio.run(
                 _run(
@@ -263,6 +286,7 @@ def main() -> None:
                     args.text_model,
                     instance,
                     stop_file,
+                    handover,
                 )
             )
     except (OSError, sqlite3.Error, ValueError):

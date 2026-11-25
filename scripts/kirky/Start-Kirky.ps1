@@ -1,5 +1,5 @@
 #requires -Version 7.4
-param([switch]$Check)
+param([switch]$Check, [switch]$Handover)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $source = Join-Path $root 'source'
@@ -44,10 +44,15 @@ $argsList = @(
     '--conversation-engine', 'timeline-roles', '--text-model', 'qwen'
 )
 if ($policy.external_ai_opt_in) {
-    if (-not $instance.isolated_free_quota_verified) {
+    if ($Handover) {
+        if (-not $env:KIRKY_GROQ_KEY) { throw 'Supply the shared key transiently from its approved local secret store.' }
+        $child.KIRKY_GROQ_KEY = $env:KIRKY_GROQ_KEY
+        $argsList += '--quota-handover'
+    } elseif (-not $instance.isolated_free_quota_verified) {
         throw 'Hosted inference is blocked without approved isolated Free quota.'
+    } else {
+        $child.KIRKY_GROQ_KEY = Read-PrivateSecret 'groq.dpapi'
     }
-    $child.KIRKY_GROQ_KEY = Read-PrivateSecret 'groq.dpapi'
     $argsList += '--groq-free'
 }
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
