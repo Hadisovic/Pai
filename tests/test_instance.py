@@ -12,6 +12,7 @@ from pai.instance import (
     Instance,
     current_name,
     distress_reply,
+    run_until_stopped,
     runtime_lock,
     verify_discord,
 )
@@ -145,3 +146,16 @@ def test_single_instance_lock_is_separate_per_private_root(tmp_path):
             pass
     with runtime_lock(tmp_path):
         pass
+
+
+def test_stop_request_closes_only_its_experimental_client(tmp_path):
+    signal = tmp_path / "stop.request"
+
+    async def start(token):
+        assert token == "fixture"
+        signal.touch()
+        await asyncio.Future()
+
+    client = Mock(start=start, close=AsyncMock())
+    asyncio.run(run_until_stopped(client, "fixture", signal))
+    client.close.assert_awaited_once()

@@ -28,7 +28,7 @@ if (-not $instance.distress_reviewed -or -not $instance.bot_user_id -or
     throw 'Kirky requires a separate bot ID, safety review and approved channel consent. Media stays off.'
 }
 function Read-PrivateSecret([string]$file) {
-    $secure = Get-Content -LiteralPath (Join-Path $root "secrets/$file") -Raw | ConvertTo-SecureString
+    $secure = (Get-Content -LiteralPath (Join-Path $root "secrets/$file") -Raw).Trim() | ConvertTo-SecureString
     [System.Net.NetworkCredential]::new('', $secure).Password
 }
 $child = @{

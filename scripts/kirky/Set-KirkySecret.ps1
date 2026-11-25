@@ -8,5 +8,5 @@ $ErrorActionPreference = 'Stop'
 $secret = Read-Host "Enter the separate Kirky $Kind secret locally" -AsSecureString
 if ($secret.Length -eq 0) { throw 'No secret was supplied.' }
 $path = Join-Path $PSScriptRoot "secrets/$Kind.dpapi"
-$secret | ConvertFrom-SecureString | Set-Content -LiteralPath $path -Encoding ascii
+$secret | ConvertFrom-SecureString | Set-Content -LiteralPath $path -Encoding ascii -NoNewline
 'Saved for the current Windows user.'

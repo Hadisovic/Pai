@@ -6,7 +6,7 @@ $db = Join-Path $root 'kirky.sqlite'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
 $snapshot = Join-Path $root "backups/$stamp.sqlite.pai"
 $erasures = Join-Path $root "backups/$stamp.erasures.pai"
-$secret = Get-Content -LiteralPath (Join-Path $root 'secrets/backup.dpapi') -Raw | ConvertTo-SecureString
+$secret = (Get-Content -LiteralPath (Join-Path $root 'secrets/backup.dpapi') -Raw).Trim() | ConvertTo-SecureString
 $oldKey = $env:PAI_BACKUP_KEY
 try {
     $env:PAI_BACKUP_KEY = [System.Net.NetworkCredential]::new('', $secret).Password

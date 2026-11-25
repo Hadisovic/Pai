@@ -4,8 +4,9 @@
 
 - Branch `codex/P9.16-kirky` stacks on verified [P9.15 draft #52](https://github.com/Hadisovic/Pai/pull/52) at `67521265c30137d2e0b0682d3ce03e67c413ed80`. [Kirky setup and rollback](docs/KIRKY.md) records independent configuration, quota priority, safety and migration.
 - Configurable app-authored name and narrowly scoped experimental distress reply are implemented outside the golden files. Experimental Discord preflight and separate start, stop, credential and backup scripts are ready for offline validation.
-- Offline `uv run --offline --locked pytest -q` passed with 165 tests. Ruff, lockfile, source diff, golden-source comparison and PowerShell syntax checks passed. The avatar-copy hash matched the user attachment.
-- Next action is local setup and encrypted restore verification. The new Discord application and permissions, participant consent, and an approved quota decision precede a live pilot. Stable Pai stays pinned and running.
+- Offline `uv run --offline --locked pytest -q` passed with 166 tests, including a mocked graceful shutdown. Ruff, lockfile, source diff, golden-source comparison and PowerShell syntax checks passed. The avatar-copy hash matched the user attachment.
+- Private checkout, exact disabled policy, empty archive, local doctor and launch gate were verified before credential access. The backup drill exposed trailing newlines in Windows-protected secret files. After trimming those file boundaries, Kirky's own encrypted backup and erasure checkpoint restored separately with SQLite integrity OK and zero messages.
+- Next action is Discord owner setup and review of the distinct quota, experiment channel permissions and consent. Stable Pai stays pinned and running. Live Discord behavior and the uploaded avatar are pending.
 
 ## P9.15 · Member awareness (2026-11-25)
 
