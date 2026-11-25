@@ -24,6 +24,14 @@ from pai.conversation import (
 )
 from pai.discord_media import discover_media
 from pai.identity import Identity
+from pai.members import (
+    Member,
+    MemberDirectory,
+    MemberPlan,
+    label,
+    member_intent,
+    render_member_reply,
+)
 from pai.observability import LOG, ReplyLimits
 from pai.policy import PrivacyPolicy
 from pai.reply_engine import ReplyEngine
@@ -61,6 +69,11 @@ class PaiDiscordClient(discord.Client):
         self.timeline = conversation_engine != "legacy"
         self.social: SocialLearning | None = None
         self.identity: Identity | None = None
+        self.members = (
+            MemberDirectory(archive, policy)
+            if archive is not None and policy.member_awareness_opt_in
+            else None
+        )
         self.receipts = (
             AssistantReceipts(archive, policy)
             if archive is not None
@@ -95,6 +108,14 @@ class PaiDiscordClient(discord.Client):
             inserted = await self.handle_message(message)
         if (
             inserted
+            and self.members is not None
+            and self.policy.permits_member_awareness(
+                message.guild.id, message.channel.id, message.author.id
+            )
+        ):
+            await asyncio.to_thread(self._observe_member, message)
+        if (
+            inserted
             and self.social is not None
             and self.policy.permits_social(
                 message.guild.id, message.channel.id, message.author.id
@@ -105,6 +126,87 @@ class PaiDiscordClient(discord.Client):
             )
         if inserted and self.respond is not None:
             await self._respond_if_addressed(message)
+
+    def _observe_member(self, message: discord.Message) -> None:
+        row = self.archive.get(message.id)
+        if row is not None:
+            self.members.observe(row, message.author.name, message.author.display_name)
+
+    async def _visible_member_labels(
+        self,
+        channel: discord.TextChannel,
+        candidates: tuple[Member, ...],
+    ) -> dict[int, str]:
+        async def resolve(candidate: Member) -> tuple[int, str] | None:
+            try:
+                member = await channel.guild.fetch_member(candidate.id)
+            except discord.HTTPException:
+                return None
+            if (
+                member.id != candidate.id
+                or member.guild.id != channel.guild.id
+                or member.bot
+            ):
+                return None
+            permissions = channel.permissions_for(member)
+            if not (permissions.view_channel and permissions.read_message_history):
+                return None
+            return candidate.id, label(member.display_name)
+
+        return dict(
+            item
+            for item in await asyncio.gather(*(resolve(row) for row in candidates))
+            if item is not None
+        )
+
+    async def _member_plan(
+        self,
+        message: discord.Message,
+        channel: discord.TextChannel,
+        context: ConversationContext,
+    ) -> MemberPlan | None:
+        request = context.request
+        if (
+            self.members is None
+            or not self.members.permits(request)
+            or (context.style and context.style.situation)
+        ):
+            return None
+        intent = member_intent(
+            request.text, self.user.id, {target.id for target in message.mentions}
+        )
+        if intent is None:
+            return None
+        present = {
+            row.author_id for row in (request, *context.parents, *context.recent)
+        }
+        if intent.appearance or intent.sensitive:
+            return self.members.plan(request, intent, (), present)
+        candidates = await asyncio.to_thread(
+            self.members.lookup,
+            request,
+            ids=intent.ids if intent.ids or intent.unavailable else None,
+            alias=intent.alias,
+        )
+        if (
+            intent.group
+            and not intent.ids
+            and not intent.alias
+            and not intent.unavailable
+        ):
+            candidates = tuple(
+                sorted(candidates, key=lambda member: member.id not in present)
+            )
+        candidates = candidates[:4]
+        labels = await self._visible_member_labels(channel, candidates)
+        return await asyncio.to_thread(
+            self.members.plan,
+            request,
+            intent,
+            tuple(member for member in candidates if member.id in labels),
+            present,
+            live_labels=labels,
+        )
 
     async def _respond_if_addressed(self, message: discord.Message) -> None:
         if self.user is None or self.archive is None or message.guild is None:
@@ -311,6 +413,30 @@ class PaiDiscordClient(discord.Client):
             context = replace(context, media=media)
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
+        member_plan = (
+            await self._member_plan(message, channel, context)
+            if can_read_history
+            else None
+        )
+        if member_plan and member_plan.block:
+            if not await asyncio.to_thread(self.members.valid, request, member_plan):
+                return
+            # The extra data path discloses only its bounded member evidence.
+            context = replace(
+                context,
+                parents=(),
+                recent=(),
+                memory=(),
+                style_examples=(),
+                group_style=(),
+                assistant_turn=None,
+                observed_speakers=(),
+                style_sources=(),
+                self_recall=False,
+                recall_question=None,
+            )
+        member_block = member_plan.block if member_plan else ""
+        used_members = False
         learned = None
         grounded = (
             self.identity.reply(context, can_read_history) if self.identity else None
@@ -322,15 +448,24 @@ class PaiDiscordClient(discord.Client):
         )
         if clarify_harmful_parent(context):
             response = "nah. what are you asking me about?"
+        elif member_plan is not None and member_plan.local_reply:
+            response = member_plan.local_reply
         elif grounded is not None:
             response = grounded
         elif self.social is not None:
-            learned = await self.social.respond(context, can_read_history, facts)
-            response = learned.text.strip()
-        elif facts and isinstance(self.respond, ReplyEngine):
-            response, _ = await respond_with_context(
-                self.respond, context, ("identity", facts)
+            learned = await self.social.respond(
+                context, can_read_history, facts, member_block
             )
+            response = learned.text.strip()
+            used_members = learned.members_used
+        elif (facts or member_block) and isinstance(self.respond, ReplyEngine):
+            response, used = await respond_with_context(
+                self.respond,
+                context,
+                ("members", member_block),
+                ("identity", facts),
+            )
+            used_members = "members" in used
             response = response.strip()
         else:
             response = (await self.respond(context)).strip()
@@ -381,6 +516,20 @@ class PaiDiscordClient(discord.Client):
             )
         ):
             return
+        if used_members:
+            if (
+                not can_read_history
+                or await self._visible_member_labels(channel, member_plan.members)
+                != dict(member_plan.live_labels)
+                or not await asyncio.to_thread(self.members.valid, request, member_plan)
+            ):
+                return
+        if self.members is not None:
+            response = render_member_reply(
+                response, member_plan if used_members else MemberPlan()
+            )
+            if not response:
+                return
         outgoing_reference = (
             discord.MessageReference(
                 message_id=message.id, channel_id=channel.id, guild_id=channel.guild.id
@@ -393,6 +542,12 @@ class PaiDiscordClient(discord.Client):
             reference=outgoing_reference,
             allowed_mentions=discord.AllowedMentions.none(),
         )
+        if member_plan is not None:
+            # Member aliases and sharing settings have their own lifecycle.
+            # A normal social or text turn still uses the ordinary receipt path.
+            if type(sent.id) is int and learned is not None and learned.notes:
+                self.social.track_feedback(sent.id, request, learned)
+            return
         if type(sent.id) is int:
             if len(self.assistant_turns) >= 64:
                 self.assistant_turns.pop(next(iter(self.assistant_turns)))
@@ -482,6 +637,7 @@ class PaiDiscordClient(discord.Client):
                     self.archive,
                     self.policy,
                     social=self.social.store if self.social else None,
+                    members=self.members,
                 )
                 await self.control_tree.sync(
                     guild=discord.Object(id=self.policy.guild_id)

@@ -485,10 +485,12 @@ class Archive:
 
     def apply_policy(self, policy: PrivacyPolicy) -> int:
         from pai.continuity import purge_receipts
+        from pai.members import purge_members
 
         with closing(self.connect()) as connection, connection:
             purge_social(connection, policy)
             purge_receipts(connection, policy)
+            purge_members(connection, policy)
             if not policy.media_opt_in:
                 connection.execute("DELETE FROM media_descriptions")
                 connection.execute("DELETE FROM message_media")
@@ -680,8 +682,11 @@ class Archive:
             )
 
     def prune(self, cutoff: datetime) -> None:
+        from pai.members import prune_members
+
         timestamp = _utc_text(cutoff)
         with closing(self.connect()) as connection, connection:
+            prune_members(connection, timestamp)
             connection.execute(
                 "DELETE FROM style_settings WHERE updated_at < ?", (timestamp,)
             )

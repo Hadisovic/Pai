@@ -82,6 +82,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P9.13 [DONE]** Add consent-gated, source-linked social learning from golden P9.11. Synthetic comparisons and golden regressions are recorded in standalone [draft PR #49](https://github.com/Hadisovic/Pai/pull/49). Live activation requires separate owner approval.
 - **P9.14 [IN_PROGRESS]** Ground identity and runtime facts. Add source-linked assistant continuity and improve verified branch selection. Evaluate harmless banter, updated memories, safety and privacy against P9.11 before requesting rollout.
 - **P9.14.1 [IN_PROGRESS]** Review the combined social and continuity safeguards, scoped identity facts and indirect recall. Synthetic evidence, diagnostic design and the separate Gateway repair proposal are in `docs/P9.14.1-REVIEW.md`. Review the observed distress gap before any rollout.
+- **P9.15 [IN_PROGRESS]** Add and review separately consented member awareness, source-scoped recall and non-notifying mentions. Keep live acceptance, GIF integration and P9.14.2 work separate.
 - **P9.12 [DEFERRED]** Preserve GIF intelligence in draft PR #48. Revisit integration after P9.14, with separate media consent and rollout approval.
 - **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.
 
