@@ -79,7 +79,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P9.9 [DONE]** Implement the adaptive voice and validate the review candidate with held-out gateway replays and matched Groq Free requests. Owner-approved TEST rollout verified at the exact review commit. Further rollout needs owner approval.
 - **P9.10 [DONE]** Ground runtime facts, verify a revised voice on matched synthetic conversations, and deploy to the authorized TEST scope with an encrypted rollback.
 - **P9.11 [DONE]** Add an opt-in timeline engine and independent text route selection. Validate with rolling synthetic dialogues and deploy the approved P9.11 candidate to the existing private TEST scope. Preserve P9.10 rollback.
-- **P9.13 [IN_PROGRESS]** Add consent-gated, source-linked social learning from golden P9.11. Verify with synthetic conversations, golden regressions and a standalone draft PR. Live activation requires separate owner approval.
+- **P9.13 [DONE]** Add consent-gated, source-linked social learning from golden P9.11. Synthetic comparisons and golden regressions are recorded in standalone [draft PR #49](https://github.com/Hadisovic/Pai/pull/49). Live activation requires separate owner approval.
 - **P9.14 [TODO]** Extend episodic, semantic and conversational memory using the existing archive and compatible retrieval interfaces.
 - **P9.12 [DEFERRED]** Preserve GIF intelligence in draft PR #48. Revisit integration after P9.14, with separate media consent and rollout approval.
 - **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.

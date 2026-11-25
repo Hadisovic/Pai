@@ -187,7 +187,7 @@ class PaiDiscordClient(discord.Client):
                 )
                 and (
                     self.social is None
-                    or await asyncio.to_thread(self.social.valid_turn, turn)
+                    or await asyncio.to_thread(self.social.valid_turn, turn, request)
                 )
             ):
                 assistant_turn = turn
@@ -232,6 +232,14 @@ class PaiDiscordClient(discord.Client):
         ):
             return
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
+            return
+        if (
+            self.social is not None
+            and context.assistant_turn is not None
+            and not await asyncio.to_thread(
+                self.social.valid_turn, context.assistant_turn, request
+            )
+        ):
             return
         if (
             learned is not None

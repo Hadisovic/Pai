@@ -196,6 +196,7 @@ def test_expiry_and_forgetme_remove_support_without_deleting_other_authors(tmp_p
 
 def test_optional_payload_preserves_golden_roles_and_rejects_withdrawn_turn(tmp_path):
     import asyncio
+    from dataclasses import replace
     from unittest.mock import AsyncMock
 
     from pai.conversation import AssistantTurn, prepare_context
@@ -238,9 +239,18 @@ def test_optional_payload_preserves_golden_roles_and_rejects_withdrawn_turn(tmp_
     assert complete.await_count == 1
     prior = AssistantTurn(answer.text, req, (req, old))
     feature.track_delivery(99, prior, ctx, answer)
-    assert feature.valid_turn(prior)
+    other = replace(req, message_id=21, author_id=4, text="actually?")
+    text_only = replace(other, author_id=5)
+    assert policy.permits(text_only.guild_id, text_only.channel_id, text_only.author_id)
+    assert feature.valid_turn(prior, other)
+    assert not feature.valid_turn(prior, text_only)
+    stop = replace(other, text='stop using "sidewalk weather"')
+    arc.append(stop)
+    assert store.observe(stop)
+    assert not feature.valid_turn(prior, other)
+    assert feature.valid_turn(prior, req)
     assert store.withdraw(req, "sidewalk weather")
-    assert not feature.valid_turn(prior)
+    assert not feature.valid_turn(prior, req)
     assert arc.records_unchanged((req, old))
     answer = asyncio.run(feature.respond(ctx, True))
     assert not answer.notes and complete.call_args.args[0] == baseline
