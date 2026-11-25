@@ -13,6 +13,7 @@ import aiohttp
 import discord
 
 from pai.discord_gateway import PaiDiscordClient, archive_message
+from pai.identity import Identity
 from pai.media import PublicMediaResolver
 from pai.model_router import Router
 from pai.observability import diagnose, initialize_logs
@@ -56,6 +57,7 @@ async def _run(
                 text_model
             )
             router = Router(archive, routes)
+            client.identity = Identity(policy, tuple(route.name for route in routes))
             client.respond = ReplyEngine(
                 router,
                 build=build,

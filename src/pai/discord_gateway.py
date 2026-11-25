@@ -17,6 +17,7 @@ from pai.conversation import (
     prepare_context,
 )
 from pai.discord_media import discover_media
+from pai.identity import Identity
 from pai.observability import LOG, ReplyLimits
 from pai.policy import PrivacyPolicy
 from pai.social import SocialLearning
@@ -52,6 +53,7 @@ class PaiDiscordClient(discord.Client):
         self.read_media = read_media
         self.timeline = conversation_engine != "legacy"
         self.social: SocialLearning | None = None
+        self.identity: Identity | None = None
         self.reply_limits = ReplyLimits()
         self.assistant_turns: dict[int, AssistantTurn] = {}
         self.archive_lock = asyncio.Lock()
@@ -215,7 +217,12 @@ class PaiDiscordClient(discord.Client):
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
         learned = None
-        if self.social is None:
+        grounded = (
+            self.identity.reply(context, can_read_history) if self.identity else None
+        )
+        if grounded is not None:
+            response = grounded
+        elif self.social is None:
             response = (await self.respond(context)).strip()
         else:
             learned = await self.social.respond(context, can_read_history)

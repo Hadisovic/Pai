@@ -1,5 +1,11 @@
 # Durable handoff state
 
+## P9.14 · Identity and conversational continuity (2026-11-25)
+
+- Branch `codex/P9.14-identity-memory` stacks on reviewed P9.13 `75562b08c74486a73cf0806689bb6e1974589aba` ([draft #49](https://github.com/Hadisovic/Pai/pull/49)). [Investigation and design](docs/P9.14-REVIEW.md) records evidence, research, prioritized fixes and implementation boundaries. P9.11 remains the live baseline. No deployment, live data changes, or PR merge.
+- Added grounded identity and configuration in `src/pai/identity.py`, connected through CLI and gateway. Expanded `runtime_info.py` colloquial version matching with regression coverage. The character card, timeline, model sampling, and provider routes remain untouched. Unknown pronunciation and birthday stay open for social play.
+- `uv lock --check`, `uv run --offline --locked ruff check .`, `uv run --offline --locked pytest -q` (133 passed), `uv run --offline --locked python -m pai --doctor`, and `git diff --check` passed. Next action is to test source-linked assistant receipts and competing native branches, then run matched synthetic conversations.
+
 ## P9.13 · Opt-in social learning (2026-11-25)
 
 - Branch `codex/P9.13-social-learning` starts at golden `v9.11` release `e678e60966a524cf19f6470c346534b5da652462` and carries forward the P9.11 rollout documentation. Only the golden regression tests carry over from [draft PR #48](https://github.com/Hadisovic/Pai/pull/48). GIF integration follows P9.14. Live activation requires separate approval.
