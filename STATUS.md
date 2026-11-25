@@ -1,5 +1,14 @@
 # Durable handoff state
 
+## P9.13 · Opt-in social learning (2026-11-25)
+
+- Branch `codex/P9.13-social-learning` starts at golden `v9.11` release `e678e60966a524cf19f6470c346534b5da652462` and carries forward the P9.11 rollout documentation. Only the golden regression tests carry over from [draft PR #48](https://github.com/Hadisovic/Pai/pull/48). GIF integration follows P9.14. Live activation requires separate approval.
+- Added independent social consent, source-linked SQLite evidence, bounded retrieval and private contribution controls. The existing Qwen primary, GPT-OSS fallback, role engine and character card handle replies. Learning makes no provider calls. See [research, evidence and operator instructions](docs/SOCIAL-LEARNING.md).
+- `uv lock --check`, `uv run --offline --locked ruff check .`, `uv run --offline --locked ruff format --check .`, `uv run --offline --locked pytest -q` (128 passed), `uv run --offline --locked python -m pai --doctor`, and `git diff --check` passed. A source comparison against `v9.11` found no changes to prompt, voice, timeline, conversation, reply engine, provider/router or lockfile.
+- Four synthetic Qwen requests on the existing Groq Free route used 1,722 reported tokens. In both learned turns a relevant note was supplied after reopening the archive. Qwen grounded the delivery-gate and meeting-postponement callbacks. This sample measures grounding in those scenes. No private chat was used.
+- Opened [draft PR #49](https://github.com/Hadisovic/Pai/pull/49) against P9.11 PR #47. GitHub's Python 3.12, Python 3.13 and host-smoke checks passed on the verified feature checkpoint `bdac1f80e3f7c6136a5f8fdad1e69bb9b5a5c734`. Follow-up review added recipient consent and feedback checks to inherited social context before generating and sending native replies. The updated regression caught the missing scope check and passed after the fix. The complete local suite still passes (128 tests).
+- The golden branch and tag both resolve to the approved revision. The recorded live Windows process is alive with that revision pin, `timeline-roles`, Qwen primary, GPT-OSS fallback and media disabled. Its configuration and archive were left alone. Next action is review of #49, then P9.14 from the golden baseline plus the reviewed social extension. Keep #48 separate until the ordered integration and explicit deployment approval.
+
 ## P9.11 · Conversation Engine V2 and authorized TEST rollout (2026-11-24)
 
 - Branch `codex/P9.11-conversation-engine` stacks on P9.10 PR #46. Legacy and GPT-OSS stay the defaults. V2 adds a bounded chronological timeline, an original short card, branch links and explicit reply targeting. Qwen and GPT-OSS remain independently selectable. `timeline-roles` is an opt-in provider-format comparison with one call.

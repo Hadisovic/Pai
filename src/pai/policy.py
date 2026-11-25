@@ -15,6 +15,8 @@ class PrivacyPolicy:
     retention_days: int = 30
     external_ai_opt_in: bool = False
     media_opt_in: bool = False
+    social_learning_opt_in: bool = False
+    social_consenting_member_ids: frozenset[int] = frozenset()
 
     @property
     def is_enabled(self) -> bool:
@@ -24,6 +26,14 @@ class PrivacyPolicy:
             and self.guild_id is not None
             and bool(self.channel_ids)
             and bool(self.consenting_member_ids)
+        )
+
+    def permits_social(self, guild_id: int, channel_id: int, author_id: int) -> bool:
+        return (
+            self.social_learning_opt_in
+            and self.external_ai_opt_in
+            and author_id in self.social_consenting_member_ids
+            and self.permits(guild_id, channel_id, author_id)
         )
 
     def permits_channel(self, guild_id: int, channel_id: int) -> bool:
@@ -81,13 +91,26 @@ def load_policy(path: Path) -> PrivacyPolicy:
     media_opt_in = config.get("media_opt_in", False)
     if type(media_opt_in) is not bool:
         raise ValueError("media_opt_in must be a boolean")
+    social = config.get("social_learning_opt_in", False)
+    social_members = _snowflakes(config, "social_consenting_member_ids")
+    text_members = _snowflakes(config, "consenting_member_ids")
+    if type(social) is not bool or not social_members <= text_members:
+        raise ValueError(
+            "Social learning requires separate opt-in from approved text members"
+        )
+    if social and (not external_ai_opt_in or not admin_opt_in or not social_members):
+        raise ValueError(
+            "Social learning requires administrator, model and member opt-in"
+        )
     return PrivacyPolicy(
         admin_opt_in=admin_opt_in,
         notice_version=notice_version,
         guild_id=guild_id,
         channel_ids=_snowflakes(config, "channel_ids"),
-        consenting_member_ids=_snowflakes(config, "consenting_member_ids"),
+        consenting_member_ids=text_members,
         retention_days=retention_days,
         external_ai_opt_in=external_ai_opt_in,
         media_opt_in=media_opt_in,
+        social_learning_opt_in=social,
+        social_consenting_member_ids=social_members,
     )

@@ -19,6 +19,7 @@ from pai.conversation import (
 from pai.discord_media import discover_media
 from pai.observability import LOG, ReplyLimits
 from pai.policy import PrivacyPolicy
+from pai.social import SocialLearning
 from pai.storage import Archive, MessageRecord
 
 
@@ -50,6 +51,7 @@ class PaiDiscordClient(discord.Client):
         self.respond = respond
         self.read_media = read_media
         self.timeline = conversation_engine != "legacy"
+        self.social: SocialLearning | None = None
         self.reply_limits = ReplyLimits()
         self.assistant_turns: dict[int, AssistantTurn] = {}
         self.archive_lock = asyncio.Lock()
@@ -75,6 +77,14 @@ class PaiDiscordClient(discord.Client):
             return
         async with self.archive_lock:
             inserted = await self.handle_message(message)
+        if (
+            inserted
+            and self.social is not None
+            and self.policy.permits_social(
+                message.guild.id, message.channel.id, message.author.id
+            )
+        ):
+            await self.social.observe(message.id)
         if inserted and self.respond is not None:
             await self._respond_if_addressed(message)
 
@@ -175,6 +185,10 @@ class PaiDiscordClient(discord.Client):
                 and await asyncio.to_thread(
                     self.archive.records_unchanged, turn.sources
                 )
+                and (
+                    self.social is None
+                    or await asyncio.to_thread(self.social.valid_turn, turn, request)
+                )
             ):
                 assistant_turn = turn
         context = await asyncio.to_thread(
@@ -200,7 +214,12 @@ class PaiDiscordClient(discord.Client):
             context = replace(context, media=media)
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
             return
-        response = (await self.respond(context)).strip()
+        learned = None
+        if self.social is None:
+            response = (await self.respond(context)).strip()
+        else:
+            learned = await self.social.respond(context, can_read_history)
+            response = learned.text.strip()
         if not response:
             return
 
@@ -213,6 +232,25 @@ class PaiDiscordClient(discord.Client):
         ):
             return
         if not await asyncio.to_thread(self.archive.records_unchanged, context.sources):
+            return
+        if (
+            self.social is not None
+            and context.assistant_turn is not None
+            and not await asyncio.to_thread(
+                self.social.valid_turn, context.assistant_turn, request
+            )
+        ):
+            return
+        if (
+            learned is not None
+            and learned.notes
+            and (
+                not can_read_history
+                or not await asyncio.to_thread(
+                    self.social.valid, context, learned.notes
+                )
+            )
+        ):
             return
         outgoing_reference = (
             discord.MessageReference(
@@ -230,6 +268,15 @@ class PaiDiscordClient(discord.Client):
             if len(self.assistant_turns) >= 64:
                 self.assistant_turns.pop(next(iter(self.assistant_turns)))
             sources = context.sources
+            if learned is not None and learned.notes:
+                sources = tuple(
+                    dict.fromkeys(
+                        (
+                            *sources,
+                            *(row for note in learned.notes for row in note.sources),
+                        )
+                    )
+                )
             if len(sources) <= 32:
                 turn = AssistantTurn(
                     response[:2000],
@@ -250,6 +297,8 @@ class PaiDiscordClient(discord.Client):
                     anchors += (context.recall_question,)
                 turn = AssistantTurn(None, request, anchors, context.recall_question)
             self.assistant_turns[sent.id] = turn
+            if learned is not None and learned.notes:
+                self.social.track_delivery(sent.id, turn, context, learned)
 
     async def _current_reply_access(
         self, message: discord.Message
@@ -287,7 +336,12 @@ class PaiDiscordClient(discord.Client):
         if self.archive is not None:
             await asyncio.to_thread(self.archive.prune, self._retention_cutoff())
             if self.policy.guild_id is not None:
-                self.control_tree = controls(self, self.archive, self.policy)
+                self.control_tree = controls(
+                    self,
+                    self.archive,
+                    self.policy,
+                    social=self.social.store if self.social else None,
+                )
                 await self.control_tree.sync(
                     guild=discord.Object(id=self.policy.guild_id)
                 )

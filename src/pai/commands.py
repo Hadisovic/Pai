@@ -12,7 +12,8 @@ from discord import app_commands
 from pai.conversation import share_style_example
 from pai.observability import LOG
 from pai.policy import PrivacyPolicy
-from pai.storage import Archive
+from pai.social_memory import SocialStore
+from pai.storage import Archive, MessageRecord
 
 
 class PrivateCommandTree(app_commands.CommandTree):
@@ -27,7 +28,11 @@ class PrivateCommandTree(app_commands.CommandTree):
 
 
 def controls(
-    client: discord.Client, archive: Archive, policy: PrivacyPolicy
+    client: discord.Client,
+    archive: Archive,
+    policy: PrivacyPolicy,
+    *,
+    social: SocialStore | None = None,
 ) -> app_commands.CommandTree:
     tree = PrivateCommandTree(client)
     guild = discord.Object(id=policy.guild_id) if policy.guild_id is not None else None
@@ -231,5 +236,65 @@ def controls(
             else "This message is unavailable or already shared.",
             ephemeral=True,
         )
+
+    if social is not None:
+
+        @tree.command(
+            guild=guild,
+            description="Inspect, confirm or withdraw your social learning contributions",
+        )
+        async def social_memory(
+            interaction: discord.Interaction,
+            action: Literal["inspect", "confirm", "withdraw"],
+            expression: str = "",
+            message_id: str = "",
+        ) -> None:
+            channel_id = interaction.channel_id
+            author = interaction.user.id
+            if (
+                channel_id is None
+                or not visible(interaction)
+                or not interaction.permissions.read_message_history
+                or not policy.permits_social(guild.id, channel_id, author)
+                or await asyncio.to_thread(archive.is_opted_out, guild.id, author)
+            ):
+                return await unavailable(interaction)
+            scope = MessageRecord(
+                0, guild.id, channel_id, author, "", "", datetime.now(UTC)
+            )
+            if action == "inspect":
+                rows = await asyncio.to_thread(social.inspect, scope)
+                answer = "\n".join(
+                    f"• {term} · {kind} · [your message](<{url}>)"
+                    for term, kind, url in rows
+                )
+                answer = (
+                    answer or "You have no active social learning contributions here."
+                )
+            elif action == "confirm":
+                if (
+                    not message_id.isascii()
+                    or not message_id.isdecimal()
+                    or len(message_id) > 20
+                ):
+                    return await unavailable(interaction)
+                changed = await asyncio.to_thread(
+                    social.confirm, scope, int(message_id)
+                )
+                answer = (
+                    "Explanation confirmed."
+                    if changed
+                    else "No eligible explanation of yours was found."
+                )
+            else:
+                changed = await asyncio.to_thread(social.withdraw, scope, expression)
+                answer = (
+                    "Your contributions for that expression were withdrawn."
+                    if changed
+                    else "No matching contribution of yours was found."
+                )
+            await interaction.response.send_message(
+                answer, ephemeral=True, allowed_mentions=discord.AllowedMentions.none()
+            )
 
     return tree

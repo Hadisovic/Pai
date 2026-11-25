@@ -20,6 +20,8 @@ from pai.policy import PrivacyPolicy, load_policy
 from pai.providers import Groq
 from pai.reply_engine import ReplyEngine
 from pai.runtime_info import BuildInfo, capture_build
+from pai.social import SocialLearning
+from pai.social_memory import SocialStore
 from pai.storage import Archive
 from pai.vision import MentionVision
 
@@ -60,6 +62,10 @@ async def _run(
                 vision=policy.media_opt_in,
                 conversation_engine=conversation_engine,
             )
+            if policy.social_learning_opt_in:
+                client.social = SocialLearning(
+                    SocialStore(archive, policy), client.respond
+                )
             if policy.media_opt_in:
                 resolver = PublicMediaResolver()
                 resources.push_async_callback(resolver.close)
