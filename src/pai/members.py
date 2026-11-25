@@ -40,7 +40,8 @@ _ALIAS = re.compile(
 )
 _TYPED_ALIAS = re.compile(r"(?<![<\w])@([\w.'-]{1,32})(?![\w.'-])")
 _REQUEST_LINK = re.compile(
-    r"\b(?:tag|mention) (?:them|both|all|each|us|him|her|me|the two)\b", re.I
+    r"\b(?:tag|mention) (?:them|both|all|each|us|him|her|me|the two|(?:one|two|three|[123]) of us)\b",
+    re.I,
 )
 _PROTECTED_TEXT = re.compile(
     r"(`+[^`\n]*`+|\[\[[^\]\n]+\]\]|\[[^\]\n]+\]\([^\n)]*\)|https?://\S+)"
