@@ -1,5 +1,13 @@
 # Durable handoff state
 
+## P9.13 · Opt-in social learning (2026-11-25)
+
+- Branch `codex/P9.13-social-learning` starts at golden `v9.11` release `e678e60966a524cf19f6470c346534b5da652462` and carries forward the P9.11 rollout documentation. Only the golden regression tests carry over from [draft PR #48](https://github.com/Hadisovic/Pai/pull/48). GIF integration follows P9.14. Live activation requires separate approval.
+- Added independent social consent, source-linked SQLite evidence, bounded retrieval and private contribution controls. The existing Qwen primary, GPT-OSS fallback, role engine and character card handle replies. Learning makes no provider calls. See [research, evidence and operator instructions](docs/SOCIAL-LEARNING.md).
+- `uv lock --check`, `uv run --offline --locked ruff check .`, `uv run --offline --locked ruff format --check .`, `uv run --offline --locked pytest -q` (128 passed), `uv run --offline --locked python -m pai --doctor`, and `git diff --check` passed. A source comparison against `v9.11` found no changes to prompt, voice, timeline, conversation, reply engine, provider/router or lockfile.
+- Four synthetic Qwen requests on the existing Groq Free route used 1,722 reported tokens. In both learned turns a relevant note was supplied after reopening the archive. Qwen grounded the delivery-gate and meeting-postponement callbacks. This sample measures grounding in those scenes. No private chat was used.
+- Next action is to verify the pushed branch and GitHub checks on the P9.11-dependent draft.
+
 ## P9.11 · Conversation Engine V2 and authorized TEST rollout (2026-11-24)
 
 - Branch `codex/P9.11-conversation-engine` stacks on P9.10 PR #46. Legacy and GPT-OSS stay the defaults. V2 adds a bounded chronological timeline, an original short card, branch links and explicit reply targeting. Qwen and GPT-OSS remain independently selectable. `timeline-roles` is an opt-in provider-format comparison with one call.
