@@ -25,7 +25,7 @@ from pai.discord_media import discover_media
 from pai.identity import Identity
 from pai.observability import LOG, ReplyLimits
 from pai.policy import PrivacyPolicy
-from pai.social import SocialLearning
+from pai.social import SocialLearning, SocialReply
 from pai.storage import Archive, MessageRecord
 
 
@@ -98,7 +98,9 @@ class PaiDiscordClient(discord.Client):
                 message.guild.id, message.channel.id, message.author.id
             )
         ):
-            await self.social.observe(message.id)
+            await self.social.observe(
+                message.id, self.receipts.feedback_terms if self.receipts else None
+            )
         if inserted and self.respond is not None:
             await self._respond_if_addressed(message)
 
@@ -185,6 +187,7 @@ class PaiDiscordClient(discord.Client):
             return
         assistant_turn = None
         recovered = None
+        social_store = self.social.store if self.social is not None else None
         if bot_reply and (turn := self.assistant_turns.get(parent.id)) is not None:
             cutoff = self._retention_cutoff()
             if (
@@ -215,13 +218,22 @@ class PaiDiscordClient(discord.Client):
                 and parent_origin.message_id is not None
             ):
                 recovered = await asyncio.to_thread(
-                    self.receipts.recover,
+                    self.receipts.restore,
                     request,
                     parent.id,
                     parent_origin.message_id,
                     parent.content,
+                    social=social_store,
                 )
-                assistant_turn = recovered
+                if recovered is not None:
+                    assistant_turn = recovered.turn
+                    if recovered.notes and self.social is not None:
+                        self.social.track_delivery(
+                            parent.id,
+                            assistant_turn,
+                            ConversationContext(assistant_turn.request),
+                            SocialReply(assistant_turn.text or "", recovered.notes),
+                        )
         context = await asyncio.to_thread(
             prepare_context,
             self.archive,
@@ -276,11 +288,12 @@ class PaiDiscordClient(discord.Client):
         if recovered is not None and (
             not can_read_history
             or await asyncio.to_thread(
-                self.receipts.recover,
+                self.receipts.restore,
                 request,
-                recovered.message_id,
-                recovered.request.message_id,
-                recovered.text,
+                recovered.turn.message_id,
+                recovered.turn.request.message_id,
+                recovered.turn.text,
+                social=social_store,
             )
             != recovered
         ):
@@ -354,11 +367,15 @@ class PaiDiscordClient(discord.Client):
             if (
                 self.receipts is not None
                 and can_read_history
-                and self.social is None
-                and not self.policy.media_opt_in
+                and context.media == MediaReading()
                 and context.assistant_turn is None
             ):
-                await asyncio.to_thread(self.receipts.remember, turn)
+                await asyncio.to_thread(
+                    self.receipts.remember,
+                    turn,
+                    notes=learned.notes if learned is not None else (),
+                    social=social_store,
+                )
 
     async def _current_reply_access(
         self, message: discord.Message

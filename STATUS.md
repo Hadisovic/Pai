@@ -1,5 +1,11 @@
 # Durable handoff state
 
+## P9.14.1 · Conversational refinement (2026-11-25)
+
+- Branch `codex/P9.14.1-conversation-refinement` starts at P9.14 [draft #50](https://github.com/Hadisovic/Pai/pull/50), `9c582054bf89b728d0aea85e3090746bbb37bf38`. [Investigation](docs/P9.14.1-REVIEW.md) records priorities and limitations.
+- Removed the social-learning-wide receipt exclusion. `continuity.py`, `social.py`, `social_memory.py` and the Gateway now preserve actual learned-note fingerprints and source IDs. Recovery revalidates both scopes and applies feedback after restart. Synthetic replay covers all four flag combinations. Withdrawing evidence deletes dependent receipts while preserving the authorized originals.
+- Local `uv run --offline --locked pytest -q` passed with 147 tests. Ruff, lockfile, doctor and diff checks passed. Next action is scoped identity context, indirect assistant recall, and a matched fictional-participation evaluation. The live pin and separate GIF draft remain unchanged.
+
 ## P9.14 · Identity and conversational continuity (2026-11-25)
 
 - Branch `codex/P9.14-identity-memory` stacks on reviewed P9.13 `75562b08c74486a73cf0806689bb6e1974589aba` ([draft #49](https://github.com/Hadisovic/Pai/pull/49)). [Investigation and design](docs/P9.14-REVIEW.md) records evidence, research, prioritized fixes and implementation boundaries. P9.11 remains the live baseline. No deployment, live data changes, or PR merge.

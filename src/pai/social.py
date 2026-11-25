@@ -2,14 +2,14 @@
 
 import asyncio
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
 from weakref import WeakKeyDictionary
 
 from pai.conversation import AssistantTurn, ConversationContext
 from pai.model_router import ModelRequest, Router
 from pai.reply_engine import ReplyEngine
-from pai.social_memory import SocialNote, SocialStore, mentions_term
+from pai.social_memory import _NEGATIVE, SocialNote, SocialStore, mentions_term
 from pai.storage import MessageRecord
 
 _CONTEXT = (
@@ -63,7 +63,12 @@ class SocialLearning:
             AssistantTurn, tuple[ConversationContext, tuple[SocialNote, ...]]
         ] = WeakKeyDictionary()
 
-    async def observe(self, message_id: int) -> None:
+    async def observe(
+        self,
+        message_id: int,
+        receipt_feedback: Callable[[MessageRecord, SocialStore], tuple[str, ...]]
+        | None = None,
+    ) -> None:
         def ingest():
             source = self.store.archive.get(message_id)
             if source is None or not self.store.permits(source):
@@ -76,6 +81,10 @@ class SocialLearning:
                     for note in match[2]
                     if self.store.archive.records_unchanged(note.sources)
                 )
+            if not terms and receipt_feedback is not None:
+                feedback = _NEGATIVE.fullmatch(source.text.strip())
+                if feedback and not feedback["term"]:
+                    terms = receipt_feedback(source, self.store)
             self.store.observe(source, terms)
 
         await asyncio.to_thread(ingest)
@@ -131,14 +140,18 @@ class SocialLearning:
             cached = self.influenced.get(current)
             if cached:
                 context, notes = cached
-                updated = replace(
+                matched = self.store.revalidate(
                     context.request,
-                    guild_id=recipient.guild_id,
-                    channel_id=recipient.channel_id,
-                    author_id=recipient.author_id,
-                    created_at=datetime.now(UTC),
+                    recipient,
+                    {note.term: note.fingerprint for note in notes},
                 )
-                if not self.valid(replace(context, request=updated), notes):
+                if matched is None or not self.store.archive.records_unchanged(
+                    tuple(
+                        dict.fromkeys(
+                            source for note in notes for source in note.sources
+                        )
+                    )
+                ):
                     return False
             current = current.prior_turn
         return True

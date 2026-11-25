@@ -8,8 +8,9 @@ import sqlite3
 import unicodedata
 from collections import defaultdict
 from contextlib import closing
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -108,6 +109,16 @@ class SocialNote:
     meaning: str
     confidence: str
     sources: tuple[MessageRecord, ...]
+
+    @property
+    def fingerprint(self) -> str:
+        value = (
+            self.term,
+            self.meaning,
+            self.confidence,
+            sorted(row.message_id for row in self.sources),
+        )
+        return sha256(json.dumps(value, ensure_ascii=False).encode()).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -306,7 +317,11 @@ class SocialStore:
         return tuple(result)
 
     def retrieve(
-        self, request: MessageRecord, query: str | None = None
+        self,
+        request: MessageRecord,
+        query: str | None = None,
+        *,
+        terms: frozenset[str] | None = None,
     ) -> tuple[SocialNote, ...]:
         if _NEGATIVE.fullmatch(request.text.strip()) or _EXPLANATION.fullmatch(
             request.text.strip()
@@ -316,7 +331,11 @@ class SocialStore:
         groups: dict[str, list[_Evidence]] = defaultdict(list)
         suppressed = set()
         for row in self._evidence(request):
-            if not mentions_term(text, row.term):
+            if not (
+                row.term in terms
+                if terms is not None
+                else mentions_term(text, row.term)
+            ):
                 continue
             if row.kind == "suppress":
                 if row.source.author_id == request.author_id:
@@ -360,6 +379,33 @@ class SocialStore:
             if len(notes) == 2:
                 break
         return tuple(notes)
+
+    def revalidate(
+        self,
+        origin: MessageRecord,
+        recipient: MessageRecord,
+        fingerprints: dict[str, str],
+    ) -> tuple[SocialNote, ...] | None:
+        if (
+            (origin.guild_id, origin.channel_id)
+            != (recipient.guild_id, recipient.channel_id)
+            or not self.permits(origin)
+            or not self.permits(recipient)
+        ):
+            return None
+        through = max(datetime.now(UTC), recipient.created_at)
+        terms = frozenset(fingerprints)
+        notes = self.retrieve(replace(origin, created_at=through), terms=terms)
+        if {note.term: note.fingerprint for note in notes} != fingerprints:
+            return None
+        if origin.author_id != recipient.author_id:
+            current = self.retrieve(
+                replace(origin, author_id=recipient.author_id, created_at=through),
+                terms=terms,
+            )
+            if {note.term: note.fingerprint for note in current} != fingerprints:
+                return None
+        return notes
 
     def confirm(self, scope: MessageRecord, message_id: int) -> bool:
         if not self.permits(scope):

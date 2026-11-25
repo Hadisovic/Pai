@@ -81,6 +81,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P9.11 [DONE]** Add an opt-in timeline engine and independent text route selection. Validate with rolling synthetic dialogues and deploy the approved P9.11 candidate to the existing private TEST scope. Preserve P9.10 rollback.
 - **P9.13 [DONE]** Add consent-gated, source-linked social learning from golden P9.11. Synthetic comparisons and golden regressions are recorded in standalone [draft PR #49](https://github.com/Hadisovic/Pai/pull/49). Live activation requires separate owner approval.
 - **P9.14 [IN_PROGRESS]** Ground identity and runtime facts. Add source-linked assistant continuity and improve verified branch selection. Evaluate harmless banter, updated memories, safety and privacy against P9.11 before requesting rollout.
+- **P9.14.1 [IN_PROGRESS]** Combine social learning and continuity with verified source dependencies. Add scoped identity facts and historical recall. Evaluate fictional participation, define correlated diagnostics, and document the Gateway reliability follow-up.
 - **P9.12 [DEFERRED]** Preserve GIF intelligence in draft PR #48. Revisit integration after P9.14, with separate media consent and rollout approval.
 - **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.
 
