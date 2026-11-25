@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -7,6 +8,7 @@ from pai.identity import Identity
 from pai.policy import PrivacyPolicy
 from pai.runtime_info import BuildInfo, runtime_reply
 from pai.storage import MessageRecord
+from pai.voice import ReplyStyle
 
 
 def _context(text, *, author=3, parent=None):
@@ -34,6 +36,12 @@ def test_identity_distinguishes_creator_models_and_live_features():
     identity = Identity(policy, ("fixture-qwen", "fixture-oss"))
     assert "Hadisovic" in identity.reply(_context("who built u"))
     assert "Hadisovic" in identity.reply(_context("مين طورك"))
+    assert (
+        identity.reply(
+            replace(_context("who built u"), style=ReplyStyle(language="arabizi"))
+        )
+        == "Hadisovic 3amalni."
+    )
     assert identity.reply(_context("ur fallback model?")) == (
         "fixture-oss is my text fallback."
     )

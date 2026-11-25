@@ -17,6 +17,7 @@ class PrivacyPolicy:
     media_opt_in: bool = False
     social_learning_opt_in: bool = False
     social_consenting_member_ids: frozenset[int] = frozenset()
+    assistant_continuity_opt_in: bool = False
 
     @property
     def is_enabled(self) -> bool:
@@ -92,6 +93,9 @@ def load_policy(path: Path) -> PrivacyPolicy:
     if type(media_opt_in) is not bool:
         raise ValueError("media_opt_in must be a boolean")
     social = config.get("social_learning_opt_in", False)
+    continuity = config.get("assistant_continuity_opt_in", False)
+    if type(continuity) is not bool:
+        raise ValueError("assistant_continuity_opt_in must be a boolean")
     social_members = _snowflakes(config, "social_consenting_member_ids")
     text_members = _snowflakes(config, "consenting_member_ids")
     if type(social) is not bool or not social_members <= text_members:
@@ -113,4 +117,5 @@ def load_policy(path: Path) -> PrivacyPolicy:
         media_opt_in=media_opt_in,
         social_learning_opt_in=social,
         social_consenting_member_ids=social_members,
+        assistant_continuity_opt_in=continuity,
     )

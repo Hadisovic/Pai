@@ -70,66 +70,73 @@ class Identity:
             return None
 
         language = context.style.language if context.style else ""
-        arabic = language == "arabic" or (
-            not language and re.search(r"[\u0621-\u064a]", query) is not None
-        )
+        if not language and re.search(r"[\u0621-\u064a]", query):
+            language = "arabic"
+        elif not language and re.match(r"min (?:3amalak|barmajak)$", query, re.I):
+            language = "arabizi"
+
+        def say(english: str, arabic: str, arabizi: str) -> str:
+            return {"arabic": arabic, "arabizi": arabizi}.get(language, english)
+
         learning = self.policy.permits_social(
             request.guild_id, request.channel_id, request.author_id
         )
         primary = self.text_routes[0] if self.text_routes else None
         fallback = self.text_routes[1] if len(self.text_routes) > 1 else None
         if topic == "creator":
-            return f"{_CREATOR} عملني." if arabic else f"{_CREATOR} made me."
+            return say(
+                f"{_CREATOR} made me.", f"{_CREATOR} عملني.", f"{_CREATOR} 3amalni."
+            )
         if topic == "identity":
-            return (
-                "أنا Pai، رفيقكم عالديسكورد."
-                if arabic
-                else "i'm Pai, your Discord companion."
+            return say(
+                "i'm Pai, your Discord companion.",
+                "أنا Pai، رفيقكم عالديسكورد.",
+                "ana Pai, rafi2kom 3al Discord.",
             )
         if topic == "model":
             if not primary:
-                return (
-                    "ما عندي موديل نص مفعّل."
-                    if arabic
-                    else "there's no text model on here."
+                return say(
+                    "there's no text model on here.",
+                    "ما عندي موديل نص مفعّل.",
+                    "ma 3andi model lal text hon.",
                 )
-            return (
-                f"أنا Pai. موديل النص الأساسي {primary}."
-                if arabic
-                else f"i'm Pai. {primary} is my default text model."
+            return say(
+                f"i'm Pai. {primary} is my default text model.",
+                f"أنا Pai. موديل النص الأساسي {primary}.",
+                f"ana Pai. {primary} howwe el model el asasi lal text.",
             )
         if topic == "fallback":
             if not fallback:
-                return (
-                    "ما عندي موديل احتياطي هون."
-                    if arabic
-                    else "there's no fallback configured here."
+                return say(
+                    "there's no fallback configured here.",
+                    "ما عندي موديل احتياطي هون.",
+                    "ma 3andi fallback hon.",
                 )
-            return (
-                f"الموديل الاحتياطي {fallback}."
-                if arabic
-                else f"{fallback} is my text fallback."
+            return say(
+                f"{fallback} is my text fallback.",
+                f"الموديل الاحتياطي {fallback}.",
+                f"el fallback taba3i {fallback}.",
             )
         if topic == "memory":
             if not read_history:
-                return (
-                    "ما بقدر أرجع للشات القديم هون."
-                    if arabic
-                    else "i can't read the old chat here rn."
+                return say(
+                    "i can't read the old chat here rn.",
+                    "ما بقدر أرجع للشات القديم هون.",
+                    "ma ba2dar arja3 lal chat el adeem hon.",
                 )
-            return (
-                "بقدر أتذكر الرسائل المسموح أحفظها هون."
-                if arabic
-                else "i can recall saved messages people agreed to share here."
+            return say(
+                "i can recall saved messages people agreed to share here.",
+                "بقدر أتذكر الرسائل المسموح أحفظها هون.",
+                "ba2dar atzakkar el rasa2el el masmoo7 a7fazha hon.",
             )
         if learning and read_history:
-            return (
-                "بتعلم معاني من المساهمات المسموحة هون."
-                if arabic
-                else "i can pick up group meanings people opted in to share here."
+            return say(
+                "i can pick up group meanings people opted in to share here.",
+                "بتعلم معاني من المساهمات المسموحة هون.",
+                "bat3allam ma3ani men el mosahamat el masmoo7a hon.",
             )
-        return (
-            "التعلّم من الشات مطفّى عندي هون."
-            if arabic
-            else "social learning's off for me here."
+        return say(
+            "social learning's off for me here.",
+            "التعلّم من الشات مطفّى عندي هون.",
+            "el ta3allom men el chat mtaffi 3andi hon.",
         )

@@ -4,7 +4,9 @@
 
 - Branch `codex/P9.14-identity-memory` stacks on reviewed P9.13 `75562b08c74486a73cf0806689bb6e1974589aba` ([draft #49](https://github.com/Hadisovic/Pai/pull/49)). [Investigation and design](docs/P9.14-REVIEW.md) records evidence, research, prioritized fixes and implementation boundaries. P9.11 remains the live baseline. No deployment, live data changes, or PR merge.
 - Added grounded identity and configuration in `src/pai/identity.py`, connected through CLI and gateway. Expanded `runtime_info.py` colloquial version matching with regression coverage. The character card, timeline, model sampling, and provider routes remain untouched. Unknown pronunciation and birthday stay open for social play.
-- `uv lock --check`, `uv run --offline --locked ruff check .`, `uv run --offline --locked pytest -q` (133 passed), `uv run --offline --locked python -m pai --doctor`, and `git diff --check` passed. Next action is to test source-linked assistant receipts and competing native branches, then run matched synthetic conversations.
+- Implemented optional assistant receipts in `continuity.py`, `policy.py`, `storage.py` and the Gateway. The replay and receipt tests verify exact native parent recovery after simulated restart, branch selection, authorized source edits, deletion, expiry and withdrawal. The Gateway intercepts a bare ping that references a verified human self-harm taunt. Added Arabizi rendering when chosen in identity preferences.
+- Full local verification passed with 138 tests, Ruff lint and format, lock and doctor, and diff checks. Golden source and lockfile comparisons passed. Four matched synthetic Qwen calls used 1,726 reported tokens and no additional provider. The restored branch answered the correct callback. Both builds participated in the fictional choice. Findings and remaining work are in the review document.
+- Next action is independent review of the P9.14 draft, then select the next scoped retrieval or diagnostic improvement. A separate owner decision is needed for any live activation or changes to protected prompts. Keep GIF integration in draft #48.
 
 ## P9.13 · Opt-in social learning (2026-11-25)
 

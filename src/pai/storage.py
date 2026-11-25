@@ -484,8 +484,11 @@ class Archive:
             )
 
     def apply_policy(self, policy: PrivacyPolicy) -> int:
+        from pai.continuity import purge_receipts
+
         with closing(self.connect()) as connection, connection:
             purge_social(connection, policy)
+            purge_receipts(connection, policy)
             if not policy.media_opt_in:
                 connection.execute("DELETE FROM media_descriptions")
                 connection.execute("DELETE FROM message_media")
