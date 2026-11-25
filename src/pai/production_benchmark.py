@@ -16,10 +16,13 @@ import discord
 
 from pai.conversation import ConversationContext
 from pai.discord_gateway import PaiDiscordClient, archive_message
+from pai.identity import Identity
 from pai.model_router import Router
 from pai.policy import PrivacyPolicy
 from pai.providers import Groq
 from pai.reply_engine import ReplyEngine
+from pai.social import SocialLearning
+from pai.social_memory import SocialStore
 from pai.storage import Archive
 
 
@@ -70,6 +73,8 @@ async def replay(
     *,
     conversation_engine: str = "legacy",
     assistant_continuity: bool = False,
+    social_learning: bool = False,
+    identity_context: bool = False,
     restart_before: str | None = None,
 ) -> list[dict]:
     policy = PrivacyPolicy(
@@ -78,6 +83,11 @@ async def replay(
         1,
         frozenset({2}),
         frozenset({3, 4}),
+        external_ai_opt_in=social_learning,
+        social_learning_opt_in=social_learning,
+        social_consenting_member_ids=frozenset({3, 4})
+        if social_learning
+        else frozenset(),
         assistant_continuity_opt_in=assistant_continuity,
     )
     guild = Mock(id=1, me=Mock(), owner_id=3)
@@ -114,6 +124,13 @@ async def replay(
 
     channel.send = AsyncMock(side_effect=send)
 
+    async def fetch_message(message_id):
+        return next(
+            (reply for reply in replies.values() if reply.id == message_id), None
+        )
+
+    channel.fetch_message = AsyncMock(side_effect=fetch_message)
+
     def make_client():
         client = PaiDiscordClient(
             policy,
@@ -122,6 +139,14 @@ async def replay(
             respond=respond,
             conversation_engine=conversation_engine,
         )
+        if social_learning:
+            client.social = SocialLearning(SocialStore(archive, policy), respond)
+        if identity_context:
+            client.identity = Identity(
+                policy,
+                tuple(route.name for route in respond.router.routes),
+                respond.build,
+            )
         client._connection.user = Mock(id=42)
         client.get_channel = Mock(return_value=channel)
         return client

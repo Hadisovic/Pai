@@ -1,12 +1,13 @@
 """Scoped identity answers with trusted configuration and no model call."""
 
+import json
 import re
 from dataclasses import dataclass
 from datetime import timedelta
 
 from pai.conversation import ConversationContext
 from pai.policy import PrivacyPolicy
-from pai.runtime_info import _query
+from pai.runtime_info import BuildInfo, _query
 
 _CREATOR = "Hadisovic"
 _TOPICS = {
@@ -35,12 +36,77 @@ _QUESTION = re.compile(
 _FALLBACK_FOLLOWUP = re.compile(
     r"(?:and|what about) (?:the |your |ur )?fallback(?: model)?", re.IGNORECASE
 )
+_INDIRECT = re.compile(
+    r"\bbehind (?:this|the) (?:account|bot)\b|\bbehind (?:you|u|pai)\b"
+    r"|\b(?:qwen|gpt(?:-oss)?)\b.{0,55}\b(?:built|made|creator|person|human|model|developer)\b"
+    r"|\b(?:built|made|trained|created) (?:you|u|pai)\b.{0,55}\b(?:qwen|gpt|human|person)\b"
+    r"|\b(?:who's|who is) the (?:human|person|one) (?:who|that)\b.{0,45}\b(?:you|u|pai|ur)\b"
+    r"|\b(?:are|were) (?:you|u) (?:actually|really) (?:a person|human|a bot)\b"
+    r"|\b(?:انت|إنت|أنت) (?:مجرد موديل|إنسان ولا|انسان ولا)|(?:مين|من) ورا (?:البوت|الحساب)",
+    re.IGNORECASE,
+)
+_INDIRECT_FOLLOWUP = re.compile(
+    r"^(?:so|then|and) (?:what does that make (?:you|u)|who made (?:you|u)|who's the person)$",
+    re.IGNORECASE,
+)
+_SELF_REFERENCE = re.compile(
+    r"\b(?:you|u|your|ur|pai|(?:this|the) (?:bot|account)|انت|إنت|أنت|البوت|الحساب)\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
 class Identity:
     policy: PrivacyPolicy
     text_routes: tuple[str, ...]
+    build: BuildInfo | None = None
+
+    def prompt_facts(self, context: ConversationContext, read_history: bool) -> str:
+        request = context.request
+        if not self.policy.permits(
+            request.guild_id, request.channel_id, request.author_id
+        ) or (context.style and context.style.situation):
+            return ""
+        query = _query(request.text)
+        prior = context.assistant_turn
+        followup = (
+            read_history
+            and prior is not None
+            and prior.request.author_id == request.author_id
+            and timedelta(0)
+            <= request.created_at - prior.request.created_at
+            <= timedelta(minutes=10)
+            and _INDIRECT_FOLLOWUP.fullmatch(query)
+            and (
+                _QUESTION.fullmatch(_query(prior.request.text))
+                or _INDIRECT.search(_query(prior.request.text))
+            )
+        )
+        if not (
+            (_INDIRECT.search(query) and _SELF_REFERENCE.search(query)) or followup
+        ):
+            return ""
+        facts = {
+            "name": "Pai",
+            "role": "AI-powered Discord friend and companion",
+            "human_creator": _CREATOR,
+            "primary_text_model": self.text_routes[0] if self.text_routes else None,
+            "fallback_text_model": self.text_routes[1]
+            if len(self.text_routes) > 1
+            else None,
+            "release": self.build.release if self.build else None,
+            "revision": self.build.revision if self.build else None,
+            "authorized_channel_recall": read_history,
+            "social_learning_for_speaker": read_history
+            and self.policy.permits_social(
+                request.guild_id, request.channel_id, request.author_id
+            ),
+            "channel_media_analysis_enabled": self.policy.media_opt_in,
+            "limitations": "No browsing, private account access, code execution or physical control.",
+        }
+        return "Verified Pai runtime facts:\n" + json.dumps(
+            facts, ensure_ascii=False, separators=(",", ":")
+        )
 
     def reply(
         self, context: ConversationContext, read_history: bool = True

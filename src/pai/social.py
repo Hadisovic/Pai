@@ -1,15 +1,15 @@
-"""Opt-in social grounding outside the frozen P9.11 reply engine."""
+"""Request-scoped context outside the frozen P9.11 reply engine."""
 
 import asyncio
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, replace
-from datetime import UTC, datetime
 from weakref import WeakKeyDictionary
 
 from pai.conversation import AssistantTurn, ConversationContext
 from pai.model_router import ModelRequest, Router
 from pai.reply_engine import ReplyEngine
-from pai.social_memory import SocialNote, SocialStore, mentions_term
+from pai.social_memory import _NEGATIVE, SocialNote, SocialStore, mentions_term
 from pai.storage import MessageRecord
 
 _CONTEXT = (
@@ -26,32 +26,45 @@ class SocialReply:
 
 
 class _ContextRouter:
-    def __init__(self, router: Router, notes: tuple[SocialNote, ...]) -> None:
+    def __init__(self, router: Router, blocks: tuple[tuple[str, str], ...]) -> None:
         self.routes = router.routes
         self.router = router
-        self.notes = notes
-        self.used = False
+        self.blocks = blocks
+        self.used: set[str] = set()
 
     async def generate(self, request: ModelRequest, *, render=None) -> str:
-        hints = json.dumps(
-            [
-                {
-                    "expression": row.term,
-                    "meaning": row.meaning,
-                    "evidence": row.confidence,
-                }
-                for row in self.notes
-            ],
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
-        block = _CONTEXT + hints + "\n\n"
-        if len(block.encode()) <= 780:
-            extended = replace(request, payload=block + request.payload)
+        prefix = ""
+        applied = set()
+        for kind, text in self.blocks:
+            block = text + "\n\n"
+            if not text or len(block.encode()) > 780:
+                continue
+            extended = replace(request, payload=prefix + block + request.payload)
             if extended.reserved_tokens <= 8000:
-                request = extended
-                self.used = True
-        return await self.router.generate(request, render=render)
+                prefix += block
+                applied.add(kind)
+        response = await self.router.generate(
+            replace(request, payload=prefix + request.payload) if prefix else request,
+            render=render,
+        )
+        self.used.update(applied)
+        return response
+
+
+async def respond_with_context(
+    engine: ReplyEngine, context: ConversationContext, *blocks: tuple[str, str]
+) -> tuple[str, set[str]]:
+    if not any(text for _, text in blocks):
+        return await engine(context), set()
+    router = _ContextRouter(engine.router, blocks)
+    decorated = ReplyEngine(
+        router,
+        build=engine.build,
+        vision=engine.vision,
+        conversation_engine=engine.conversation_engine,
+    )
+    decorated.notice = engine.notice
+    return await decorated(context), router.used
 
 
 class SocialLearning:
@@ -63,7 +76,12 @@ class SocialLearning:
             AssistantTurn, tuple[ConversationContext, tuple[SocialNote, ...]]
         ] = WeakKeyDictionary()
 
-    async def observe(self, message_id: int) -> None:
+    async def observe(
+        self,
+        message_id: int,
+        receipt_feedback: Callable[[MessageRecord, SocialStore], tuple[str, ...]]
+        | None = None,
+    ) -> None:
         def ingest():
             source = self.store.archive.get(message_id)
             if source is None or not self.store.permits(source):
@@ -76,6 +94,10 @@ class SocialLearning:
                     for note in match[2]
                     if self.store.archive.records_unchanged(note.sources)
                 )
+            if not terms and receipt_feedback is not None:
+                feedback = _NEGATIVE.fullmatch(source.text.strip())
+                if feedback and not feedback["term"]:
+                    terms = receipt_feedback(source, self.store)
             self.store.observe(source, terms)
 
         await asyncio.to_thread(ingest)
@@ -100,30 +122,42 @@ class SocialLearning:
             )
         )
 
-    async def respond(self, context: ConversationContext, history: bool) -> SocialReply:
+    async def respond(
+        self, context: ConversationContext, history: bool, identity_facts: str = ""
+    ) -> SocialReply:
+        notes = ()
         if (
-            not history
-            or not self.store.permits(context.request)
-            or context.self_recall
-            or (context.style and context.style.situation)
+            history
+            and self.store.permits(context.request)
+            and not context.self_recall
+            and not (context.style and context.style.situation)
         ):
-            return SocialReply(await self.engine(context))
-        notes = await asyncio.to_thread(
-            self.store.retrieve, context.request, self._query(context)
+            notes = await asyncio.to_thread(
+                self.store.retrieve, context.request, self._query(context)
+            )
+            if notes and not await asyncio.to_thread(self.valid, context, notes):
+                notes = ()
+        hints = (
+            _CONTEXT
+            + json.dumps(
+                [
+                    {
+                        "expression": row.term,
+                        "meaning": row.meaning,
+                        "evidence": row.confidence,
+                    }
+                    for row in notes
+                ],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+            if notes
+            else ""
         )
-        if not notes or not await asyncio.to_thread(self.valid, context, notes):
-            return SocialReply(await self.engine(context))
-
-        router = _ContextRouter(self.engine.router, notes)
-        engine = ReplyEngine(
-            router,
-            build=self.engine.build,
-            vision=self.engine.vision,
-            conversation_engine=self.engine.conversation_engine,
+        answer, used = await respond_with_context(
+            self.engine, context, ("social", hints), ("identity", identity_facts)
         )
-        engine.notice = self.engine.notice
-        answer = await engine(context)
-        return SocialReply(answer, notes if router.used else ())
+        return SocialReply(answer, notes if "social" in used else ())
 
     def valid_turn(self, turn: AssistantTurn, recipient: MessageRecord) -> bool:
         current = turn
@@ -131,14 +165,18 @@ class SocialLearning:
             cached = self.influenced.get(current)
             if cached:
                 context, notes = cached
-                updated = replace(
+                matched = self.store.revalidate(
                     context.request,
-                    guild_id=recipient.guild_id,
-                    channel_id=recipient.channel_id,
-                    author_id=recipient.author_id,
-                    created_at=datetime.now(UTC),
+                    recipient,
+                    {note.term: note.fingerprint for note in notes},
                 )
-                if not self.valid(replace(context, request=updated), notes):
+                if matched is None or not self.store.archive.records_unchanged(
+                    tuple(
+                        dict.fromkeys(
+                            source for note in notes for source in note.sources
+                        )
+                    )
+                ):
                     return False
             current = current.prior_turn
         return True
