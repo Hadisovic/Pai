@@ -1,13 +1,20 @@
 """Verified native branch continuity without a second transcript."""
 
 import json
+import re
 from contextlib import closing
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from sqlite3 import Connection
 
-from pai.conversation import AssistantTurn, ConversationContext, _normalized_request
+from pai.conversation import (
+    _RECALL_ALIASES,
+    AssistantTurn,
+    ConversationContext,
+    _normalized_request,
+    _recall_words,
+)
 from pai.policy import PrivacyPolicy
 from pai.social_memory import SocialNote, SocialStore, mentions_term
 from pai.storage import Archive, MessageRecord, _record, _utc_text
@@ -70,12 +77,24 @@ DELETE FROM assistant_receipts_v1 WHERE reply_id IN (
     WHERE term=OLD.term AND OLD.message_id IN (SELECT value FROM json_each(evidence_ids))
 );
 """
+_HISTORICAL = re.compile(
+    r"^(?:(?:remind me )?what did (?:you|u) (?:call|name|say about|suggest for|pick for) "
+    r"|(?:(?:ذكرني|ذكّرني) )?شو (?:سميت|أسميت|حكيت عن) |(?:shu|shou) (?:sammet|sammayt) )"
+    r"(?P<topic>[^?؟\n]{3,100})[?.!؟]*$",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
 class RecoveredReply:
     turn: AssistantTurn
     notes: tuple[SocialNote, ...] = ()
+
+
+@dataclass(frozen=True)
+class ReceiptTarget:
+    reply_id: int
+    request_id: int
 
 
 def purge_receipts(connection: Connection, policy: PrivacyPolicy) -> None:
@@ -226,9 +245,11 @@ class AssistantReceipts:
         text: str,
         *,
         social: SocialStore | None = None,
+        historical: bool = False,
     ) -> RecoveredReply | None:
         guild, channel = request.guild_id, request.channel_id
-        if request.reply_to_id != reply_id or not self._eligible(
+        expected = None if historical else reply_id
+        if request.reply_to_id != expected or not self._eligible(
             request, guild, channel
         ):
             return None
@@ -277,7 +298,7 @@ class AssistantReceipts:
             return None
         by_id = {str(row.message_id): row for row in sources}
         original = by_id.get(str(original_id))
-        if not original:
+        if not original or (historical and original.author_id != request.author_id):
             return None
         notes = ()
         if fingerprints:
@@ -297,6 +318,69 @@ class AssistantReceipts:
             ),
             notes,
         )
+
+    def find_historical(self, request: MessageRecord) -> ReceiptTarget | None:
+        if request.reply_to_id is not None or not self._eligible(
+            request, request.guild_id, request.channel_id
+        ):
+            return None
+        match = _HISTORICAL.fullmatch(_normalized_request(request.text))
+        if match is None:
+            return None
+        direct = tuple(
+            word
+            for word in dict.fromkeys(_recall_words(match["topic"]))
+            if word not in {"again", "last", "time", "قبل", "زمان", "مرة", "آخر"}
+        )
+        groups = {
+            next(
+                (
+                    frozenset(values)
+                    for values in _RECALL_ALIASES.values()
+                    if term in values
+                ),
+                frozenset({term}),
+            )
+            for term in direct
+        }
+        if not 2 <= len(groups) <= 6:
+            return None
+        cutoff = max(request.created_at, datetime.now(UTC)) - timedelta(
+            days=self.policy.retention_days
+        )
+        candidates = self.archive.search(
+            " ".join((*direct, *sorted(set().union(*groups).difference(direct)))),
+            guild_id=request.guild_id,
+            channel_id=request.channel_id,
+            authors=frozenset({request.author_id}),
+            cutoff=cutoff,
+            through=request.created_at,
+            omit=frozenset({request.message_id}),
+            limit=12,
+        )
+        origins = []
+        for row in candidates:
+            words = frozenset(_recall_words(row.text))
+            if all(words.intersection(group) for group in groups):
+                origins.append(str(row.message_id))
+        if not origins:
+            return None
+        with closing(self.archive.connect()) as db:
+            rows = db.execute(
+                """SELECT reply_id,request_id FROM assistant_receipts_v1
+                   WHERE guild_id=? AND channel_id=? AND notice_version=?
+                     AND delivered_at BETWEEN ? AND ?
+                     AND request_id IN (SELECT value FROM json_each(?)) LIMIT 2""",
+                (
+                    str(request.guild_id),
+                    str(request.channel_id),
+                    self.policy.notice_version,
+                    _utc_text(cutoff),
+                    _utc_text(request.created_at),
+                    json.dumps(origins),
+                ),
+            ).fetchall()
+        return ReceiptTarget(*map(int, rows[0])) if len(rows) == 1 else None
 
     def feedback_terms(
         self, source: MessageRecord, social: SocialStore

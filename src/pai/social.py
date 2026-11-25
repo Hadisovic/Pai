@@ -1,4 +1,4 @@
-"""Opt-in social grounding outside the frozen P9.11 reply engine."""
+"""Request-scoped context outside the frozen P9.11 reply engine."""
 
 import asyncio
 import json
@@ -26,32 +26,45 @@ class SocialReply:
 
 
 class _ContextRouter:
-    def __init__(self, router: Router, notes: tuple[SocialNote, ...]) -> None:
+    def __init__(self, router: Router, blocks: tuple[tuple[str, str], ...]) -> None:
         self.routes = router.routes
         self.router = router
-        self.notes = notes
-        self.used = False
+        self.blocks = blocks
+        self.used: set[str] = set()
 
     async def generate(self, request: ModelRequest, *, render=None) -> str:
-        hints = json.dumps(
-            [
-                {
-                    "expression": row.term,
-                    "meaning": row.meaning,
-                    "evidence": row.confidence,
-                }
-                for row in self.notes
-            ],
-            ensure_ascii=False,
-            separators=(",", ":"),
-        )
-        block = _CONTEXT + hints + "\n\n"
-        if len(block.encode()) <= 780:
-            extended = replace(request, payload=block + request.payload)
+        prefix = ""
+        applied = set()
+        for kind, text in self.blocks:
+            block = text + "\n\n"
+            if not text or len(block.encode()) > 780:
+                continue
+            extended = replace(request, payload=prefix + block + request.payload)
             if extended.reserved_tokens <= 8000:
-                request = extended
-                self.used = True
-        return await self.router.generate(request, render=render)
+                prefix += block
+                applied.add(kind)
+        response = await self.router.generate(
+            replace(request, payload=prefix + request.payload) if prefix else request,
+            render=render,
+        )
+        self.used.update(applied)
+        return response
+
+
+async def respond_with_context(
+    engine: ReplyEngine, context: ConversationContext, *blocks: tuple[str, str]
+) -> tuple[str, set[str]]:
+    if not any(text for _, text in blocks):
+        return await engine(context), set()
+    router = _ContextRouter(engine.router, blocks)
+    decorated = ReplyEngine(
+        router,
+        build=engine.build,
+        vision=engine.vision,
+        conversation_engine=engine.conversation_engine,
+    )
+    decorated.notice = engine.notice
+    return await decorated(context), router.used
 
 
 class SocialLearning:
@@ -109,30 +122,42 @@ class SocialLearning:
             )
         )
 
-    async def respond(self, context: ConversationContext, history: bool) -> SocialReply:
+    async def respond(
+        self, context: ConversationContext, history: bool, identity_facts: str = ""
+    ) -> SocialReply:
+        notes = ()
         if (
-            not history
-            or not self.store.permits(context.request)
-            or context.self_recall
-            or (context.style and context.style.situation)
+            history
+            and self.store.permits(context.request)
+            and not context.self_recall
+            and not (context.style and context.style.situation)
         ):
-            return SocialReply(await self.engine(context))
-        notes = await asyncio.to_thread(
-            self.store.retrieve, context.request, self._query(context)
+            notes = await asyncio.to_thread(
+                self.store.retrieve, context.request, self._query(context)
+            )
+            if notes and not await asyncio.to_thread(self.valid, context, notes):
+                notes = ()
+        hints = (
+            _CONTEXT
+            + json.dumps(
+                [
+                    {
+                        "expression": row.term,
+                        "meaning": row.meaning,
+                        "evidence": row.confidence,
+                    }
+                    for row in notes
+                ],
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+            if notes
+            else ""
         )
-        if not notes or not await asyncio.to_thread(self.valid, context, notes):
-            return SocialReply(await self.engine(context))
-
-        router = _ContextRouter(self.engine.router, notes)
-        engine = ReplyEngine(
-            router,
-            build=self.engine.build,
-            vision=self.engine.vision,
-            conversation_engine=self.engine.conversation_engine,
+        answer, used = await respond_with_context(
+            self.engine, context, ("social", hints), ("identity", identity_facts)
         )
-        engine.notice = self.engine.notice
-        answer = await engine(context)
-        return SocialReply(answer, notes if router.used else ())
+        return SocialReply(answer, notes if "social" in used else ())
 
     def valid_turn(self, turn: AssistantTurn, recipient: MessageRecord) -> bool:
         current = turn

@@ -16,6 +16,7 @@ import discord
 
 from pai.conversation import ConversationContext
 from pai.discord_gateway import PaiDiscordClient, archive_message
+from pai.identity import Identity
 from pai.model_router import Router
 from pai.policy import PrivacyPolicy
 from pai.providers import Groq
@@ -73,6 +74,7 @@ async def replay(
     conversation_engine: str = "legacy",
     assistant_continuity: bool = False,
     social_learning: bool = False,
+    identity_context: bool = False,
     restart_before: str | None = None,
 ) -> list[dict]:
     policy = PrivacyPolicy(
@@ -122,6 +124,13 @@ async def replay(
 
     channel.send = AsyncMock(side_effect=send)
 
+    async def fetch_message(message_id):
+        return next(
+            (reply for reply in replies.values() if reply.id == message_id), None
+        )
+
+    channel.fetch_message = AsyncMock(side_effect=fetch_message)
+
     def make_client():
         client = PaiDiscordClient(
             policy,
@@ -132,6 +141,12 @@ async def replay(
         )
         if social_learning:
             client.social = SocialLearning(SocialStore(archive, policy), respond)
+        if identity_context:
+            client.identity = Identity(
+                policy,
+                tuple(route.name for route in respond.router.routes),
+                respond.build,
+            )
         client._connection.user = Mock(id=42)
         client.get_channel = Mock(return_value=channel)
         return client

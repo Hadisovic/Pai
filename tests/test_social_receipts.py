@@ -15,7 +15,7 @@ from pai.social_memory import SocialStore
 from pai.storage import Archive, MessageRecord
 
 
-def _seed(archive, *, social=True, continuity=True):
+def _seed(archive, *, social=True, continuity=True, age=timedelta(hours=2)):
     policy = PrivacyPolicy(
         True,
         "synthetic",
@@ -27,7 +27,7 @@ def _seed(archive, *, social=True, continuity=True):
         social_consenting_member_ids=frozenset({3, 4}) if social else frozenset(),
         assistant_continuity_opt_in=continuity,
     )
-    now = datetime.now(UTC) - timedelta(hours=2)
+    now = datetime.now(UTC) - age
     row = MessageRecord(
         81, 1, 2, 3, "Synthetic", '"sock orbit" means use the green crate', now
     )
@@ -202,3 +202,64 @@ def test_reply_feedback_applies_to_persisted_note_after_restart(tmp_path):
     assert "Optional group context" in prompts[0].payload
     assert ("assistant", "sock orbit, got it") not in prompts[1].prior_messages
     assert "Optional group context" not in prompts[2].payload
+
+
+def test_expiry_and_disabling_social_leave_ordinary_receipts_available(tmp_path):
+    archive = Archive(tmp_path / "retention.sqlite")
+    policy, store, source = _seed(archive, age=timedelta(days=2))
+    current = datetime.now(UTC) - timedelta(seconds=20)
+    original = replace(
+        source, message_id=82, text="sock orbit again?", created_at=current
+    )
+    archive.append(original)
+    receipts = AssistantReceipts(archive, policy)
+    turn = AssistantTurn(
+        "sock orbit, yep",
+        original,
+        (original, source),
+        message_id=83,
+        created_at=current + timedelta(seconds=1),
+    )
+    assert receipts.remember(turn, notes=store.retrieve(original), social=store)
+    ordinary = replace(turn, text="okay", sources=(original,), message_id=85)
+    assert receipts.remember(ordinary)
+    query = replace(
+        original,
+        message_id=84,
+        reply_to_id=83,
+        text="sure?",
+        created_at=current + timedelta(seconds=2),
+    )
+    short_policy = replace(policy, retention_days=1)
+    assert not AssistantReceipts(archive, short_policy).restore(
+        query, 83, 82, turn.text, social=SocialStore(archive, short_policy)
+    )
+    assert AssistantReceipts(archive, short_policy).recover(
+        replace(query, reply_to_id=85), 85, 82, ordinary.text
+    )
+    disabled = replace(policy, social_learning_opt_in=False)
+    archive.apply_policy(disabled)
+    assert (
+        receipts.restore(
+            query, 83, 82, turn.text, social=SocialStore(archive, disabled)
+        )
+        is None
+    )
+    assert receipts.recover(replace(query, reply_to_id=85), 85, 82, ordinary.text)
+
+
+def test_unavailable_route_does_not_create_social_dependencies(tmp_path):
+    from pai.conversation import ConversationContext
+    from pai.social import SocialLearning
+
+    archive = Archive(tmp_path / "quota.sqlite")
+    _, store, source = _seed(archive)
+    request = replace(
+        source, message_id=82, text="sock orbit?", created_at=datetime.now(UTC)
+    )
+    feature = SocialLearning(
+        store, ReplyEngine(Router(archive, ()), conversation_engine="timeline-roles")
+    )
+    assert store.retrieve(request)
+    output = asyncio.run(feature.respond(ConversationContext(request), True))
+    assert not output.notes

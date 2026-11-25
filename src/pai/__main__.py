@@ -57,7 +57,9 @@ async def _run(
                 text_model
             )
             router = Router(archive, routes)
-            client.identity = Identity(policy, tuple(route.name for route in routes))
+            client.identity = Identity(
+                policy, tuple(route.name for route in routes), build
+            )
             client.respond = ReplyEngine(
                 router,
                 build=build,

@@ -11,6 +11,7 @@ from discord.ext import tasks
 from pai.commands import controls
 from pai.continuity import (
     AssistantReceipts,
+    RecoveredReply,
     clarify_harmful_parent,
     focus_native_branch,
 )
@@ -25,7 +26,8 @@ from pai.discord_media import discover_media
 from pai.identity import Identity
 from pai.observability import LOG, ReplyLimits
 from pai.policy import PrivacyPolicy
-from pai.social import SocialLearning, SocialReply
+from pai.reply_engine import ReplyEngine
+from pai.social import SocialLearning, SocialReply, respond_with_context
 from pai.storage import Archive, MessageRecord
 
 
@@ -144,15 +146,54 @@ class PaiDiscordClient(discord.Client):
                     )
 
     def _is_pai_message(self, parent: object, message: discord.Message) -> bool:
+        return self._is_own_reply(
+            parent, message.reference.message_id, message.guild.id, message.channel.id
+        )
+
+    def _is_own_reply(
+        self, parent: object, reply_id: int, guild_id: int, channel_id: int
+    ) -> bool:
         return (
             self.user is not None
             and isinstance(parent, discord.Message)
-            and parent.id == message.reference.message_id
-            and parent.channel.id == message.channel.id
+            and parent.id == reply_id
+            and parent.channel.id == channel_id
             and parent.guild is not None
-            and parent.guild.id == message.guild.id
+            and parent.guild.id == guild_id
             and parent.author.id == self.user.id
             and parent.webhook_id is None
+        )
+
+    async def _historical_reply(
+        self, channel: discord.TextChannel, request: MessageRecord
+    ) -> RecoveredReply | None:
+        target = await asyncio.to_thread(self.receipts.find_historical, request)
+        if target is None:
+            return None
+        try:
+            parent = await channel.fetch_message(target.reply_id)
+        except discord.HTTPException:
+            return None
+        if not self._is_own_reply(
+            parent, target.reply_id, request.guild_id, request.channel_id
+        ):
+            return None
+        reference = parent.reference
+        if (
+            reference is None
+            or reference.message_id != target.request_id
+            or reference.channel_id != request.channel_id
+            or reference.guild_id not in (None, request.guild_id)
+        ):
+            return None
+        return await asyncio.to_thread(
+            self.receipts.restore,
+            request,
+            target.reply_id,
+            target.request_id,
+            parent.content,
+            social=self.social.store if self.social is not None else None,
+            historical=True,
         )
 
     async def _deliver_reply(
@@ -227,13 +268,6 @@ class PaiDiscordClient(discord.Client):
                 )
                 if recovered is not None:
                     assistant_turn = recovered.turn
-                    if recovered.notes and self.social is not None:
-                        self.social.track_delivery(
-                            parent.id,
-                            assistant_turn,
-                            ConversationContext(assistant_turn.request),
-                            SocialReply(assistant_turn.text or "", recovered.notes),
-                        )
         context = await asyncio.to_thread(
             prepare_context,
             self.archive,
@@ -246,6 +280,24 @@ class PaiDiscordClient(discord.Client):
             native_reply=self.timeline and bot_reply,
             prefer_arabic=self.timeline and message.author.id == message.guild.owner_id,
         )
+        if (
+            self.receipts is not None
+            and can_read_history
+            and not bot_reply
+            and not context.self_recall
+            and not (context.style and context.style.situation)
+        ):
+            recovered = await self._historical_reply(channel, request)
+            if recovered is not None:
+                context = replace(context, assistant_turn=recovered.turn)
+        if recovered is not None and recovered.notes and self.social is not None:
+            restored_turn = recovered.turn
+            self.social.track_delivery(
+                restored_turn.message_id,
+                restored_turn,
+                ConversationContext(restored_turn.request),
+                SocialReply(restored_turn.text or "", recovered.notes),
+            )
         if self.timeline:
             context = focus_native_branch(context)
         if self.read_media is not None:
@@ -263,15 +315,25 @@ class PaiDiscordClient(discord.Client):
         grounded = (
             self.identity.reply(context, can_read_history) if self.identity else None
         )
+        facts = (
+            self.identity.prompt_facts(context, can_read_history)
+            if self.identity and grounded is None
+            else ""
+        )
         if clarify_harmful_parent(context):
             response = "nah. what are you asking me about?"
         elif grounded is not None:
             response = grounded
-        elif self.social is None:
-            response = (await self.respond(context)).strip()
-        else:
-            learned = await self.social.respond(context, can_read_history)
+        elif self.social is not None:
+            learned = await self.social.respond(context, can_read_history, facts)
             response = learned.text.strip()
+        elif facts and isinstance(self.respond, ReplyEngine):
+            response, _ = await respond_with_context(
+                self.respond, context, ("identity", facts)
+            )
+            response = response.strip()
+        else:
+            response = (await self.respond(context)).strip()
         if not response:
             return
 
@@ -294,12 +356,14 @@ class PaiDiscordClient(discord.Client):
                 recovered.turn.request.message_id,
                 recovered.turn.text,
                 social=social_store,
+                historical=not bot_reply,
             )
             != recovered
         ):
             return
         if (
             self.social is not None
+            and recovered is None
             and context.assistant_turn is not None
             and not await asyncio.to_thread(
                 self.social.valid_turn, context.assistant_turn, request

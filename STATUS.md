@@ -4,7 +4,10 @@
 
 - Branch `codex/P9.14.1-conversation-refinement` starts at P9.14 [draft #50](https://github.com/Hadisovic/Pai/pull/50), `9c582054bf89b728d0aea85e3090746bbb37bf38`. [Investigation](docs/P9.14.1-REVIEW.md) records priorities and limitations.
 - Removed the social-learning-wide receipt exclusion. `continuity.py`, `social.py`, `social_memory.py` and the Gateway now preserve actual learned-note fingerprints and source IDs. Recovery revalidates both scopes and applies feedback after restart. Synthetic replay covers all four flag combinations. Withdrawing evidence deletes dependent receipts while preserving the authorized originals.
-- Local `uv run --offline --locked pytest -q` passed with 147 tests. Ruff, lockfile, doctor and diff checks passed. Next action is scoped identity context, indirect assistant recall, and a matched fictional-participation evaluation. The live pin and separate GIF draft remain unchanged.
+- Added scoped identity facts and same-speaker indirect history with a unique FTS and receipt match, one verified Discord lookup, and no searchable assistant text. The protected golden sources and route settings remain unchanged.
+- Twelve matched synthetic Qwen calls used 5,257 reported tokens. The identity answer attributed creation correctly, and the mixed-language callback restored the synthetic book title. Neither harmless scenario reproduced the live refusal. Both variants omitted real-world help in the synthetic imminent-distress response. See the review for exact examples, local costs, diagnostic design and the independent Gateway repair proposal.
+- Local verification passed with 152 tests, Ruff lint and formatting, lockfile, doctor and diff checks. The protected golden source comparison passed. Initial compatibility checkpoint `62e4f196f647aaed497e42c141894566f4015a6f` was pushed and verified before the final review checkpoint.
+- Next action is review of this draft and the separate imminent-distress and correlation proposals before considering wider validation. The live pin and GIF draft remain unchanged.
 
 ## P9.14 · Identity and conversational continuity (2026-11-25)
 
