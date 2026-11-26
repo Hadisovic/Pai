@@ -83,6 +83,7 @@ Statuses: `TODO`, `IN_PROGRESS`, `BLOCKED`, `DONE`. A task is DONE only after it
 - **P9.14 [IN_PROGRESS]** Ground identity and runtime facts. Add source-linked assistant continuity and improve verified branch selection. Evaluate harmless banter, updated memories, safety and privacy against P9.11 before requesting rollout.
 - **P9.14.1 [IN_PROGRESS]** Review the combined social and continuity safeguards, scoped identity facts and indirect recall. Synthetic evidence, diagnostic design and the separate Gateway repair proposal are in `docs/P9.14.1-REVIEW.md`. Review the observed distress gap before any rollout.
 - **P9.15 [IN_PROGRESS]** Add and review separately consented member awareness, source-scoped recall and non-notifying mentions. Keep live acceptance, GIF integration and P9.14.2 work separate.
+- **P9.16 [IN_PROGRESS]** Operate the isolated Kirky experiment with an exclusive Free quota handover. Discord identity, channel isolation, consent, the distress review, native replies and two user references are verified. Resolve the reported client notification before marking the live smoke test complete.
 - **P9.12 [DEFERRED]** Preserve GIF intelligence in draft PR #48. Revisit integration after P9.14, with separate media consent and rollout approval.
 - **Acceptance:** run the complete automated suite and synthetic requests on the authenticated Free model, verify the remote checkpoint, and record live test results after rollout.
 

@@ -35,6 +35,7 @@ def controls(
     *,
     social: SocialStore | None = None,
     members: MemberDirectory | None = None,
+    name: str = "Pai",
 ) -> app_commands.CommandTree:
     tree = PrivateCommandTree(client)
     guild = discord.Object(id=policy.guild_id) if policy.guild_id is not None else None
@@ -46,6 +47,10 @@ def controls(
             interaction.guild_id == guild.id
             and isinstance(interaction.channel, discord.TextChannel)
             and interaction.permissions.view_channel
+            and (
+                name == "Pai"
+                or policy.permits_channel(guild.id, interaction.channel_id)
+            )
         )
 
     async def unavailable(interaction: discord.Interaction) -> None:
@@ -352,4 +357,9 @@ def controls(
                 answer, ephemeral=True, allowed_mentions=discord.AllowedMentions.none()
             )
 
+    if name != "Pai":
+        for command in tree.get_commands(guild=guild):
+            tree.remove_command(command.name, guild=guild)
+            command.name = f"{name.lower()}_{command.name}"
+            tree.add_command(command, guild=guild)
     return tree

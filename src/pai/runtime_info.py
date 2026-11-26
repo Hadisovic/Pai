@@ -7,6 +7,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from pai.conversation import ConversationContext, _normalized_request
+from pai.instance import current_name, identity_query
 
 _REVISION = re.compile(r"[0-9a-f]{40}")
 _RELEASE = re.compile(r"^(P[0-9]+(?:\.[0-9]+)+):", re.IGNORECASE)
@@ -105,7 +106,7 @@ def capture_build() -> BuildInfo | None:
 
 
 def _query(text: str) -> str:
-    return _normalized_request(text).rstrip("?.!؟").strip()
+    return identity_query(_normalized_request(text).rstrip("?.!؟").strip())
 
 
 def _build_followup(context: ConversationContext, text: str) -> bool:
@@ -145,7 +146,10 @@ def runtime_reply(
             return "i can't verify which build is running."
         if build.release and not followup and "commit" not in text.casefold():
             return f"{build.release.lower()} rn"
-        return f"pai's running commit is {build.revision}"
+        name = current_name.get()
+        return (
+            f"{'pai' if name == 'Pai' else name}'s running commit is {build.revision}"
+        )
     if _MODEL.fullmatch(text):
         return (
             f"my default text model here is {primary_model}."
@@ -173,7 +177,7 @@ def runtime_reply(
 
 def unsupported_runtime_claim(text: str, *, vision: bool) -> bool:
     return bool(
-        _SELF_VERSION_CLAIM.search(text)
+        _SELF_VERSION_CLAIM.search(identity_query(text))
         or _TOOL_CLAIM.search(text)
         or (not vision and _VISION_CLAIM.search(text))
     )

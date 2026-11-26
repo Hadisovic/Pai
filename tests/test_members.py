@@ -181,7 +181,7 @@ def test_gateway_member_context_with_social_and_continuity(tmp_path):
                 Event(
                     "two",
                     4,
-                    "<@42> pick jobs for <@3> and <@4> at a cloud bell party. mention them both",
+                    "<@42> pick jobs for <@3> and <@4> at a cloud bell party. mention two of us without pinging",
                 ),
                 Event(
                     "unauthorized", 4, "<@42> can you remember <@5>'s favorite game?"
