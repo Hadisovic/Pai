@@ -21,9 +21,24 @@ P9.14.1's test found that both model variants omitted immediate outside help for
 
 ```powershell
 pwsh -NoProfile -File "$env:LOCALAPPDATA/Kirky/Start-Kirky.ps1" -Check
-pwsh -NoProfile -File "$env:LOCALAPPDATA/Kirky/Start-Kirky.ps1"
 pwsh -NoProfile -File "$env:LOCALAPPDATA/Kirky/Stop-Kirky.ps1"
 pwsh -NoProfile -File "$env:LOCALAPPDATA/Kirky/Backup-Kirky.ps1"
+```
+
+For the current exclusive handover, run the following from a Pai Git checkout after confirming Pai is stopped. The shared key stays in the original checkout's local `.env` and is passed through the launch environment for this invocation.
+
+```powershell
+$mainCheckout = Split-Path (git rev-parse --path-format=absolute --git-common-dir)
+$keyLine = @(Get-Content -LiteralPath (Join-Path $mainCheckout '.env') |
+    Where-Object { $_ -match '^\s*PAI_GROQ_KEY\s*=' })
+if ($keyLine.Count -ne 1) { throw 'Expected a single local Groq key entry.' }
+try {
+    $env:KIRKY_GROQ_KEY = ($keyLine[0] -split '=', 2)[1].Trim().Trim('"').Trim("'")
+    pwsh -NoProfile -File "$env:LOCALAPPDATA/Kirky/Start-Kirky.ps1" -Handover
+} finally {
+    Remove-Item Env:KIRKY_GROQ_KEY -ErrorAction SilentlyContinue
+    Remove-Variable keyLine
+}
 ```
 
 The private directory holds the pinned source checkout, scope policy, independent SQLite archive, logs, avatar and encrypted backups. Kirky uses its own process lock and a local shutdown request. The same gateway excludes bot-authored and webhook messages, including Pai's messages. Kirky commands are prefixed with `kirky_` and accept only the dedicated channel. A launch message confirms process creation. Verify actual Gateway readiness in Kirky's own log.

@@ -1,14 +1,17 @@
 # Durable handoff state
 
-## P9.16 · Kirky experimental runtime (2026-11-25)
+## P9.16 · Kirky experimental runtime (2026-11-26)
 
 - Exclusive handover follow-up verifies Discord channel isolation, access for four affirmatively enrolled Kirky testers, and imminent-distress, fiction and taunt fixtures. The new handover reads stable usage, reservations and backoff from SQLite in read-only mode after Pai exits and accounts for recent synthetic requests. Startup and provider calls fail closed if the stable process is present. Independent organization verification remains false.
 - At 16:37 Amman on 2026-11-25, Pai was stopped and one Kirky connector became Gateway-ready at `5b09a1e3a262696f83f56ada2936f16581f633be`. Discord verified the direct mention and ping-off native reply with “cedar” and “CEDAR”. The quota snapshot initially retained 186,795 Qwen tokens or reservations and 5,199 GPT-OSS tokens or reservations. GPT-OSS served the synthetic requests while the Qwen cap was occupied. The first live group reply used plain names because the link matcher omitted “mention two of us”. This checkpoint fixes that wording and tests the mapper through the Gateway.
 - Branch `codex/P9.16-kirky` stacks on verified [P9.15 draft #52](https://github.com/Hadisovic/Pai/pull/52) at `67521265c30137d2e0b0682d3ce03e67c413ed80`. [Kirky setup and rollback](docs/KIRKY.md) records independent configuration, quota priority, safety and migration.
+- On 2026-11-26 after a Windows reboot, Kirky was offline. Fresh Discord checks verified its custom avatar, Message Content Intent, exclusive channel access and four testers' access. The private launch preflight passed. One Kirky connector reached Gateway readiness at `03ae586801974a320ab951f8e0061f9b1615232c` with `timeline-roles`, Qwen primary and GPT-OSS fallback. Stable Pai stayed stopped. The shared Free quota still uses the exclusive handover.
+- The corrected live native reply contained two distinct opted-in user references. Qwen accepted the request and Discord delivered the reply in 3.59 seconds. Discord's message object returned zero parsed mentions and no everyone mention. The owner reported a notification. Its originating message and alert type are pending confirmation. The non-notification check remains open.
+- `uv run --offline --locked pytest -q` passed with 168 tests. The lockfile and Ruff checks also passed. All five GitHub checks passed on the deployed code commit in [draft PR #53](https://github.com/Hadisovic/Pai/pull/53).
 - Configurable app-authored name and narrowly scoped experimental distress reply are implemented outside the golden files. Experimental Discord preflight and separate start, stop, credential and backup scripts are ready for offline validation.
 - Offline `uv run --offline --locked pytest -q` passed with 166 tests, including a mocked graceful shutdown. Ruff, lockfile, source diff, golden-source comparison and PowerShell syntax checks passed. The avatar-copy hash matched the user attachment.
 - Private checkout, exact disabled policy, empty archive, local doctor and launch gate were verified before credential access. The backup drill exposed trailing newlines in Windows-protected secret files. After trimming those file boundaries, Kirky's own encrypted backup and erasure checkpoint restored separately with SQLite integrity OK and zero messages.
-- Next action is Discord owner setup and review of the distinct quota, experiment channel permissions and consent. Stable Pai stays pinned and running. Live Discord behavior and the uploaded avatar are pending.
+- Next action is to correlate the reported alert with a specific Discord message on the affected tester's client. Keep the experiment scoped to its approved channel and retain the local logs and backups.
 
 ## P9.15 · Member awareness (2026-11-25)
 
